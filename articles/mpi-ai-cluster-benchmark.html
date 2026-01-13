@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MPI benchmark suite for RDMA AI clusters - measure Allreduce, Broadcast, Alltoall latencies">
+    <title>MPI AI Cluster Benchmark | Eniz Aksoy</title>
+    <style>
+        :root { --primary: #2563eb; --secondary: #1e40af; --accent: #f59e0b; --text: #1f2937; --text-light: #6b7280; --bg: #ffffff; --bg-alt: #f3f4f6; --bg-code: #1e293b; --border: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.7; color: var(--text); background: var(--bg); }
+        .hero { background: linear-gradient(135deg, #1e40af 0%, #f59e0b 100%); color: white; padding: 80px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .hero .subtitle { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+        .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.8rem; color: var(--secondary); margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 3px solid var(--accent); }
+        h3 { font-size: 1.3rem; margin: 25px 0 15px; }
+        p { margin-bottom: 15px; }
+        pre { background: var(--bg-code); color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; font-family: 'Consolas', monospace; font-size: 0.9rem; }
+        code { font-family: 'Consolas', monospace; background: var(--bg-alt); padding: 2px 6px; border-radius: 4px; }
+        pre code { background: none; padding: 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px 15px; text-align: left; border: 1px solid var(--border); }
+        th { background: var(--accent); color: white; }
+        tr:nth-child(even) { background: var(--bg-alt); }
+        .info-box { padding: 20px; border-radius: 8px; margin: 20px 0; background: #fffbeb; border-left: 4px solid var(--accent); }
+        .diagram { background: var(--bg-code); color: #e2e8f0; padding: 25px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; margin: 20px 0; }
+        .author { background: linear-gradient(135deg, var(--bg-alt) 0%, #fef3c7 100%); padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center; }
+        .author-links { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .author-links a { padding: 10px 20px; background: var(--accent); color: white; text-decoration: none; border-radius: 6px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; }
+        footer { background: var(--bg-code); color: #94a3b8; text-align: center; padding: 30px 20px; margin-top: 50px; }
+        footer a { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <h1>MPI AI Cluster Benchmark</h1>
+    <p class="subtitle">Production-Grade MPI Benchmark Suite for RDMA AI Clusters</p>
+    <div class="badges">
+        <span class="badge">OpenMPI</span>
+        <span class="badge">UCX</span>
+        <span class="badge">Prometheus</span>
+        <span class="badge">Grafana</span>
+    </div>
+</header>
+
+<main class="container">
+    <a href="../index.html" class="back-link">&larr; Back to Portfolio</a>
+
+    <section>
+        <h2>Overview</h2>
+        <p>Production-grade MPI benchmark suite for RDMA-enabled AI training clusters. Simulate real distributed AI training traffic patterns and measure collective operation latencies.</p>
+
+        <div class="info-box">
+            <h4>This toolkit provides:</h4>
+            <ul>
+                <li><strong>MPI Collective Benchmarks</strong> - Measure Allreduce, Broadcast, Alltoall, Reduce, Allgather latencies</li>
+                <li><strong>Bandwidth Stress Testing</strong> - Saturate RDMA links with continuous MPI traffic</li>
+                <li><strong>Prometheus Metrics</strong> - Export MPI latencies for monitoring</li>
+                <li><strong>Grafana Dashboard</strong> - Visualize performance and correlate with network congestion</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Why MPI Benchmarks for AI?</h2>
+        <p>Distributed AI training relies heavily on MPI collective operations:</p>
+
+        <table>
+            <tr><th>Operation</th><th>AI Training Use</th><th>Frequency</th></tr>
+            <tr><td><strong>Allreduce</strong></td><td>Gradient synchronization across GPUs</td><td>Every training step</td></tr>
+            <tr><td><strong>Broadcast</strong></td><td>Model weight distribution</td><td>Initialization</td></tr>
+            <tr><td><strong>Alltoall</strong></td><td>Expert routing in MoE models</td><td>Per-layer in MoE</td></tr>
+            <tr><td><strong>Allgather</strong></td><td>Batch normalization statistics</td><td>Per BatchNorm layer</td></tr>
+            <tr><td><strong>Reduce</strong></td><td>Loss aggregation for logging</td><td>Every N steps</td></tr>
+        </table>
+
+        <p><strong>Allreduce is the critical path</strong> - it's called every training step and directly impacts training throughput.</p>
+    </section>
+
+    <section>
+        <h2>Performance Results</h2>
+        <h3>Test Environment</h3>
+        <ul>
+            <li><strong>Cluster:</strong> 8-node RDMA cluster</li>
+            <li><strong>Network:</strong> 25Gbps RoCEv2 with PFC/ECN enabled</li>
+            <li><strong>Interconnect:</strong> Cisco Nexus switches</li>
+            <li><strong>Transport:</strong> UCX with UD verbs</li>
+        </ul>
+
+        <h3>Measured Latencies (8 nodes)</h3>
+        <table>
+            <tr><th>Operation</th><th>Message Size</th><th>Latency</th><th>Target</th></tr>
+            <tr><td>Allreduce</td><td>4MB</td><td>38.9 ms</td><td>&lt; 50ms</td></tr>
+            <tr><td>Allreduce</td><td>1MB</td><td>10.6 ms</td><td>&lt; 15ms</td></tr>
+            <tr><td>Allreduce</td><td>64KB</td><td>484 μs</td><td>&lt; 1ms</td></tr>
+            <tr><td>Allreduce</td><td>1KB</td><td>64.9 μs</td><td>&lt; 100μs</td></tr>
+            <tr><td>Broadcast</td><td>4MB</td><td>25.4 ms</td><td>&lt; 30ms</td></tr>
+            <tr><td>Broadcast</td><td>1MB</td><td>5.87 ms</td><td>&lt; 10ms</td></tr>
+            <tr><td>Alltoall</td><td>1MB</td><td>73.0 ms</td><td>&lt; 100ms</td></tr>
+            <tr><td>Reduce</td><td>1MB</td><td>5.85 ms</td><td>&lt; 10ms</td></tr>
+            <tr><td>Allgather</td><td>128KB</td><td>6.30 ms</td><td>&lt; 10ms</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>MPI Operations Explained</h2>
+        <div class="diagram">ALLREDUCE (Gradient Sync)              BROADCAST (Weight Distribution)
+─────────────────────────              ──────────────────────────────
+
+  Node1 ──┐                              Master ──┬──► Node2
+  Node2 ──┼──► SUM ──► All Nodes                 ├──► Node3
+  Node3 ──┤                                      ├──► Node4
+  Node4 ──┘                                      └──► ...
+
+REDUCE (Loss Aggregation)              ALLGATHER (BatchNorm Stats)
+─────────────────────────              ──────────────────────────
+
+  Node1 ──┐                              Node1 [A] ──┐
+  Node2 ──┼──► SUM ──► Master            Node2 [B] ──┼──► [A,B,C,D] All
+  Node3 ──┤                              Node3 [C] ──┤
+  Node4 ──┘                              Node4 [D] ──┘</div>
+    </section>
+
+    <section>
+        <h2>Quick Start</h2>
+        <pre><code># Quick latency test (single run)
+./mpi_test_controller.py once
+
+# Continuous monitoring mode
+./mpi_test_controller.py start
+
+# High-bandwidth stress test
+./mpi_bandwidth_stress.py start
+
+# Check status
+./mpi_bandwidth_stress.py status
+
+# Stop tests
+./mpi_bandwidth_stress.py stop</code></pre>
+    </section>
+
+    <section>
+        <h2>Traffic Generation</h2>
+        <ul>
+            <li><strong>Stress Test:</strong> Generates ~32MB+ per Allreduce operation (8 nodes × 4MB)</li>
+            <li><strong>Alltoall 1MB:</strong> Generates ~64MB total traffic (each node sends to every other)</li>
+            <li><strong>Link Utilization:</strong> Achieved multi-Gbps sustained throughput</li>
+        </ul>
+
+        <h3>Congestion Control Activity</h3>
+        <ul>
+            <li>ECN marked packets: 200-600 per second</li>
+            <li>PFC frames triggered on switch fabric</li>
+            <li>Demonstrates lossless RDMA operation under load</li>
+        </ul>
+    </section>
+
+    <div class="author">
+        <h3>Eniz Aksoy</h3>
+        <p>CCIE #23970 | Senior Network Architect | AI/ML Infrastructure</p>
+        <div class="author-links">
+            <a href="https://github.com/Enizaksoy/mpi-ai-cluster-benchmark" target="_blank">View on GitHub</a>
+            <a href="https://linkedin.com/in/enizaksoy" target="_blank">LinkedIn</a>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2026 Eniz Aksoy. CCIE #23970</p>
+    <p><a href="../index.html">Back to Portfolio</a></p>
+</footer>
+
+</body>
+</html>

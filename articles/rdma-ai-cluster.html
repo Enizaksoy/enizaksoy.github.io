@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Building a lossless RDMA network for distributed AI training with PFC and ECN - 96% packet drop reduction">
+    <title>RDMA AI Cluster - Lossless Network for AI Training | Eniz Aksoy</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #06b6d4;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #ffffff;
+            --bg-alt: #f3f4f6;
+            --bg-code: #1e293b;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.7; color: var(--text); background: var(--bg); }
+        .hero { background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 50%, var(--accent) 100%); color: white; padding: 80px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .hero .subtitle { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+        .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.8rem; color: var(--secondary); margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 3px solid var(--primary); }
+        h3 { font-size: 1.3rem; margin: 25px 0 15px; }
+        p { margin-bottom: 15px; }
+        pre { background: var(--bg-code); color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; font-family: 'Consolas', monospace; font-size: 0.9rem; }
+        code { font-family: 'Consolas', monospace; background: var(--bg-alt); padding: 2px 6px; border-radius: 4px; }
+        pre code { background: none; padding: 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px 15px; text-align: left; border: 1px solid var(--border); }
+        th { background: var(--primary); color: white; }
+        tr:nth-child(even) { background: var(--bg-alt); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin: 30px 0; }
+        .stat-card { background: var(--bg-alt); padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid var(--primary); }
+        .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .stat-card .label { color: var(--text-light); font-size: 0.9rem; }
+        .info-box { padding: 20px; border-radius: 8px; margin: 20px 0; background: #eff6ff; border-left: 4px solid var(--primary); }
+        .diagram { background: var(--bg-code); color: #e2e8f0; padding: 25px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; margin: 20px 0; }
+        .author { background: linear-gradient(135deg, var(--bg-alt) 0%, #e0e7ff 100%); padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center; }
+        .author-links { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .author-links a { padding: 10px 20px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        footer { background: var(--bg-code); color: #94a3b8; text-align: center; padding: 30px 20px; margin-top: 50px; }
+        footer a { color: var(--accent); }
+        .highlight { color: #fbbf24; }
+        @media (max-width: 768px) { .hero h1 { font-size: 1.8rem; } h2 { font-size: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <h1>RDMA Network for AI Training</h1>
+    <p class="subtitle">Building a Lossless, High-Performance Network for Distributed AI</p>
+    <div class="badges">
+        <span class="badge">96% Drop Reduction</span>
+        <span class="badge">2x Bandwidth</span>
+        <span class="badge">RoCEv2</span>
+        <span class="badge">PFC/ECN</span>
+    </div>
+</header>
+
+<main class="container">
+    <a href="../index.html" class="back-link">&larr; Back to Portfolio</a>
+
+    <section>
+        <h2>Achievement Highlights</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value">96%</div>
+                <div class="label">Packet Drop Reduction</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">2x</div>
+                <div class="label">Bandwidth Improvement</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">11x</div>
+                <div class="label">Lower Latency</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">40M+</div>
+                <div class="label">ECN Packets</div>
+            </div>
+        </div>
+
+        <table>
+            <tr><th>Metric</th><th>TCP</th><th>RDMA</th><th>Improvement</th></tr>
+            <tr><td>Bandwidth</td><td>4.67 Gbps</td><td>9.23 Gbps</td><td><strong>2x</strong></td></tr>
+            <tr><td>Latency</td><td>161 μs</td><td>14.37 μs</td><td><strong>11x</strong></td></tr>
+            <tr><td>Packet Drops</td><td>6.5M</td><td>256K</td><td><strong>96% reduction</strong></td></tr>
+            <tr><td>Jitter</td><td>High</td><td>0.82 μs</td><td><strong>Sub-microsecond</strong></td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>Architecture</h2>
+        <div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│                    Grafana Dashboard                         │
+│            Real-time RDMA Network Monitoring                 │
+│    ECN/CNP Stats | ESXi Pause Frames | Switch PFC Metrics   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                Prometheus (Port 9090)                        │
+│    Collecting from: RDMA Exporters | ESXi | Switch          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                8-Node AI Training Cluster                    │
+│                                                              │
+│    Ubuntu Servers (x8) with Mellanox ConnectX-4 Lx NICs     │
+│                          ↓                                   │
+│    Cisco Nexus Switch (100G, PFC + ECN enabled)             │
+│                          ↓                                   │
+│    RoCEv2 (RDMA over Converged Ethernet v2)                 │
+│                          ↓                                   │
+│    Lossless Network for AI Training                         │
+└─────────────────────────────────────────────────────────────┘</div>
+    </section>
+
+    <section>
+        <h2>Key Technologies</h2>
+        <div class="info-box">
+            <ul>
+                <li><strong>RoCEv2</strong> - RDMA over Converged Ethernet v2</li>
+                <li><strong>PFC</strong> - Priority Flow Control (IEEE 802.1Qbb)</li>
+                <li><strong>ECN</strong> - Explicit Congestion Notification (RFC 3168)</li>
+                <li><strong>DCQCN</strong> - Data Center Quantized Congestion Notification</li>
+                <li><strong>Prometheus + Grafana</strong> - Observability Stack</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>What's Included</h2>
+        <table>
+            <tr><th>Component</th><th>Description</th></tr>
+            <tr><td>Technical Documentation</td><td>Complete RDMA/RoCEv2 configuration guides</td></tr>
+            <tr><td>PFC Implementation</td><td>Priority Flow Control setup and validation</td></tr>
+            <tr><td>ECN Configuration</td><td>Explicit Congestion Notification setup</td></tr>
+            <tr><td>Monitoring Stack</td><td>Prometheus + Grafana dashboards</td></tr>
+            <tr><td>Custom Exporters</td><td>RDMA stats, ESXi metrics, switch monitoring</td></tr>
+            <tr><td>Automation Scripts</td><td>30+ scripts for configuration and testing</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>Server Configuration</h2>
+        <table>
+            <tr><th>Server</th><th>IP Address</th><th>RDMA Interface</th><th>RDMA Device</th></tr>
+            <tr><td>ubunturdma1</td><td>192.168.11.152</td><td>ens224</td><td>rocep19s0</td></tr>
+            <tr><td>ubunturdma2</td><td>192.168.11.153</td><td>ens192</td><td>rocep11s0</td></tr>
+            <tr><td>ubunturdma3</td><td>192.168.11.154</td><td>ens224</td><td>rocep19s0</td></tr>
+            <tr><td>ubunturdma4</td><td>192.168.11.155</td><td>ens192</td><td>rocep11s0</td></tr>
+            <tr><td>ubunturdma5</td><td>192.168.11.107</td><td>ens192</td><td>rocep11s0</td></tr>
+            <tr><td>ubunturdma6</td><td>192.168.12.51</td><td>ens192</td><td>rocep11s0</td></tr>
+            <tr><td>ubunturdma7</td><td>192.168.20.150</td><td>ens192</td><td>rocep11s0</td></tr>
+            <tr><td>ubunturdma8</td><td>192.168.30.94</td><td>ens192</td><td>rocep11s0</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>Quick Start</h2>
+        <h3>Basic RDMA Bandwidth Test</h3>
+        <pre><code># On Server 1 (Receiver)
+ib_write_bw -d rocep19s0 -F --report_gbits
+
+# On Server 2 (Sender)
+ib_write_bw -d rocep11s0 -F --report_gbits 192.168.11.152</code></pre>
+
+        <h3>Latency Test</h3>
+        <pre><code># On Server 1 (Receiver)
+ib_write_lat -d rocep19s0 -F
+
+# On Server 2 (Sender)
+ib_write_lat -d rocep11s0 -F 192.168.11.152</code></pre>
+    </section>
+
+    <div class="author">
+        <h3>Eniz Aksoy</h3>
+        <p>CCIE #23970 | Senior Network Architect | AI/ML Infrastructure</p>
+        <div class="author-links">
+            <a href="https://github.com/Enizaksoy/rdma-ai-cluster" target="_blank">View on GitHub</a>
+            <a href="https://linkedin.com/in/enizaksoy" target="_blank">LinkedIn</a>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2026 Eniz Aksoy. CCIE #23970</p>
+    <p><a href="../index.html">Back to Portfolio</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multi-Datacenter EVPN-VXLAN Integration with Cisco Nexus and Versa Flex VNF">
+    <title>EVPN Cisco with Versa | Eniz Aksoy</title>
+    <style>
+        :root { --primary: #6366f1; --secondary: #4f46e5; --accent: #06b6d4; --text: #1f2937; --text-light: #6b7280; --bg: #ffffff; --bg-alt: #f3f4f6; --bg-code: #1e293b; --border: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.7; color: var(--text); background: var(--bg); }
+        .hero { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #06b6d4 100%); color: white; padding: 80px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .hero .subtitle { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+        .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.8rem; color: var(--secondary); margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 3px solid var(--primary); }
+        h3 { font-size: 1.3rem; margin: 25px 0 15px; }
+        p { margin-bottom: 15px; }
+        ul { margin-left: 20px; margin-bottom: 15px; }
+        pre { background: var(--bg-code); color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; font-family: 'Consolas', monospace; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px 15px; text-align: left; border: 1px solid var(--border); }
+        th { background: var(--primary); color: white; }
+        tr:nth-child(even) { background: var(--bg-alt); }
+        .info-box { padding: 20px; border-radius: 8px; margin: 20px 0; background: #eef2ff; border-left: 4px solid var(--primary); }
+        .diagram { background: var(--bg-code); color: #e2e8f0; padding: 25px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; margin: 20px 0; }
+        .author { background: linear-gradient(135deg, var(--bg-alt) 0%, #e0e7ff 100%); padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center; }
+        .author-links { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .author-links a { padding: 10px 20px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--secondary); text-decoration: none; }
+        footer { background: var(--bg-code); color: #94a3b8; text-align: center; padding: 30px 20px; margin-top: 50px; }
+        footer a { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <h1>EVPN Cisco with Versa</h1>
+    <p class="subtitle">Multi-Datacenter EVPN-VXLAN Integration</p>
+    <div class="badges">
+        <span class="badge">EVPN</span>
+        <span class="badge">VXLAN</span>
+        <span class="badge">Cisco Nexus</span>
+        <span class="badge">Versa SD-WAN</span>
+    </div>
+</header>
+
+<main class="container">
+    <a href="../index.html" class="back-link">&larr; Back to Portfolio</a>
+
+    <section>
+        <h2>Overview</h2>
+        <p>This project demonstrates EVPN-VXLAN implementation across two datacenters. The primary datacenter uses Cisco Nexus infrastructure, while the secondary datacenter utilizes Versa Flex VNF. Both datacenters are interconnected through an MPLS backbone network.</p>
+    </section>
+
+    <section>
+        <h2>Network Topology</h2>
+        <div class="diagram">┌───────────────────────┐         ┌───────────────────────┐
+│      CISCO DC         │         │      VERSA DC         │
+│      AS 65000         │         │                       │
+│                       │         │                       │
+│  ┌─────┐   ┌─────┐   │         │   ┌─────┐   ┌─────┐  │
+│  │Spine│   │Spine│   │         │   │Versa│   │Versa│  │
+│  │  1  │   │  2  │   │         │   │Spine│   │Spine│  │
+│  └──┬──┘   └──┬──┘   │         │   └──┬──┘   └──┬──┘  │
+│     │         │      │         │      │         │     │
+│  ┌──┴──┐   ┌──┴──┐   │         │   ┌──┴──┐   ┌──┴──┐  │
+│  │Leaf │   │Leaf │   │         │   │Versa│   │Versa│  │
+│  │  1  │   │  2  │   │         │   │Leaf │   │Leaf │  │
+│  └─────┘   └─────┘   │         │   └─────┘   └─────┘  │
+│                       │         │                       │
+│  VLANs: 10, 20, 30   │         │  Endpoints            │
+└───────────┬───────────┘         └───────────┬───────────┘
+            │                                 │
+            │         MPLS Backbone           │
+            │          AS 65100               │
+            └─────────────┬───────────────────┘
+                          │
+              ┌───────────┴───────────┐
+              │  PE-1 ─── P-RR ─── P-2│
+              │       ASBR            │
+              └───────────────────────┘</div>
+    </section>
+
+    <section>
+        <h2>Datacenter Components</h2>
+        <h3>Cisco DC</h3>
+        <table>
+            <tr><th>Component</th><th>Quantity</th><th>Details</th></tr>
+            <tr><td>Spine Switches</td><td>2</td><td>SPINE-DC-1, NX-SPINE-2</td></tr>
+            <tr><td>Leaf Switches</td><td>2</td><td>NX-Leaf-1, NX-Leaf-2</td></tr>
+            <tr><td>VLANs</td><td>3</td><td>VLAN 10, 20, 30</td></tr>
+            <tr><td>AS Number</td><td>-</td><td>65000</td></tr>
+        </table>
+
+        <h3>Versa DC</h3>
+        <table>
+            <tr><th>Component</th><th>Quantity</th><th>Details</th></tr>
+            <tr><td>Virtual Spines</td><td>2</td><td>Versa-Spine-1, Versa-Spine-2</td></tr>
+            <tr><td>Virtual Leafs</td><td>2</td><td>Versa-Leaf-1, Versa-Leaf-2</td></tr>
+            <tr><td>Platform</td><td>-</td><td>Versa Flex VNF</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>Key Features</h2>
+        <div class="info-box">
+            <ul>
+                <li><strong>Multi-datacenter VXLAN EVPN</strong> fabric with BGP as control plane</li>
+                <li><strong>L2/L3 VNI extension</strong> between Cisco infrastructure and Versa Flex VNF</li>
+                <li><strong>VRF segmentation</strong> and tenant isolation across datacenters</li>
+                <li><strong>BGP EVPN Type-2/Type-5 routes</strong> for host/prefix advertisement</li>
+                <li><strong>Anycast gateway</strong> implementation for optimal traffic forwarding</li>
+                <li><strong>L3VNI (VLAN 999)</strong> for inter-VRF communication</li>
+                <li><strong>LACP-based port-channels</strong> for link redundancy</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Technical Details</h2>
+        <table>
+            <tr><th>Feature</th><th>Implementation</th></tr>
+            <tr><td>Overlay Encapsulation</td><td>VXLAN</td></tr>
+            <tr><td>Control Plane</td><td>BGP EVPN</td></tr>
+            <tr><td>Underlay Routing</td><td>OSPF (per DC)</td></tr>
+            <tr><td>Route Types</td><td>Type-2 (MAC/IP), Type-5 (IP Prefix)</td></tr>
+            <tr><td>Inter-VXLAN Routing</td><td>Symmetric IRB</td></tr>
+            <tr><td>Gateway Model</td><td>Anycast Gateway</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>Use Cases</h2>
+        <ul>
+            <li><strong>Datacenter Migration:</strong> Move workloads between physical and virtual infrastructure</li>
+            <li><strong>Hybrid Cloud:</strong> Connect on-prem DC with SD-WAN enabled branches</li>
+            <li><strong>Disaster Recovery:</strong> Active-active or active-standby DC configurations</li>
+            <li><strong>Multi-site Deployment:</strong> Consistent networking across heterogeneous platforms</li>
+        </ul>
+    </section>
+
+    <div class="author">
+        <h3>Eniz Aksoy</h3>
+        <p>CCIE #23970 | Senior Network Architect | AI/ML Infrastructure</p>
+        <div class="author-links">
+            <a href="https://github.com/Enizaksoy/EVPN-CISCO-with-VERSA" target="_blank">View on GitHub</a>
+            <a href="https://linkedin.com/in/enizaksoy" target="_blank">LinkedIn</a>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2026 Eniz Aksoy. CCIE #23970</p>
+    <p><a href="../index.html">Back to Portfolio</a></p>
+</footer>
+
+</body>
+</html>

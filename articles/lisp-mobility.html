@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cisco LISP Mobility Lab - Location/ID Separation Protocol for workload mobility">
+    <title>LISP Mobility Lab | Eniz Aksoy</title>
+    <style>
+        :root { --primary: #049fd9; --secondary: #0077b5; --accent: #00bceb; --text: #1f2937; --text-light: #6b7280; --bg: #ffffff; --bg-alt: #f3f4f6; --bg-code: #1e293b; --border: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.7; color: var(--text); background: var(--bg); }
+        .hero { background: linear-gradient(135deg, #0077b5 0%, #049fd9 50%, #00bceb 100%); color: white; padding: 80px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .hero .subtitle { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+        .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.8rem; color: var(--secondary); margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 3px solid var(--primary); }
+        h3 { font-size: 1.3rem; margin: 25px 0 15px; }
+        p { margin-bottom: 15px; }
+        ul { margin-left: 20px; margin-bottom: 15px; }
+        pre { background: var(--bg-code); color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; font-family: 'Consolas', monospace; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px 15px; text-align: left; border: 1px solid var(--border); }
+        th { background: var(--primary); color: white; }
+        tr:nth-child(even) { background: var(--bg-alt); }
+        .info-box { padding: 20px; border-radius: 8px; margin: 20px 0; background: #e0f2fe; border-left: 4px solid var(--primary); }
+        .diagram { background: var(--bg-code); color: #e2e8f0; padding: 25px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.9rem; white-space: pre; overflow-x: auto; margin: 20px 0; }
+        .author { background: linear-gradient(135deg, var(--bg-alt) 0%, #e0f2fe 100%); padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center; }
+        .author-links { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .author-links a { padding: 10px 20px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--secondary); text-decoration: none; }
+        footer { background: var(--bg-code); color: #94a3b8; text-align: center; padding: 30px 20px; margin-top: 50px; }
+        footer a { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <h1>LISP Mobility Lab</h1>
+    <p class="subtitle">Cisco Location/ID Separation Protocol Implementation</p>
+    <div class="badges">
+        <span class="badge">Cisco LISP</span>
+        <span class="badge">Mobility</span>
+        <span class="badge">EID/RLOC</span>
+        <span class="badge">xTR</span>
+    </div>
+</header>
+
+<main class="container">
+    <a href="../index.html" class="back-link">&larr; Back to Portfolio</a>
+
+    <section>
+        <h2>Overview</h2>
+        <p>This lab demonstrates Locator/ID Separation Protocol (LISP) implementation for seamless workload mobility across sites. LISP separates the identity of a device (EID) from its location (RLOC), enabling transparent IP mobility.</p>
+    </section>
+
+    <section>
+        <h2>Network Architecture</h2>
+        <div class="diagram">                    MS-MR (3.3.3.3)
+                   /              \
+                  /                \
+           XTR-1 (1.1.1.1)    XTR-2 (2.2.2.2)
+                |                   |
+                 EID: 172.16.10.0/24</div>
+
+        <h3>Lab Components</h3>
+        <table>
+            <tr><th>Device</th><th>Role</th><th>Loopback IP</th></tr>
+            <tr><td>MS-MR</td><td>Map Server / Map Resolver</td><td>3.3.3.3</td></tr>
+            <tr><td>XTR-1</td><td>Ingress/Egress Tunnel Router</td><td>1.1.1.1</td></tr>
+            <tr><td>XTR-2</td><td>Standard Router (connectivity)</td><td>2.2.2.2</td></tr>
+            <tr><td>VRF-Test</td><td>Client Device</td><td>-</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>Key LISP Concepts</h2>
+        <div class="info-box">
+            <ul>
+                <li><strong>EID (Endpoint Identifier):</strong> 172.16.10.0/24 - The mobile subnet that can move between sites</li>
+                <li><strong>RLOC (Routing Locator):</strong> Loopback addresses of routers (1.1.1.1, 2.2.2.2, 3.3.3.3)</li>
+                <li><strong>Map Server/Resolver:</strong> Central database for EID-to-RLOC mappings</li>
+                <li><strong>xTR:</strong> Performs LISP encapsulation/decapsulation (tunnel router)</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>How LISP Works</h2>
+        <div class="diagram">1. Host in EID space sends packet
+   Source: 172.16.10.10 → Dest: 8.8.8.8
+
+2. xTR intercepts and queries Map Resolver
+   "Where is 8.8.8.8's RLOC?"
+
+3. Map Server returns RLOC mapping
+   "8.8.8.8 is reachable via RLOC 2.2.2.2"
+
+4. xTR encapsulates packet
+   Outer: Src 1.1.1.1 → Dst 2.2.2.2
+   Inner: Src 172.16.10.10 → Dst 8.8.8.8
+
+5. Remote xTR decapsulates and delivers
+   Original packet delivered to destination</div>
+    </section>
+
+    <section>
+        <h2>Lab Objectives</h2>
+        <ul>
+            <li>Configure LISP Map Server and Map Resolver</li>
+            <li>Set up LISP xTR functionality</li>
+            <li>Test EID mobility and reachability</li>
+            <li>Understand LISP encapsulation process</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Use Cases</h2>
+        <table>
+            <tr><th>Use Case</th><th>Benefit</th></tr>
+            <tr><td>VM Mobility</td><td>Move VMs between data centers without IP changes</td></tr>
+            <tr><td>Disaster Recovery</td><td>Seamless failover to DR site</td></tr>
+            <tr><td>Multi-homing</td><td>Connect to multiple ISPs with single IP space</td></tr>
+            <tr><td>IPv6 Transition</td><td>Tunnel IPv6 over IPv4 infrastructure</td></tr>
+        </table>
+    </section>
+
+    <div class="author">
+        <h3>Eniz Aksoy</h3>
+        <p>CCIE #23970 | Senior Network Architect | AI/ML Infrastructure</p>
+        <div class="author-links">
+            <a href="https://github.com/Enizaksoy/LISP-Mobility" target="_blank">View on GitHub</a>
+            <a href="https://linkedin.com/in/enizaksoy" target="_blank">LinkedIn</a>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2026 Eniz Aksoy. CCIE #23970</p>
+    <p><a href="../index.html">Back to Portfolio</a></p>
+</footer>
+
+</body>
+</html>
