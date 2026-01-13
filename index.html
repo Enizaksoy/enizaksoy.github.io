@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Eniz Aksoy - CCIE #23970 | Senior Network Architect specializing in AI/ML Infrastructure, RDMA, and Data Center Networking">
+    <meta name="keywords" content="CCIE, Network Architect, RDMA, RoCEv2, AI Infrastructure, Data Center, Cisco, EVPN, SD-WAN">
+    <meta name="author" content="Eniz Aksoy">
+    <title>Eniz Aksoy | CCIE #23970 | Network Architect</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #0f172a;
+            --accent: #06b6d4;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --bg: #ffffff;
+            --bg-alt: #f8fafc;
+            --border: #e2e8f0;
+            --gradient: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 15px 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--secondary);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 160px 20px 100px;
+            background: var(--gradient);
+            color: white;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        .hero .tagline {
+            font-size: 1.1rem;
+            opacity: 0.85;
+            margin-bottom: 30px;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        /* Stats Section */
+        .stats {
+            background: var(--secondary);
+            color: white;
+            padding: 40px 20px;
+        }
+
+        .stats-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-item p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 20px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .section-header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* Projects Grid */
+        .projects {
+            background: var(--bg-alt);
+        }
+
+        .projects-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .project-card.featured {
+            border: 2px solid var(--primary);
+            background: linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%);
+        }
+
+        .project-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--bg-alt);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .project-card.featured .project-category {
+            background: var(--primary);
+            color: white;
+        }
+
+        .project-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+
+        .project-card p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .project-tag {
+            background: var(--bg-alt);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Skills Section */
+        .skills-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .skill-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .skill-card h3 {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .skill-card ul {
+            list-style: none;
+        }
+
+        .skill-card li {
+            padding: 8px 0;
+            color: var(--text-light);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .skill-card li:last-child {
+            border-bottom: none;
+        }
+
+        /* Articles Section */
+        .articles-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            gap: 20px;
+        }
+
+        .article-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .article-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 5px 20px rgba(37, 99, 235, 0.1);
+        }
+
+        .article-info h3 {
+            font-size: 1.15rem;
+            color: var(--secondary);
+            margin-bottom: 5px;
+        }
+
+        .article-info p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .article-arrow {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        /* Contact Section */
+        .contact {
+            background: var(--secondary);
+            color: white;
+            text-align: center;
+        }
+
+        .contact h2 {
+            color: white;
+        }
+
+        .contact p {
+            opacity: 0.8;
+        }
+
+        .contact-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .contact-link {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 30px;
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .contact-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        footer {
+            background: #0a0f1a;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .article-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo">Eniz<span>Aksoy</span></a>
+            <ul class="nav-links">
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#articles">Articles</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Eniz Aksoy</h1>
+            <p class="subtitle">CCIE Routing & Switching #23970</p>
+            <p class="tagline">Senior Network Architect | AI/ML Infrastructure Specialist</p>
+
+            <div class="badges">
+                <span class="badge">CCIE R&S</span>
+                <span class="badge">RDMA/RoCEv2</span>
+                <span class="badge">Data Center</span>
+                <span class="badge">SD-WAN</span>
+                <span class="badge">AI Networking</span>
+            </div>
+
+            <div class="hero-buttons">
+                <a href="https://github.com/Enizaksoy" class="btn btn-primary" target="_blank">
+                    View GitHub
+                </a>
+                <a href="https://linkedin.com/in/enizaksoy" class="btn btn-secondary" target="_blank">
+                    LinkedIn
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-container">
+            <div class="stat-item">
+                <h3>8+</h3>
+                <p>GitHub Projects</p>
+            </div>
+            <div class="stat-item">
+                <h3>96%</h3>
+                <p>Packet Drop Reduction</p>
+            </div>
+            <div class="stat-item">
+                <h3>2x</h3>
+                <p>Bandwidth Improvement</p>
+            </div>
+            <div class="stat-item">
+                <h3>15+</h3>
+                <p>Years Experience</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="projects">
+        <div class="section-header">
+            <h2>Featured Projects</h2>
+            <p>Open source tools and documentation for modern networking</p>
+        </div>
+
+        <div class="projects-grid">
+
+            <!-- Featured: ECN/CNP Deep Dive -->
+            <a href="https://github.com/Enizaksoy/ROCEV2_ECN_CNP_DEEP_DIVE" class="project-card featured" target="_blank">
+                <span class="project-category">Featured</span>
+                <h3>RoCEv2 ECN & CNP Deep Dive</h3>
+                <p>Deep dive into congestion control in lossless RDMA networks with real packet captures from 8-node AI cluster. Analysis of 808,992 packets showing ECN/CNP in action.</p>
+                <div class="project-tags">
+                    <span class="project-tag">RoCEv2</span>
+                    <span class="project-tag">ECN</span>
+                    <span class="project-tag">DCQCN</span>
+                    <span class="project-tag">Wireshark</span>
+                </div>
+            </a>
+
+            <!-- RDMA AI Cluster -->
+            <a href="https://github.com/Enizaksoy/rdma-ai-cluster" class="project-card featured" target="_blank">
+                <span class="project-category">AI Infrastructure</span>
+                <h3>RDMA AI Cluster</h3>
+                <p>Lossless RDMA network for distributed AI training with PFC/ECN. Achieved 96% packet drop reduction and 2x bandwidth improvement.</p>
+                <div class="project-tags">
+                    <span class="project-tag">RDMA</span>
+                    <span class="project-tag">PFC</span>
+                    <span class="project-tag">ECN</span>
+                    <span class="project-tag">PyTorch</span>
+                </div>
+            </a>
+
+            <!-- MPI Benchmark -->
+            <a href="https://github.com/Enizaksoy/mpi-ai-cluster-benchmark" class="project-card" target="_blank">
+                <span class="project-category">Benchmarking</span>
+                <h3>MPI AI Cluster Benchmark</h3>
+                <p>MPI benchmark suite for RDMA AI clusters. Measure Allreduce, Broadcast, Alltoall latencies with Prometheus/Grafana monitoring.</p>
+                <div class="project-tags">
+                    <span class="project-tag">MPI</span>
+                    <span class="project-tag">OpenMPI</span>
+                    <span class="project-tag">Prometheus</span>
+                    <span class="project-tag">Grafana</span>
+                </div>
+            </a>
+
+            <!-- Lossless Monitoring -->
+            <a href="https://github.com/Enizaksoy/lossless-ethernet-monitoring" class="project-card" target="_blank">
+                <span class="project-category">Monitoring</span>
+                <h3>Lossless Ethernet Monitoring</h3>
+                <p>Complete monitoring solution for lossless ethernet/RoCE/RDMA networks. Making invisible traffic visible with 40M+ ECN packets tracked.</p>
+                <div class="project-tags">
+                    <span class="project-tag">Prometheus</span>
+                    <span class="project-tag">Grafana</span>
+                    <span class="project-tag">Python</span>
+                </div>
+            </a>
+
+            <!-- Nvidia DC Lab -->
+            <a href="https://github.com/Enizaksoy/Nvidia_DC_LAB_2" class="project-card" target="_blank">
+                <span class="project-category">Data Center</span>
+                <h3>Nvidia DC Lab</h3>
+                <p>Data Center Network with Nvidia Cumulus Linux Switches. Modern spine-leaf architecture with BGP EVPN.</p>
+                <div class="project-tags">
+                    <span class="project-tag">Cumulus</span>
+                    <span class="project-tag">BGP</span>
+                    <span class="project-tag">EVPN</span>
+                </div>
+            </a>
+
+            <!-- LISP Mobility -->
+            <a href="https://github.com/Enizaksoy/LISP-Mobility" class="project-card" target="_blank">
+                <span class="project-category">Cisco</span>
+                <h3>LISP Mobility</h3>
+                <p>Cisco LISP Mobility Lab - Location/ID Separation Protocol for seamless workload mobility across sites.</p>
+                <div class="project-tags">
+                    <span class="project-tag">LISP</span>
+                    <span class="project-tag">Cisco</span>
+                    <span class="project-tag">Mobility</span>
+                </div>
+            </a>
+
+            <!-- EVPN Cisco Versa -->
+            <a href="https://github.com/Enizaksoy/EVPN-CISCO-with-VERSA" class="project-card" target="_blank">
+                <span class="project-category">SD-WAN</span>
+                <h3>EVPN Cisco with Versa</h3>
+                <p>Integration of Cisco EVPN fabric with Versa SD-WAN. Enterprise WAN modernization with overlay networking.</p>
+                <div class="project-tags">
+                    <span class="project-tag">EVPN</span>
+                    <span class="project-tag">SD-WAN</span>
+                    <span class="project-tag">Versa</span>
+                </div>
+            </a>
+
+            <!-- IPsec -->
+            <a href="https://github.com/Enizaksoy/ipsec-between-cisco-and-versa" class="project-card" target="_blank">
+                <span class="project-category">Security</span>
+                <h3>IPsec: Cisco & Versa</h3>
+                <p>IPsec tunnel configuration between Cisco routers and Versa SD-WAN appliances for secure hybrid connectivity.</p>
+                <div class="project-tags">
+                    <span class="project-tag">IPsec</span>
+                    <span class="project-tag">VPN</span>
+                    <span class="project-tag">Security</span>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- Articles Section -->
+    <section id="articles">
+        <div class="section-header">
+            <h2>Technical Articles</h2>
+            <p>In-depth analysis and tutorials</p>
+        </div>
+
+        <div class="articles-grid">
+            <a href="articles/rocev2-ecn-cnp-deep-dive.html" class="article-card">
+                <div class="article-info">
+                    <h3>RoCEv2 ECN & CNP Deep Dive</h3>
+                    <p>Understanding congestion control in lossless RDMA networks with real packet analysis</p>
+                </div>
+                <span class="article-arrow">&rarr;</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" style="background: var(--bg-alt);">
+        <div class="section-header">
+            <h2>Technical Expertise</h2>
+            <p>Core competencies and certifications</p>
+        </div>
+
+        <div class="skills-grid">
+            <div class="skill-card">
+                <h3>AI/ML Networking</h3>
+                <ul>
+                    <li>RDMA / RoCEv2</li>
+                    <li>Lossless Ethernet (PFC/ECN)</li>
+                    <li>DCQCN Congestion Control</li>
+                    <li>GPU Cluster Networking</li>
+                    <li>MPI / NCCL</li>
+                </ul>
+            </div>
+
+            <div class="skill-card">
+                <h3>Data Center</h3>
+                <ul>
+                    <li>Cisco Nexus / ACI</li>
+                    <li>Nvidia Cumulus Linux</li>
+                    <li>BGP EVPN / VXLAN</li>
+                    <li>Spine-Leaf Architecture</li>
+                    <li>Network Automation</li>
+                </ul>
+            </div>
+
+            <div class="skill-card">
+                <h3>SD-WAN & Security</h3>
+                <ul>
+                    <li>Versa SD-WAN</li>
+                    <li>Cisco SD-WAN</li>
+                    <li>IPsec / VPN</li>
+                    <li>Zero Trust</li>
+                    <li>Firewall / NAT</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="section-header">
+            <h2>Let's Connect</h2>
+            <p>Open to collaborations and discussions on network engineering</p>
+        </div>
+
+        <div class="contact-links">
+            <a href="https://linkedin.com/in/enizaksoy" class="contact-link" target="_blank">
+                LinkedIn
+            </a>
+            <a href="https://github.com/Enizaksoy" class="contact-link" target="_blank">
+                GitHub
+            </a>
+            <a href="mailto:eniz@aksoy.com" class="contact-link">
+                Email
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Eniz Aksoy. CCIE #23970. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
