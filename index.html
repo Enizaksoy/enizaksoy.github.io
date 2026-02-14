@@ -590,144 +590,216 @@
     <!-- ============================================================ -->
     <div class="section-panel" id="panel-topology">
         <h2 id="topology">2. Physical Topology</h2>
-        <div class="topo-wrap">
+        <div style="width:100%; overflow-x:auto; background:#fff; border-radius:8px; padding:10px; box-sizing:border-box;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 960" style="width:100%; height:auto; font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+                <defs>
+                    <!-- Arrowhead markers -->
+                    <marker id="arr-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#FF9800"/></marker>
+                    <marker id="arr-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#4CAF50"/></marker>
+                    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#2196F3"/></marker>
+                    <marker id="arr-pink" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#E91E63"/></marker>
+                    <!-- Drop shadow -->
+                    <filter id="shadow1" x="-4%" y="-4%" width="108%" height="112%">
+                        <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.12"/>
+                    </filter>
+                </defs>
 
-            <!-- MANAGEMENT LAYER -->
-            <div class="topo-layer" style="margin-bottom:5px;">
-                <div class="topo-box mgmt">
-                    <div class="topo-name" style="font-size:12px;">Lab_3750X</div>
-                    <div class="topo-detail">Management Switch</div>
-                    <div class="topo-mgmt-ip">192.168.51.142</div>
-                </div>
-            </div>
+                <!-- Background -->
+                <rect width="1200" height="960" rx="10" fill="#FAFAFA"/>
 
-            <div style="text-align:center; color:#78909c; font-size:9px; padding:2px 0 8px; font-family:monospace;">
-                &#9474; mgmt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mgmt &#9474;
-            </div>
+                <!-- Title block -->
+                <text x="600" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a237e">GPU AI Cluster &#8212; Spine-Leaf Fabric</text>
+                <text x="600" y="52" text-anchor="middle" font-size="10" fill="#607D8B">Cisco Nexus 9332PQ &#124; eBGP L3 Rail Routing &#124; 40G Fabric &#124; February 2026</text>
 
-            <!-- SPINE LAYER -->
-            <div style="text-align:center; color:#555; font-size:10px; font-weight:bold; letter-spacing:2px; margin-bottom:6px;">SPINE LAYER</div>
-            <div class="topo-layer">
-                <div class="topo-box spine">
-                    <div class="topo-name">NX_AI_Spine1</div>
-                    <div class="topo-detail">Nexus 9332PQ &middot; NX-OS 9.3(13)</div>
-                    <div class="topo-as">BGP AS 65000</div>
-                    <div class="topo-ip">Lo0: 10.2.0.1</div>
-                    <div class="topo-mgmt-ip">Mgmt: 192.168.51.232</div>
-                </div>
-                <div class="topo-box spine">
-                    <div class="topo-name">NX_AI_Spine2</div>
-                    <div class="topo-detail">Nexus 9332PQ &middot; NX-OS 9.3(13)</div>
-                    <div class="topo-as">BGP AS 65000</div>
-                    <div class="topo-ip">Lo0: 10.2.0.2</div>
-                    <div class="topo-mgmt-ip">Mgmt: 192.168.51.231</div>
-                </div>
-            </div>
+                <!-- ======== LAYER LABELS (left side) ======== -->
+                <text x="18" y="115" font-size="9" font-weight="bold" fill="#90A4AE" letter-spacing="2" transform="rotate(-90,18,115)">MGMT</text>
+                <text x="18" y="265" font-size="9" font-weight="bold" fill="#90A4AE" letter-spacing="2" transform="rotate(-90,18,265)">SPINE LAYER</text>
+                <text x="18" y="510" font-size="9" font-weight="bold" fill="#90A4AE" letter-spacing="2" transform="rotate(-90,18,510)">LEAF LAYER</text>
+                <text x="18" y="760" font-size="9" font-weight="bold" fill="#90A4AE" letter-spacing="2" transform="rotate(-90,18,760)">COMPUTE</text>
 
-            <!-- FABRIC LINKS TABLE -->
-            <div class="topo-fabric-banner">&#9552;&#9552;&#9552; 40G eBGP + BFD FABRIC &#9552;&#9552;&#9552;</div>
-            <table class="topo-link-table" style="max-width:680px; margin:4px auto;">
-                <tr>
-                    <td class="port" style="text-align:right;">Spine1 Eth1/14</td>
-                    <td class="ip" style="text-align:right;">10.4.0.6</td>
-                    <td class="arrow">&#8644;</td>
-                    <td class="ip">10.4.0.5</td>
-                    <td class="port">Eth1/14 Leaf1</td>
-                </tr>
-                <tr>
-                    <td class="port" style="text-align:right;">Spine1 Eth1/18</td>
-                    <td class="ip" style="text-align:right;">10.4.0.13</td>
-                    <td class="arrow">&#8644;</td>
-                    <td class="ip">10.4.0.14</td>
-                    <td class="port">Eth1/18 Leaf2</td>
-                </tr>
-                <tr>
-                    <td class="port" style="text-align:right;">Spine2 Eth1/13</td>
-                    <td class="ip" style="text-align:right;">10.4.0.2</td>
-                    <td class="arrow">&#8644;</td>
-                    <td class="ip">10.4.0.1</td>
-                    <td class="port">Eth1/13 Leaf1</td>
-                </tr>
-                <tr>
-                    <td class="port" style="text-align:right;">Spine2 Eth1/17</td>
-                    <td class="ip" style="text-align:right;">10.4.0.10</td>
-                    <td class="arrow">&#8644;</td>
-                    <td class="ip">10.4.0.9</td>
-                    <td class="port">Eth1/17 Leaf2</td>
-                </tr>
-            </table>
+                <!-- ======== MANAGEMENT LAYER ======== -->
+                <rect x="480" y="70" width="240" height="52" rx="10" fill="#E0F7FA" stroke="#00BCD4" stroke-width="2" filter="url(#shadow1)"/>
+                <text x="600" y="89" text-anchor="middle" font-size="13" font-weight="bold" fill="#006064">Lab_3750X</text>
+                <text x="600" y="103" text-anchor="middle" font-size="9" fill="#00838F">Management Switch</text>
+                <text x="600" y="116" text-anchor="middle" font-size="9" fill="#00695C">192.168.51.142</text>
 
-            <!-- LEAF LAYER -->
-            <div style="text-align:center; color:#555; font-size:10px; font-weight:bold; letter-spacing:2px; margin:10px 0 6px;">LEAF LAYER</div>
-            <div class="topo-layer">
-                <div class="topo-box leaf rail0">
-                    <div class="topo-name">NX_AI_Leaf1</div>
-                    <div class="topo-detail">Nexus 9332PQ &middot; NX-OS 9.3(13)</div>
-                    <div class="topo-as">BGP AS 65001</div>
-                    <div class="topo-ip">Lo0: 10.2.0.3</div>
-                    <div class="topo-vlan" style="color:#66bb6a;">&#9632; VLAN 100 &mdash; Rail 0</div>
-                    <div class="topo-ip">SVI: 10.0.0.254/24</div>
-                    <div class="topo-mgmt-ip">Mgmt: 192.168.50.229</div>
-                </div>
-                <div class="topo-box leaf rail1">
-                    <div class="topo-name">NX_AI_Leaf2</div>
-                    <div class="topo-detail">Nexus 9332PQ &middot; NX-OS 9.3(13)</div>
-                    <div class="topo-as">BGP AS 65002</div>
-                    <div class="topo-ip">Lo0: 10.2.0.4</div>
-                    <div class="topo-vlan" style="color:#42a5f5;">&#9632; VLAN 101 &mdash; Rail 1</div>
-                    <div class="topo-ip">SVI: 10.0.1.254/24</div>
-                    <div class="topo-mgmt-ip">Mgmt: 192.168.51.230</div>
-                </div>
-            </div>
+                <!-- Management dashed lines -->
+                <line x1="520" y1="122" x2="350" y2="175" stroke="#90A4AE" stroke-width="1.2" stroke-dasharray="5,4"/>
+                <text x="420" y="143" font-size="7.5" fill="#90A4AE" text-anchor="middle">mgmt</text>
+                <line x1="680" y1="122" x2="850" y2="175" stroke="#90A4AE" stroke-width="1.2" stroke-dasharray="5,4"/>
+                <text x="780" y="143" font-size="7.5" fill="#90A4AE" text-anchor="middle">mgmt</text>
 
-            <!-- SERVER-FACING LINKS -->
-            <div style="padding:8px 0 4px;">
-                <div class="topo-server-links">
-                    <div class="link-item r0">&#9632; Leaf1 Eth1/27 &rarr; gpu1 ens6d1</div>
-                    <div class="link-item r1">&#9632; Leaf2 Eth1/27 &rarr; gpu1 ens6</div>
-                    <div class="link-item r0">&#9632; Leaf1 Eth1/28 &rarr; gpu2 ens6d1</div>
-                    <div class="link-item r1">&#9632; Leaf2 Eth1/28 &rarr; gpu2 ens6</div>
-                    <div class="link-item esxi-link">&#9632; Leaf2 Eth1/1/1 &rarr; ESXi vmnic5</div>
-                </div>
-            </div>
+                <!-- ======== SPINE LAYER ======== -->
+                <!-- Spine1 -->
+                <rect x="200" y="175" width="280" height="100" rx="6" fill="#E3F2FD" stroke="#2196F3" stroke-width="2.2" filter="url(#shadow1)"/>
+                <text x="340" y="196" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D47A1">NX_AI_Spine1</text>
+                <text x="340" y="212" text-anchor="middle" font-size="9" fill="#1565C0">Nexus 9332PQ | NX-OS 9.3(13)</text>
+                <text x="340" y="227" text-anchor="middle" font-size="10" font-weight="bold" fill="#1976D2">BGP AS 65000</text>
+                <text x="340" y="242" text-anchor="middle" font-size="9" fill="#455A64">Lo0: 10.2.0.1</text>
+                <text x="340" y="256" text-anchor="middle" font-size="8" fill="#78909C">Mgmt: 192.168.51.232</text>
 
-            <!-- COMPUTE LAYER -->
-            <div style="text-align:center; color:#555; font-size:10px; font-weight:bold; letter-spacing:2px; margin:8px 0 6px;">COMPUTE LAYER</div>
-            <div class="topo-layer" style="gap:30px;">
-                <div class="topo-box server">
-                    <div class="topo-name">gpuserver1</div>
-                    <div class="topo-detail">Ubuntu &middot; Mellanox ConnectX-3 Pro</div>
-                    <div class="topo-mgmt-ip">Mgmt: 192.168.51.73</div>
-                    <hr class="topo-divider">
-                    <div class="topo-nic-r0">&#9632; ens6d1: 10.0.0.1/24 &rarr; tbl 100 gw 10.0.0.254</div>
-                    <div class="topo-nic-r1">&#9632; ens6: &nbsp; 10.0.1.1/24 &rarr; tbl 101 gw 10.0.1.254</div>
-                </div>
-                <div class="topo-box server">
-                    <div class="topo-name">gpuserver2</div>
-                    <div class="topo-detail">Ubuntu &middot; Mellanox ConnectX-3 Pro</div>
-                    <div class="topo-mgmt-ip">Mgmt: 192.168.51.71</div>
-                    <hr class="topo-divider">
-                    <div class="topo-nic-r0">&#9632; ens6d1: 10.0.0.2/24 &rarr; tbl 100 gw 10.0.0.254</div>
-                    <div class="topo-nic-r1">&#9632; ens6: &nbsp; 10.0.1.2/24 &rarr; tbl 101 gw 10.0.1.254</div>
-                </div>
-                <div class="topo-box esxi">
-                    <div class="topo-name" style="font-size:13px;">ESXi Host</div>
-                    <div class="topo-detail">VMware ESXi 7.0</div>
-                    <div class="topo-mgmt-ip">192.168.50.32</div>
-                    <div class="topo-detail" style="color:#ce93d8;">vmnic5 (10G)</div>
-                </div>
-            </div>
+                <!-- Spine2 -->
+                <rect x="720" y="175" width="280" height="100" rx="6" fill="#E3F2FD" stroke="#2196F3" stroke-width="2.2" filter="url(#shadow1)"/>
+                <text x="860" y="196" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D47A1">NX_AI_Spine2</text>
+                <text x="860" y="212" text-anchor="middle" font-size="9" fill="#1565C0">Nexus 9332PQ | NX-OS 9.3(13)</text>
+                <text x="860" y="227" text-anchor="middle" font-size="10" font-weight="bold" fill="#1976D2">BGP AS 65000</text>
+                <text x="860" y="242" text-anchor="middle" font-size="9" fill="#455A64">Lo0: 10.2.0.2</text>
+                <text x="860" y="256" text-anchor="middle" font-size="8" fill="#78909C">Mgmt: 192.168.51.231</text>
 
-            <!-- TRAFFIC FLOW KEY -->
-            <div style="margin-top:15px; padding:10px 15px; background:rgba(255,255,255,0.03); border-radius:6px; border:1px solid #2a2a4a;">
-                <div style="font-size:10px; color:#999; font-weight:bold; margin-bottom:6px;">TRAFFIC FLOW</div>
-                <div style="display:flex; gap:25px; flex-wrap:wrap; font-size:10px;">
-                    <div><span style="color:#66bb6a;">&#9632; Rail 0 (same-rail):</span> <span style="color:#b0bec5;">gpu &rarr; ens6d1 &rarr; Leaf1 &rarr; ens6d1 &rarr; gpu</span></div>
-                    <div><span style="color:#42a5f5;">&#9632; Rail 1 (same-rail):</span> <span style="color:#b0bec5;">gpu &rarr; ens6 &rarr; Leaf2 &rarr; ens6 &rarr; gpu</span></div>
-                    <div><span style="color:#ff9800;">&#9632; Cross-rail:</span> <span style="color:#b0bec5;">gpu &rarr; Leaf1 &rarr; Spine &rarr; Leaf2 &rarr; gpu (ECMP x2)</span></div>
-                </div>
-            </div>
+                <!-- ======== FABRIC LINKS (Spine-Leaf) ======== -->
+                <!-- Spine1 Eth1/14 <-> Leaf1 Eth1/14 (straight left) -->
+                <line x1="300" y1="275" x2="300" y2="430" stroke="#FF9800" stroke-width="2.5"/>
+                <text x="268" y="320" font-size="7.5" fill="#E65100" transform="rotate(-90,268,320)">Eth1/14</text>
+                <rect x="280" y="345" width="40" height="16" rx="3" fill="#FFF3E0" stroke="#FF9800" stroke-width="1"/>
+                <text x="300" y="356" text-anchor="middle" font-size="8" font-weight="bold" fill="#E65100">40G</text>
+                <text x="268" y="400" font-size="7.5" fill="#E65100" transform="rotate(-90,268,400)">Eth1/14</text>
 
+                <!-- Spine1 Eth1/18 <-> Leaf2 Eth1/18 (cross: Spine1 right to Leaf2 left) -->
+                <line x1="420" y1="275" x2="780" y2="430" stroke="#FF9800" stroke-width="2.5"/>
+                <text x="560" y="330" font-size="7.5" fill="#E65100" text-anchor="middle">Eth1/18</text>
+                <rect x="570" y="340" width="40" height="16" rx="3" fill="#FFF3E0" stroke="#FF9800" stroke-width="1"/>
+                <text x="590" y="351" text-anchor="middle" font-size="8" font-weight="bold" fill="#E65100">40G</text>
+                <text x="640" y="385" font-size="7.5" fill="#E65100" text-anchor="middle">Eth1/18</text>
+
+                <!-- Spine2 Eth1/13 <-> Leaf1 Eth1/13 (cross: Spine2 left to Leaf1 right) -->
+                <line x1="780" y1="275" x2="420" y2="430" stroke="#FF9800" stroke-width="2.5"/>
+                <text x="640" y="330" font-size="7.5" fill="#E65100" text-anchor="middle">Eth1/13</text>
+                <rect x="570" y="360" width="40" height="16" rx="3" fill="#FFF3E0" stroke="#FF9800" stroke-width="1"/>
+                <text x="590" y="371" text-anchor="middle" font-size="8" font-weight="bold" fill="#E65100">40G</text>
+                <text x="560" y="395" font-size="7.5" fill="#E65100" text-anchor="middle">Eth1/13</text>
+
+                <!-- Spine2 Eth1/17 <-> Leaf2 Eth1/17 (straight right) -->
+                <line x1="900" y1="275" x2="900" y2="430" stroke="#FF9800" stroke-width="2.5"/>
+                <text x="928" y="320" font-size="7.5" fill="#E65100" transform="rotate(90,928,320)">Eth1/17</text>
+                <rect x="880" y="345" width="40" height="16" rx="3" fill="#FFF3E0" stroke="#FF9800" stroke-width="1"/>
+                <text x="900" y="356" text-anchor="middle" font-size="8" font-weight="bold" fill="#E65100">40G</text>
+                <text x="928" y="400" font-size="7.5" fill="#E65100" transform="rotate(90,928,400)">Eth1/17</text>
+
+                <!-- ======== LEAF LAYER ======== -->
+                <!-- Leaf1 -->
+                <rect x="200" y="430" width="280" height="115" rx="6" fill="#E1F5FE" stroke="#03A9F4" stroke-width="2.2" filter="url(#shadow1)"/>
+                <text x="340" y="451" text-anchor="middle" font-size="14" font-weight="bold" fill="#01579B">NX_AI_Leaf1</text>
+                <text x="340" y="467" text-anchor="middle" font-size="9" fill="#0277BD">Nexus 9332PQ | NX-OS 9.3(13)</text>
+                <text x="340" y="482" text-anchor="middle" font-size="10" font-weight="bold" fill="#0288D1">BGP AS 65001 | Rail 0</text>
+                <text x="340" y="497" text-anchor="middle" font-size="9" fill="#455A64">Lo0: 10.2.0.3 | SVI Vlan100: 10.0.0.254/24</text>
+                <text x="340" y="511" text-anchor="middle" font-size="8" fill="#78909C">Mgmt: 192.168.50.229</text>
+                <rect x="290" y="517" width="100" height="15" rx="3" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1.2"/>
+                <text x="340" y="528" text-anchor="middle" font-size="8" font-weight="bold" fill="#2E7D32">VLAN 100 (Rail 0)</text>
+
+                <!-- Leaf2 -->
+                <rect x="720" y="430" width="280" height="115" rx="6" fill="#E1F5FE" stroke="#03A9F4" stroke-width="2.2" filter="url(#shadow1)"/>
+                <text x="860" y="451" text-anchor="middle" font-size="14" font-weight="bold" fill="#01579B">NX_AI_Leaf2</text>
+                <text x="860" y="467" text-anchor="middle" font-size="9" fill="#0277BD">Nexus 9332PQ | NX-OS 9.3(13)</text>
+                <text x="860" y="482" text-anchor="middle" font-size="10" font-weight="bold" fill="#0288D1">BGP AS 65002 | Rail 1</text>
+                <text x="860" y="497" text-anchor="middle" font-size="9" fill="#455A64">Lo0: 10.2.0.4 | SVI Vlan101: 10.0.1.254/24</text>
+                <text x="860" y="511" text-anchor="middle" font-size="8" fill="#78909C">Mgmt: 192.168.51.230</text>
+                <rect x="810" y="517" width="100" height="15" rx="3" fill="#E3F2FD" stroke="#2196F3" stroke-width="1.2"/>
+                <text x="860" y="528" text-anchor="middle" font-size="8" font-weight="bold" fill="#1565C0">VLAN 101 (Rail 1)</text>
+
+                <!-- ======== SERVER-FACING LINKS ======== -->
+                <!-- Leaf1 Eth1/27 -> gpuserver1 ens6d1 (green, straight down-left) -->
+                <line x1="290" y1="545" x2="230" y2="680" stroke="#4CAF50" stroke-width="2.2"/>
+                <text x="245" y="580" font-size="7" fill="#2E7D32">Eth1/27</text>
+                <rect x="237" y="600" width="32" height="14" rx="3" fill="#E8F5E9" stroke="#4CAF50" stroke-width="0.8"/>
+                <text x="253" y="610" text-anchor="middle" font-size="7" font-weight="bold" fill="#2E7D32">40G</text>
+                <text x="215" y="660" font-size="7" fill="#2E7D32">ens6d1</text>
+
+                <!-- Leaf1 Eth1/28 -> gpuserver2 ens6d1 (green, cross to center) -->
+                <line x1="380" y1="545" x2="570" y2="680" stroke="#4CAF50" stroke-width="2.2"/>
+                <text x="440" y="580" font-size="7" fill="#2E7D32">Eth1/28</text>
+                <rect x="460" y="605" width="32" height="14" rx="3" fill="#E8F5E9" stroke="#4CAF50" stroke-width="0.8"/>
+                <text x="476" y="615" text-anchor="middle" font-size="7" font-weight="bold" fill="#2E7D32">40G</text>
+                <text x="555" y="660" font-size="7" fill="#2E7D32">ens6d1</text>
+
+                <!-- Leaf2 Eth1/27 -> gpuserver1 ens6 (blue, cross to left) -->
+                <line x1="810" y1="545" x2="270" y2="680" stroke="#2196F3" stroke-width="2.2"/>
+                <text x="755" y="580" font-size="7" fill="#1565C0">Eth1/27</text>
+                <rect x="530" y="590" width="32" height="14" rx="3" fill="#E3F2FD" stroke="#2196F3" stroke-width="0.8"/>
+                <text x="546" y="600" text-anchor="middle" font-size="7" font-weight="bold" fill="#1565C0">40G</text>
+                <text x="285" y="660" font-size="7" fill="#1565C0">ens6</text>
+
+                <!-- Leaf2 Eth1/28 -> gpuserver2 ens6 (blue, cross to center) -->
+                <line x1="870" y1="545" x2="620" y2="680" stroke="#2196F3" stroke-width="2.2"/>
+                <text x="825" y="580" font-size="7" fill="#1565C0">Eth1/28</text>
+                <rect x="740" y="605" width="32" height="14" rx="3" fill="#E3F2FD" stroke="#2196F3" stroke-width="0.8"/>
+                <text x="756" y="615" text-anchor="middle" font-size="7" font-weight="bold" fill="#1565C0">40G</text>
+                <text x="630" y="660" font-size="7" fill="#1565C0">ens6</text>
+
+                <!-- Leaf2 Eth1/1/1 -> ESXi vmnic5 (pink) -->
+                <line x1="950" y1="545" x2="1030" y2="680" stroke="#E91E63" stroke-width="2"/>
+                <text x="970" y="580" font-size="7" fill="#AD1457">Eth1/1/1</text>
+                <rect x="975" y="610" width="32" height="14" rx="3" fill="#FCE4EC" stroke="#E91E63" stroke-width="0.8"/>
+                <text x="991" y="620" text-anchor="middle" font-size="7" font-weight="bold" fill="#AD1457">10G</text>
+                <text x="1015" y="660" font-size="7" fill="#AD1457">vmnic5</text>
+
+                <!-- ======== COMPUTE LAYER ======== -->
+                <!-- gpuserver1 -->
+                <rect x="150" y="680" width="220" height="105" rx="6" fill="#F1F8E9" stroke="#8BC34A" stroke-width="2" filter="url(#shadow1)"/>
+                <text x="260" y="700" text-anchor="middle" font-size="13" font-weight="bold" fill="#33691E">gpuserver1</text>
+                <text x="260" y="714" text-anchor="middle" font-size="8.5" fill="#558B2F">Ubuntu | Mellanox ConnectX-3 Pro</text>
+                <text x="260" y="728" text-anchor="middle" font-size="8" fill="#78909C">Mgmt: 192.168.51.73</text>
+                <line x1="170" y1="735" x2="350" y2="735" stroke="#C5E1A5" stroke-width="0.8"/>
+                <text x="260" y="749" text-anchor="middle" font-size="8" fill="#2E7D32">ens6d1: 10.0.0.1 | tbl 100 gw .254</text>
+                <text x="260" y="763" text-anchor="middle" font-size="8" fill="#1565C0">ens6: 10.0.1.1 | tbl 101 gw .254</text>
+                <rect x="170" y="768" width="82" height="11" rx="2" fill="#E8F5E9"/>
+                <text x="211" y="777" text-anchor="middle" font-size="6.5" fill="#4CAF50">Rail 0: ens6d1</text>
+                <rect x="258" y="768" width="82" height="11" rx="2" fill="#E3F2FD"/>
+                <text x="299" y="777" text-anchor="middle" font-size="6.5" fill="#2196F3">Rail 1: ens6</text>
+
+                <!-- gpuserver2 -->
+                <rect x="480" y="680" width="220" height="105" rx="6" fill="#F1F8E9" stroke="#8BC34A" stroke-width="2" filter="url(#shadow1)"/>
+                <text x="590" y="700" text-anchor="middle" font-size="13" font-weight="bold" fill="#33691E">gpuserver2</text>
+                <text x="590" y="714" text-anchor="middle" font-size="8.5" fill="#558B2F">Ubuntu | Mellanox ConnectX-3 Pro</text>
+                <text x="590" y="728" text-anchor="middle" font-size="8" fill="#78909C">Mgmt: 192.168.51.71</text>
+                <line x1="500" y1="735" x2="680" y2="735" stroke="#C5E1A5" stroke-width="0.8"/>
+                <text x="590" y="749" text-anchor="middle" font-size="8" fill="#2E7D32">ens6d1: 10.0.0.2 | tbl 100 gw .254</text>
+                <text x="590" y="763" text-anchor="middle" font-size="8" fill="#1565C0">ens6: 10.0.1.2 | tbl 101 gw .254</text>
+                <rect x="500" y="768" width="82" height="11" rx="2" fill="#E8F5E9"/>
+                <text x="541" y="777" text-anchor="middle" font-size="6.5" fill="#4CAF50">Rail 0: ens6d1</text>
+                <rect x="588" y="768" width="82" height="11" rx="2" fill="#E3F2FD"/>
+                <text x="629" y="777" text-anchor="middle" font-size="6.5" fill="#2196F3">Rail 1: ens6</text>
+
+                <!-- ESXi Host -->
+                <rect x="920" y="680" width="200" height="80" rx="6" fill="#F1F8E9" stroke="#8BC34A" stroke-width="2" filter="url(#shadow1)"/>
+                <text x="1020" y="700" text-anchor="middle" font-size="13" font-weight="bold" fill="#33691E">ESXi Host</text>
+                <text x="1020" y="714" text-anchor="middle" font-size="8.5" fill="#558B2F">VMware ESXi 7.0</text>
+                <text x="1020" y="728" text-anchor="middle" font-size="8" fill="#78909C">192.168.50.32</text>
+                <text x="1020" y="742" text-anchor="middle" font-size="8" fill="#AD1457">vmnic5 (10G)</text>
+
+                <!-- ======== FABRIC SUMMARY BOX (bottom-left) ======== -->
+                <rect x="40" y="810" width="460" height="140" rx="6" fill="#ECEFF1" stroke="#B0BEC5" stroke-width="1.2" filter="url(#shadow1)"/>
+                <text x="270" y="830" text-anchor="middle" font-size="11" font-weight="bold" fill="#37474F">Fabric Summary</text>
+                <line x1="55" y1="836" x2="485" y2="836" stroke="#CFD8DC" stroke-width="0.8"/>
+                <text x="55" y="852" font-size="8.5" fill="#455A64">Routing: eBGP (AS 65000 Spines, 65001 Leaf1, 65002 Leaf2)</text>
+                <text x="55" y="866" font-size="8.5" fill="#455A64">Design: L3 Rail Routing (no EVPN/VXLAN)</text>
+                <text x="55" y="880" font-size="8.5" fill="#2E7D32">Rail 0: VLAN 100, 10.0.0.0/24 (Leaf1 SVI .254)</text>
+                <text x="55" y="894" font-size="8.5" fill="#1565C0">Rail 1: VLAN 101, 10.0.1.0/24 (Leaf2 SVI .254)</text>
+                <text x="55" y="908" font-size="8.5" fill="#455A64">MTU: 9000 (Servers), 9216 (Fabric)</text>
+                <text x="55" y="922" font-size="8.5" fill="#455A64">Servers: Per-NIC policy routing (tbl 100/101)</text>
+                <text x="55" y="936" font-size="8.5" fill="#455A64">All fabric links: 40G QSFP+ | BFD enabled</text>
+                <text x="55" y="950" font-size="8.5" fill="#455A64">Platform: Cisco Nexus 9332PQ | NX-OS 9.3(13)</text>
+
+                <!-- ======== LEGEND (bottom-right) ======== -->
+                <rect x="750" y="810" width="400" height="105" rx="6" fill="#ECEFF1" stroke="#B0BEC5" stroke-width="1.2" filter="url(#shadow1)"/>
+                <text x="950" y="830" text-anchor="middle" font-size="11" font-weight="bold" fill="#37474F">Legend</text>
+                <line x1="765" y1="836" x2="1135" y2="836" stroke="#CFD8DC" stroke-width="0.8"/>
+                <!-- Orange: Spine-Leaf -->
+                <line x1="770" y1="852" x2="810" y2="852" stroke="#FF9800" stroke-width="2.5"/>
+                <text x="820" y="855" font-size="9" fill="#455A64">Spine-Leaf 40G Fabric</text>
+                <!-- Green: Rail 0 -->
+                <line x1="770" y1="870" x2="810" y2="870" stroke="#4CAF50" stroke-width="2.2"/>
+                <text x="820" y="873" font-size="9" fill="#455A64">Rail 0: Leaf1 &#8594; Server (ens6d1)</text>
+                <!-- Blue: Rail 1 -->
+                <line x1="770" y1="888" x2="810" y2="888" stroke="#2196F3" stroke-width="2.2"/>
+                <text x="820" y="891" font-size="9" fill="#455A64">Rail 1: Leaf2 &#8594; Server (ens6)</text>
+                <!-- Pink: ESXi -->
+                <line x1="770" y1="906" x2="810" y2="906" stroke="#E91E63" stroke-width="2"/>
+                <text x="820" y="909" font-size="9" fill="#455A64">ESXi 10G</text>
+                <!-- Dashed gray: Management -->
+                <line x1="1010" y1="852" x2="1050" y2="852" stroke="#90A4AE" stroke-width="1.2" stroke-dasharray="5,4"/>
+                <text x="1060" y="855" font-size="9" fill="#455A64">Management</text>
+
+            </svg>
         </div>
     </div>
 
