@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MPLS L3VPN Lab - LDP, BGP, OSPF, VRF on Juniper vMX - Kibris Network Lab by Eniz Aksoy">
+    <title>MPLS L3VPN Lab - Kibris | Eniz Aksoy</title>
+    <style>
+        :root {
+            --bg-dark: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-code: #0f0f23;
+            --accent-blue: #4fc3f7;
+            --accent-green: #66bb6a;
+            --accent-orange: #ff9800;
+            --accent-red: #ef5350;
+            --accent-purple: #ce93d8;
+            --text-primary: #e0e0e0;
+            --text-secondary: #9e9e9e;
+            --border: #2a2a4a;
+            --sidebar-width: 280px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: #12122a;
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            top: 0; left: 0; z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px 18px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-header h1 {
+            font-size: 1.15em;
+            color: var(--accent-blue);
+            margin-bottom: 4px;
+        }
+        .sidebar-header .subtitle {
+            font-size: 0.72em;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .sidebar-header .lab-badges {
+            display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px;
+        }
+        .sidebar-header .lab-badge {
+            font-size: 0.65em; padding: 2px 8px; border-radius: 10px;
+            background: rgba(79,195,247,0.12); color: var(--accent-blue); border: 1px solid rgba(79,195,247,0.25);
+        }
+        .sidebar-nav {
+            flex: 1; padding: 12px 0; overflow-y: auto;
+        }
+        .sidebar-nav a {
+            display: block; color: var(--text-secondary); text-decoration: none;
+            padding: 6px 18px; font-size: 0.85em;
+            border-left: 3px solid transparent; transition: all 0.2s ease; cursor: pointer;
+        }
+        .sidebar-nav a:hover {
+            color: var(--text-primary); background: rgba(79,195,247,0.05);
+        }
+        .sidebar-nav a.active {
+            color: var(--accent-blue); border-left-color: var(--accent-blue);
+            background: rgba(79,195,247,0.08); font-weight: 600;
+        }
+        .sidebar-nav a.indent {
+            padding-left: 36px; font-size: 0.8em;
+        }
+        .sidebar-nav .nav-section-label {
+            font-size: 0.65em; text-transform: uppercase; letter-spacing: 1.5px;
+            color: #555; padding: 14px 18px 4px; font-weight: bold;
+        }
+        .sidebar-footer {
+            padding: 12px 18px; border-top: 1px solid var(--border); font-size: 0.72em;
+            color: var(--text-secondary);
+        }
+        .sidebar-footer a { color: var(--accent-blue); text-decoration: none; }
+
+        /* Content */
+        .content-area {
+            margin-left: var(--sidebar-width);
+            flex: 1; height: 100vh; overflow-y: auto;
+            padding: 30px 40px 60px;
+        }
+        .section-panel { display: none; animation: fadeIn 0.25s ease; }
+        .section-panel.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hamburger */
+        .hamburger {
+            display: none; position: fixed; top: 12px; left: 12px; z-index: 200;
+            background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--accent-blue); font-size: 1.5em; padding: 6px 10px;
+            border-radius: 6px; cursor: pointer;
+        }
+
+        /* Typography */
+        h1 { font-size: 2.2em; color: var(--accent-blue); margin-bottom: 5px; }
+        h2 { font-size: 1.5em; color: var(--accent-orange); border-bottom: 2px solid var(--accent-orange); padding-bottom: 8px; margin: 0 0 18px 0; }
+        h3 { font-size: 1.15em; color: var(--accent-green); margin: 20px 0 10px 0; }
+        h4 { font-size: 1em; color: var(--accent-purple); margin: 15px 0 8px 0; }
+        p { margin-bottom: 12px; }
+        ul, ol { margin-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 4px; }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 20px 25px; margin: 15px 0;
+        }
+        .card h3 { margin-top: 0; }
+
+        /* Info boxes */
+        .info-box {
+            background: rgba(79,195,247,0.06); border-left: 4px solid var(--accent-blue);
+            padding: 15px 20px; border-radius: 0 8px 8px 0; margin: 15px 0;
+        }
+        .info-box.warning {
+            background: rgba(255,152,0,0.08); border-left-color: var(--accent-orange);
+        }
+        .info-box.success {
+            background: rgba(102,187,106,0.08); border-left-color: var(--accent-green);
+        }
+
+        /* Code */
+        pre {
+            background: var(--bg-code); border: 1px solid var(--border);
+            border-radius: 6px; padding: 14px 18px; overflow-x: auto;
+            font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+            font-size: 0.88em; line-height: 1.5; margin: 10px 0;
+        }
+        code {
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            background: rgba(79,195,247,0.1); padding: 2px 6px; border-radius: 3px; font-size: 0.9em;
+        }
+        .cmd { color: #81d4fa; }
+        .comment { color: #616161; font-style: italic; }
+        .highlight { color: #ffcc80; }
+        .ip { color: #a5d6a7; }
+        .kw { color: var(--accent-blue); }
+        .val { color: var(--accent-green); }
+
+        /* Protocol badges */
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
+        .badge-ospf { background: #2e7d32; color: white; }
+        .badge-ldp { background: #1565c0; color: white; }
+        .badge-mpls { background: #6a1b9a; color: white; }
+        .badge-bgp { background: #e65100; color: white; }
+        .badge-vrf { background: #c62828; color: white; }
+        .badge-pe { background: #1565c0; color: white; }
+        .badge-pex { background: #6a1b9a; color: white; }
+        .badge-ce { background: #2e7d32; color: white; }
+
+        /* Config label */
+        .config-label {
+            display: inline-block; font-size: 0.7em; padding: 2px 10px;
+            border-radius: 3px; margin-bottom: 5px; text-transform: uppercase;
+            letter-spacing: 0.5px; font-weight: bold; color: white;
+        }
+        .config-label.ospf { background: #2e7d32; }
+        .config-label.ldp { background: #1565c0; }
+        .config-label.mpls { background: #6a1b9a; }
+        .config-label.bgp { background: #e65100; }
+        .config-label.vrf { background: #c62828; }
+        .config-label.intf { background: #0277bd; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92em; }
+        th { background: #1a237e; color: var(--accent-blue); padding: 10px 14px; text-align: left; border: 1px solid var(--border); }
+        td { padding: 8px 14px; border: 1px solid var(--border); }
+        tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+        tr:hover { background: rgba(79,195,247,0.07); }
+
+        /* Topology */
+        .topology-ascii {
+            background: var(--bg-code); border: 2px solid var(--accent-orange);
+            border-radius: 8px; padding: 20px;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.82em; line-height: 1.4; overflow-x: auto; white-space: pre;
+        }
+        .t-pe { color: var(--accent-blue); font-weight: bold; }
+        .t-pex { color: var(--accent-purple); font-weight: bold; }
+        .t-ce { color: var(--accent-green); font-weight: bold; }
+        .t-ip { color: var(--accent-orange); }
+        .t-link { color: var(--text-secondary); }
+
+        /* Summary grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin: 15px 0; }
+
+        /* Tabs for router configs */
+        .tabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 20px 0 0; }
+        .tab {
+            background: var(--bg-card); border: 1px solid var(--border); border-bottom: none;
+            border-radius: 6px 6px 0 0; padding: 8px 16px; cursor: pointer;
+            font-size: 0.85em; color: var(--text-secondary); transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text-primary); background: #1c2128; }
+        .tab.active { color: var(--accent-blue); background: #1c2128; border-bottom: 2px solid var(--accent-blue); font-weight: bold; }
+        .tab-content { display: none; background: #1c2128; border: 1px solid var(--border); border-radius: 0 8px 8px 8px; padding: 20px; }
+        .tab-content.active { display: block; }
+
+        /* Collapsible */
+        details { margin: 10px 0; }
+        details summary { cursor: pointer; color: var(--accent-blue); font-size: 0.9em; padding: 5px 0; }
+        details summary:hover { color: #79c0ff; }
+
+        /* Flow diagram */
+        .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 15px 0; }
+        .flow-box {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+            padding: 8px 14px; font-size: 0.85em; text-align: center;
+        }
+        .flow-arrow { color: var(--accent-orange); font-weight: bold; font-size: 1.2em; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+            .sidebar.open { transform: translateX(0); }
+            .hamburger { display: block; }
+            .content-area { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <h1>MPLS L3VPN Lab</h1>
+        <div class="subtitle">Kibris Network - Juniper vMX<br>CML Lab | AS 65000</div>
+        <div class="lab-badges">
+            <span class="lab-badge">OSPF</span>
+            <span class="lab-badge">LDP</span>
+            <span class="lab-badge">MPLS</span>
+            <span class="lab-badge">BGP L3VPN</span>
+            <span class="lab-badge">VRF</span>
+            <span class="lab-badge">Juniper vMX 23.2</span>
+        </div>
+    </div>
+    <div class="sidebar-nav">
+        <div class="nav-section-label">Overview</div>
+        <a onclick="showSection('overview')" class="active" data-section="overview">Network Overview</a>
+        <a onclick="showSection('topology')" data-section="topology">Lab Topology</a>
+        <a onclick="showSection('addressing')" data-section="addressing">IP Addressing</a>
+
+        <div class="nav-section-label">Protocols Explained</div>
+        <a onclick="showSection('ospf')" data-section="ospf">OSPF - Underlay IGP</a>
+        <a onclick="showSection('ospf')" data-section="ospf" class="indent">What is OSPF?</a>
+        <a onclick="showSection('ospf')" data-section="ospf" class="indent">Lab Configuration</a>
+
+        <a onclick="showSection('ldp')" data-section="ldp">LDP - Label Distribution</a>
+        <a onclick="showSection('ldp')" data-section="ldp" class="indent">What is LDP?</a>
+        <a onclick="showSection('ldp')" data-section="ldp" class="indent">How LDP Works</a>
+        <a onclick="showSection('ldp')" data-section="ldp" class="indent">Lab Configuration</a>
+
+        <a onclick="showSection('mpls')" data-section="mpls">MPLS - Label Switching</a>
+        <a onclick="showSection('mpls')" data-section="mpls" class="indent">What is MPLS?</a>
+        <a onclick="showSection('mpls')" data-section="mpls" class="indent">Label Stack</a>
+
+        <a onclick="showSection('bgp')" data-section="bgp">BGP L3VPN - VPNv4</a>
+        <a onclick="showSection('bgp')" data-section="bgp" class="indent">Why BGP for VPN?</a>
+        <a onclick="showSection('bgp')" data-section="bgp" class="indent">iBGP Full Mesh</a>
+        <a onclick="showSection('bgp')" data-section="bgp" class="indent">Lab Configuration</a>
+
+        <a onclick="showSection('vrf')" data-section="vrf">VRF - Virtual Routing</a>
+        <a onclick="showSection('vrf')" data-section="vrf" class="indent">What is VRF?</a>
+        <a onclick="showSection('vrf')" data-section="vrf" class="indent">RD & RT Explained</a>
+        <a onclick="showSection('vrf')" data-section="vrf" class="indent">Lab Configuration</a>
+
+        <div class="nav-section-label">Lab Details</div>
+        <a onclick="showSection('configs')" data-section="configs">Router Configurations</a>
+        <a onclick="showSection('verification')" data-section="verification">Verification Commands</a>
+        <a onclick="showSection('inventory')" data-section="inventory">Node Inventory</a>
+    </div>
+    <div class="sidebar-footer">
+        <a href="../index.html">&larr; Back to Portfolio</a><br>
+        Eniz Aksoy | CCIE #23970
+    </div>
+</nav>
+
+<main class="content-area">
+
+<!-- ==================== OVERVIEW ==================== -->
+<div class="section-panel active" id="section-overview">
+    <h1>MPLS L3VPN Lab - Kibris Network</h1>
+    <p class="subtitle">Building an MPLS backbone with L3VPN services using Juniper vMX on CML</p>
+
+    <h2>What This Lab Demonstrates</h2>
+    <p>This lab builds a complete <strong>MPLS L3VPN service provider network</strong> connecting two sites (KKY and ORT) in Kibris (Cyprus). It covers the full protocol stack required to deliver VPN services over an MPLS backbone:</p>
+
+    <div class="grid">
+        <div class="card">
+            <h3><span class="badge badge-ospf">OSPF</span> Underlay IGP</h3>
+            <p>OSPF Area 0 provides IP reachability between all PE/P routers. This is the foundation - without it, nothing else works.</p>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-ldp">LDP</span> Label Distribution</h3>
+            <p>LDP automatically assigns and distributes MPLS labels to all OSPF-learned prefixes. This creates the Label Switched Paths (LSPs) through the core.</p>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-mpls">MPLS</span> Label Switching</h3>
+            <p>MPLS forwards packets based on labels instead of IP lookups. The transport label (from LDP) gets packets across the core; the VPN label (from BGP) identifies the VRF.</p>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-bgp">BGP</span> L3VPN Control Plane</h3>
+            <p>iBGP with VPNv4 address family carries customer routes between PE routers. Each VPN route includes a Route Distinguisher (RD) and Route Target (RT).</p>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-vrf">VRF</span> Customer Isolation</h3>
+            <p>VRF instances on PE routers create isolated routing tables per customer. CE routers peer with their local PE via OSPF inside the VRF.</p>
+        </div>
+    </div>
+
+    <h2>How It All Fits Together</h2>
+    <div class="info-box">
+        <p><strong>The packet flow from CE1 to CE2:</strong></p>
+        <ol>
+            <li><strong>CE1</strong> sends a packet to 192.168.2.2 (CE2) via default route to PEX1-ORT</li>
+            <li><strong>PEX1-ORT</strong> receives it on VRF CUSTOMER-A interface, looks up in VRF routing table</li>
+            <li><strong>BGP L3VPN</strong> has advertised 192.168.2.0/24 from PEX2-ORT with a VPN label</li>
+            <li><strong>PEX1-ORT</strong> pushes two labels: <em>transport label</em> (LDP, to reach PEX2-ORT loopback) + <em>VPN label</em> (BGP, to identify CUSTOMER-A VRF)</li>
+            <li>Packet traverses the <strong>MPLS core</strong> - each P router swaps the transport label (PHP on penultimate hop)</li>
+            <li><strong>PEX2-ORT</strong> pops the VPN label, looks up in CUSTOMER-A VRF, forwards to CE2</li>
+        </ol>
+    </div>
+
+    <div class="flow">
+        <div class="flow-box">CE1<br><small>192.168.1.2</small></div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box" style="border-color:#c62828">PEX1-ORT<br><small>VRF Lookup<br>Push 2 Labels</small></div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box" style="border-color:#6a1b9a">PE1-ORT<br><small>Label Swap</small></div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box" style="border-color:#6a1b9a">PE2-ORT<br><small>PHP (Pop Transport)</small></div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box" style="border-color:#c62828">PEX2-ORT<br><small>Pop VPN Label<br>VRF Forward</small></div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box">CE2<br><small>192.168.2.2</small></div>
+    </div>
+</div>
+
+<!-- ==================== TOPOLOGY ==================== -->
+<div class="section-panel" id="section-topology">
+    <h2>Lab Topology</h2>
+    <p>The lab simulates a two-site service provider network: <strong>KKY (Kibris)</strong> and <strong>ORT (Ortakoy)</strong>. The MPLS core has 4 PE routers in a full-mesh, with 2 PEX routers at the edge providing VRF services to customers.</p>
+
+    <div class="topology-ascii">
+                          <span class="t-ip">KIBRIS (KKY)</span>                                    <span class="t-ip">ORTAKOY (ORT)</span>
+
+     <span class="t-pe">PE1-KKY</span> <span class="t-ip">(10.255.0.1)</span>  ───── ge0/0/1 ─────  <span class="t-pe">PE1-ORT</span> <span class="t-ip">(10.255.0.3)</span>  ─── ge0/0/3 ───  <span class="t-pex">PEX1-ORT</span> <span class="t-ip">(10.255.0.5)</span> ─── <span class="t-ce">CE1</span>
+       │  <span class="t-ip">10.0.13.1/30</span>                  <span class="t-ip">10.0.13.2/30</span>  │  <span class="t-ip">10.0.35.1/30</span>        <span class="t-ip">10.0.35.2/30</span>       <span class="t-ip">192.168.1.1/24</span>  <span class="t-ip">192.168.1.2/24</span>
+       │                                              │                                   VRF: CUSTOMER-A
+       │ ge0/0/0           ge0/0/0                    │ ge0/0/0           ge0/0/0
+       │ <span class="t-ip">10.0.12.1/30</span>      <span class="t-ip">10.0.12.2/30</span>               │ <span class="t-ip">10.0.34.1/30</span>      <span class="t-ip">10.0.34.2/30</span>
+       │                                              │
+       ├──────────────────────┤                       ├──────────────────────┤
+       │                      │                       │                      │
+       │ ge0/0/2   ge0/0/2   │ ge0/0/1   ge0/0/2    │ ge0/0/1   ge0/0/1   │ ge0/0/3
+       │ <span class="t-ip">10.0.14.1</span>  <span class="t-ip">10.0.14.2</span> │ <span class="t-ip">10.0.23.1</span>  <span class="t-ip">10.0.23.2</span> │ <span class="t-ip">10.0.24.2</span>  <span class="t-ip">10.0.24.1</span> │ <span class="t-ip">10.0.46.1/30</span>
+       │              │       │              │        │              │       │
+       │              └───────┼──────────────┘        └──────────────┘       │
+       │                      │                                              │
+       └──────────────────────┼──────────────────────────────────────────────┘
+                              │
+     <span class="t-pe">PE2-KKY</span> <span class="t-ip">(10.255.0.2)</span>  ───── ge0/0/1 ─────  (PE1-ORT ge0/0/2)
+                                                                        <span class="t-pex">PEX2-ORT</span> <span class="t-ip">(10.255.0.6)</span> ─── <span class="t-ce">CE2</span>
+     <span class="t-pe">PE2-ORT</span> <span class="t-ip">(10.255.0.4)</span>  ─── ge0/0/3 ───────────  <span class="t-ip">10.0.46.2/30</span>       <span class="t-ip">192.168.2.1/24</span>  <span class="t-ip">192.168.2.2/24</span>
+                                                                        VRF: CUSTOMER-A
+
+  <span class="t-link">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+  <span class="t-link">All core links: OSPF Area 0 + LDP + MPLS | iBGP full-mesh VPNv4 (AS 65000) | VRF on PEX nodes</span></div>
+
+    <h3>Device Roles</h3>
+    <table>
+        <tr><th>Device</th><th>Role</th><th>Location</th><th>Description</th></tr>
+        <tr><td>PE1-KKY</td><td><span class="badge badge-pe">PE</span></td><td>KKY DC</td><td>Provider Edge - core transit, iBGP VPNv4 peer</td></tr>
+        <tr><td>PE2-KKY</td><td><span class="badge badge-pe">PE</span></td><td>KKY DC</td><td>Provider Edge - core transit, iBGP VPNv4 peer</td></tr>
+        <tr><td>PE1-ORT</td><td><span class="badge badge-pe">PE</span></td><td>ORT AC</td><td>Provider Edge - core transit, connects to PEX1</td></tr>
+        <tr><td>PE2-ORT</td><td><span class="badge badge-pe">PE</span></td><td>ORT AC</td><td>Provider Edge - core transit, connects to PEX2</td></tr>
+        <tr><td>PEX1-ORT</td><td><span class="badge badge-pex">PEX</span></td><td>ORT DC</td><td>PE Edge - VRF CUSTOMER-A, CE1-facing</td></tr>
+        <tr><td>PEX2-ORT</td><td><span class="badge badge-pex">PEX</span></td><td>ORT DC</td><td>PE Edge - VRF CUSTOMER-A, CE2-facing</td></tr>
+        <tr><td>CE1</td><td><span class="badge badge-ce">CE</span></td><td>Customer</td><td>Customer Edge - Alpine Linux, 192.168.1.0/24</td></tr>
+        <tr><td>CE2</td><td><span class="badge badge-ce">CE</span></td><td>Customer</td><td>Customer Edge - Alpine Linux, 192.168.2.0/24</td></tr>
+    </table>
+</div>
+
+<!-- ==================== ADDRESSING ==================== -->
+<div class="section-panel" id="section-addressing">
+    <h2>IP Addressing</h2>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Loopback Addresses (lo0.0)</h3>
+            <table>
+                <tr><th>Router</th><th>Loopback</th><th>Role</th></tr>
+                <tr><td>PE1-KKY</td><td class="ip">10.255.0.1/32</td><td>PE Core</td></tr>
+                <tr><td>PE2-KKY</td><td class="ip">10.255.0.2/32</td><td>PE Core</td></tr>
+                <tr><td>PE1-ORT</td><td class="ip">10.255.0.3/32</td><td>PE Core</td></tr>
+                <tr><td>PE2-ORT</td><td class="ip">10.255.0.4/32</td><td>PE Core</td></tr>
+                <tr><td>PEX1-ORT</td><td class="ip">10.255.0.5/32</td><td>PE Edge</td></tr>
+                <tr><td>PEX2-ORT</td><td class="ip">10.255.0.6/32</td><td>PE Edge</td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Point-to-Point Links</h3>
+            <table>
+                <tr><th>Link</th><th>Subnet</th></tr>
+                <tr><td>PE1-KKY &harr; PE2-KKY</td><td>10.0.12.0/30</td></tr>
+                <tr><td>PE1-KKY &harr; PE1-ORT</td><td>10.0.13.0/30</td></tr>
+                <tr><td>PE1-KKY &harr; PE2-ORT</td><td>10.0.14.0/30</td></tr>
+                <tr><td>PE2-KKY &harr; PE1-ORT</td><td>10.0.23.0/30</td></tr>
+                <tr><td>PE2-KKY &harr; PE2-ORT</td><td>10.0.24.0/30</td></tr>
+                <tr><td>PE1-ORT &harr; PE2-ORT</td><td>10.0.34.0/30</td></tr>
+                <tr><td>PE1-ORT &harr; PEX1-ORT</td><td>10.0.35.0/30</td></tr>
+                <tr><td>PE2-ORT &harr; PEX2-ORT</td><td>10.0.46.0/30</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>VRF CUSTOMER-A Addresses</h3>
+        <table>
+            <tr><th>Interface</th><th>IP Address</th><th>RD</th><th>RT</th></tr>
+            <tr><td>PEX1-ORT ge-0/0/1.0</td><td>192.168.1.1/24</td><td>65000:5</td><td>target:65000:100</td></tr>
+            <tr><td>PEX2-ORT ge-0/0/1.0</td><td>192.168.2.1/24</td><td>65000:6</td><td>target:65000:100</td></tr>
+            <tr><td>CE1 eth0</td><td>192.168.1.2/24</td><td colspan="2">Default via 192.168.1.1</td></tr>
+            <tr><td>CE2 eth0</td><td>192.168.2.2/24</td><td colspan="2">Default via 192.168.2.1</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ==================== OSPF ==================== -->
+<div class="section-panel" id="section-ospf">
+    <h2><span class="badge badge-ospf">OSPF</span> Underlay IGP</h2>
+
+    <h3>What is OSPF?</h3>
+    <p><strong>Open Shortest Path First (OSPF)</strong> is a link-state routing protocol that builds a complete map of the network topology. Each router floods its link-state advertisements (LSAs) to all other routers, and every router independently calculates the shortest path to every destination using Dijkstra's SPF algorithm.</p>
+
+    <div class="info-box">
+        <strong>Why OSPF in an MPLS network?</strong><br>
+        OSPF provides the <strong>underlay IP reachability</strong> between all PE routers' loopback addresses. This is critical because:
+        <ul style="margin-top:8px">
+            <li><strong>LDP</strong> needs OSPF routes to build label bindings</li>
+            <li><strong>iBGP</strong> peers between loopback addresses (needs OSPF to resolve next-hops)</li>
+            <li><strong>MPLS LSPs</strong> follow the OSPF shortest path</li>
+        </ul>
+    </div>
+
+    <h3>Key OSPF Concepts in This Lab</h3>
+    <div class="grid">
+        <div class="card">
+            <h4>Single Area 0 (Backbone)</h4>
+            <p>All core interfaces are in OSPF Area 0. In a small SP core, a single area is sufficient. Multi-area is used when the network grows larger.</p>
+        </div>
+        <div class="card">
+            <h4>Passive Loopbacks</h4>
+            <p>Loopback interfaces (lo0.0) are configured as <code>passive</code> - they are advertised into OSPF but don't send/receive Hello packets. This is standard practice.</p>
+        </div>
+        <div class="card">
+            <h4>Point-to-Point Links</h4>
+            <p>All core links use /30 subnets. OSPF advertises these as transit links. Every router knows the complete core topology.</p>
+        </div>
+    </div>
+
+    <h3>How OSPF is Configured in Our Lab</h3>
+    <p>Example from <strong>PE1-KKY</strong> - all core-facing interfaces + loopback in Area 0:</p>
+
+    <span class="config-label ospf">OSPF - PE1-KKY</span>
+    <pre>protocols {
+    ospf {
+        area <span class="highlight">0.0.0.0</span> {
+            interface lo0.0 {
+                <span class="cmd">passive;</span>              <span class="comment">/* Advertise loopback but don't send Hellos */</span>
+            }
+            interface ge-0/0/0.0;     <span class="comment">/* to PE2-KKY - 10.0.12.0/30 */</span>
+            interface ge-0/0/1.0;     <span class="comment">/* to PE1-ORT - 10.0.13.0/30 */</span>
+            interface ge-0/0/2.0;     <span class="comment">/* to PE2-ORT - 10.0.14.0/30 */</span>
+        }
+    }
+}
+
+<span class="comment">/* Don't forget the router-id: */</span>
+routing-options {
+    router-id <span class="ip">10.255.0.1</span>;
+}</pre>
+
+    <div class="info-box success">
+        <strong>Important:</strong> VRF-facing interfaces (ge-0/0/1 on PEX routers) are NOT in the global OSPF instance. They run a separate OSPF process inside the VRF routing instance. This keeps customer routes isolated from the provider core.
+    </div>
+
+    <h3>Verification Commands</h3>
+    <pre><span class="cmd">show ospf neighbor</span>           <span class="comment">/* Verify adjacencies - should see all direct peers */</span>
+<span class="cmd">show ospf interface brief</span>     <span class="comment">/* Check interface participation */</span>
+<span class="cmd">show ospf database</span>            <span class="comment">/* View the LSDB - every router's LSAs */</span>
+<span class="cmd">show route protocol ospf</span>      <span class="comment">/* Routes learned via OSPF */</span></pre>
+</div>
+
+<!-- ==================== LDP ==================== -->
+<div class="section-panel" id="section-ldp">
+    <h2><span class="badge badge-ldp">LDP</span> Label Distribution Protocol</h2>
+
+    <h3>What is LDP?</h3>
+    <p><strong>Label Distribution Protocol (LDP)</strong> is a protocol that automatically creates MPLS label bindings for IP prefixes learned from the IGP (OSPF in our case). It allows routers to agree on which label to use for forwarding packets toward a destination.</p>
+
+    <div class="info-box">
+        <strong>LDP in simple terms:</strong><br>
+        Think of labels as "express lane numbers" on a highway. Instead of reading the full destination address at every intersection (IP lookup), each router just reads the lane number (label) and forwards the packet. LDP is how routers agree on which lane number to use for each destination.
+    </div>
+
+    <h3>How LDP Works - Step by Step</h3>
+    <div class="card">
+        <h4>1. Discovery (Hello)</h4>
+        <p>LDP sends Hello messages on enabled interfaces (UDP port 646, multicast 224.0.0.2). When two routers discover each other, they become LDP neighbors.</p>
+
+        <h4>2. Session Establishment</h4>
+        <p>After discovery, routers establish a TCP session (port 646) between their <strong>transport addresses</strong> (usually the loopback). This is why OSPF must be running first - LDP needs IP reachability to the neighbor's loopback.</p>
+
+        <h4>3. Label Distribution</h4>
+        <p>Each router locally assigns a label for every IGP prefix in its routing table, then advertises these bindings to all LDP peers. Junos uses <strong>downstream unsolicited</strong> mode - labels are advertised without being requested.</p>
+
+        <h4>4. Label Forwarding Table</h4>
+        <p>Based on received label bindings and the IGP best path, the router builds the <code>mpls.0</code> forwarding table. For each destination prefix, it knows: incoming label &rarr; outgoing label + next-hop.</p>
+    </div>
+
+    <h3>LDP Label Operations</h3>
+    <table>
+        <tr><th>Operation</th><th>Where</th><th>What Happens</th></tr>
+        <tr><td><strong>Push</strong></td><td>Ingress PE</td><td>IP packet enters MPLS domain - a label is pushed onto the packet</td></tr>
+        <tr><td><strong>Swap</strong></td><td>Transit P/PE</td><td>Incoming label is replaced with outgoing label, packet forwarded</td></tr>
+        <tr><td><strong>Pop</strong></td><td>Penultimate Hop</td><td><strong>PHP (Penultimate Hop Popping)</strong> - the second-to-last router removes the label so the egress router receives a plain IP packet</td></tr>
+    </table>
+
+    <div class="info-box warning">
+        <strong>PHP (Penultimate Hop Popping):</strong> In Junos, the penultimate hop router pops the transport label so the egress PE doesn't have to do two lookups. The egress PE receives the packet with only the VPN label remaining (in L3VPN scenarios) or as a plain IP packet (in basic MPLS).
+    </div>
+
+    <h3>How LDP is Configured in Our Lab</h3>
+    <p>LDP is enabled on every core-facing interface. Example from <strong>PE1-ORT</strong> (4 core interfaces):</p>
+
+    <span class="config-label ldp">LDP - PE1-ORT</span>
+    <pre>protocols {
+    ldp {
+        interface ge-0/0/0.0;     <span class="comment">/* to PE2-ORT - 10.0.34.0/30 */</span>
+        interface ge-0/0/1.0;     <span class="comment">/* to PE1-KKY - 10.0.13.0/30 */</span>
+        interface ge-0/0/2.0;     <span class="comment">/* to PE2-KKY - 10.0.23.0/30 */</span>
+        interface ge-0/0/3.0;     <span class="comment">/* to PEX1-ORT - 10.0.35.0/30 */</span>
+    }
+}</pre>
+
+    <p>And <strong>MPLS must also be enabled</strong> on the same interfaces (LDP needs MPLS to function):</p>
+
+    <span class="config-label mpls">MPLS - PE1-ORT</span>
+    <pre>protocols {
+    mpls {
+        interface ge-0/0/0.0;
+        interface ge-0/0/1.0;
+        interface ge-0/0/2.0;
+        interface ge-0/0/3.0;
+    }
+}</pre>
+
+    <p>And each interface must have <code>family mpls</code> enabled:</p>
+    <span class="config-label intf">Interface - family mpls</span>
+    <pre>interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                address <span class="ip">10.0.34.1/30</span>;
+            }
+            <span class="cmd">family mpls;</span>    <span class="comment">/* Required for MPLS/LDP to work on this interface */</span>
+        }
+    }
+}</pre>
+
+    <h3>Three Things Required for LDP</h3>
+    <div class="grid">
+        <div class="card">
+            <h4>1. <code>family mpls</code> on interface</h4>
+            <p>Enables MPLS encapsulation on the interface. Without this, the interface cannot send/receive labeled packets.</p>
+        </div>
+        <div class="card">
+            <h4>2. <code>protocols mpls</code></h4>
+            <p>Enables the MPLS data plane on the interface. This allows the router to process MPLS-labeled packets.</p>
+        </div>
+        <div class="card">
+            <h4>3. <code>protocols ldp</code></h4>
+            <p>Enables LDP on the interface. This starts Hello/session establishment and label exchange with neighbors.</p>
+        </div>
+    </div>
+
+    <h3>Verification Commands</h3>
+    <pre><span class="cmd">show ldp neighbor</span>         <span class="comment">/* LDP neighbors discovered via Hello */</span>
+<span class="cmd">show ldp session</span>           <span class="comment">/* TCP sessions - should show "Operational" */</span>
+<span class="cmd">show ldp interface</span>         <span class="comment">/* Interfaces running LDP */</span>
+<span class="cmd">show ldp database</span>          <span class="comment">/* Labels received and advertised */</span>
+<span class="cmd">show route table mpls.0</span>    <span class="comment">/* MPLS forwarding table - label swap/pop entries */</span></pre>
+</div>
+
+<!-- ==================== MPLS ==================== -->
+<div class="section-panel" id="section-mpls">
+    <h2><span class="badge badge-mpls">MPLS</span> Multiprotocol Label Switching</h2>
+
+    <h3>What is MPLS?</h3>
+    <p><strong>Multiprotocol Label Switching (MPLS)</strong> is a forwarding mechanism that uses short labels (instead of long IP addresses) to make forwarding decisions. It sits between Layer 2 and Layer 3 - sometimes called "Layer 2.5".</p>
+
+    <div class="info-box">
+        <strong>Why MPLS matters:</strong>
+        <ul>
+            <li><strong>Speed:</strong> Label lookup is faster than longest-prefix-match IP lookup (less relevant with modern hardware, but the architecture remains)</li>
+            <li><strong>VPN services:</strong> MPLS labels identify which VRF a packet belongs to - this is the foundation of L3VPN</li>
+            <li><strong>Traffic Engineering:</strong> RSVP-TE can create explicit paths through the network (not used in this lab)</li>
+            <li><strong>Any-to-any connectivity:</strong> Once the MPLS core is built, you can run any service (L3VPN, L2VPN, VPLS, EVPN) on top</li>
+        </ul>
+    </div>
+
+    <h3>The MPLS Label Stack in L3VPN</h3>
+    <p>In our lab, a packet from CE1 to CE2 carries <strong>two labels</strong> through the core:</p>
+
+    <div class="card">
+        <pre style="margin:0">
+  ┌──────────────────────────────────────────────────────┐
+  │  Ethernet Header                                      │
+  ├──────────────────────────────────────────────────────┤
+  │  <span class="cmd">Transport Label (LDP)</span>  │ EXP │ S=0 │ TTL │          │
+  │  "How to reach PEX2-ORT loopback 10.255.0.6"        │
+  ├──────────────────────────────────────────────────────┤
+  │  <span class="highlight">VPN Label (BGP)</span>        │ EXP │ S=1 │ TTL │          │
+  │  "Belongs to VRF CUSTOMER-A on PEX2-ORT"            │
+  ├──────────────────────────────────────────────────────┤
+  │  IP Header: src=192.168.1.2  dst=192.168.2.2        │
+  ├──────────────────────────────────────────────────────┤
+  │  Payload                                              │
+  └──────────────────────────────────────────────────────┘
+
+  S=0 means "more labels below"
+  S=1 means "bottom of stack" (last label)</pre>
+    </div>
+
+    <h3>Label Operations Per Hop</h3>
+    <table>
+        <tr><th>Hop</th><th>Router</th><th>Action</th><th>Labels on Packet</th></tr>
+        <tr><td>1</td><td>PEX1-ORT (Ingress)</td><td>PUSH transport + VPN label</td><td>[Transport][VPN][IP]</td></tr>
+        <tr><td>2</td><td>PE1-ORT (Transit)</td><td>SWAP transport label</td><td>[New-Transport][VPN][IP]</td></tr>
+        <tr><td>3</td><td>PE2-ORT (Penultimate)</td><td>POP transport label (PHP)</td><td>[VPN][IP]</td></tr>
+        <tr><td>4</td><td>PEX2-ORT (Egress)</td><td>POP VPN label, VRF lookup</td><td>[IP] &rarr; forwarded to CE2</td></tr>
+    </table>
+</div>
+
+<!-- ==================== BGP ==================== -->
+<div class="section-panel" id="section-bgp">
+    <h2><span class="badge badge-bgp">BGP</span> L3VPN Control Plane</h2>
+
+    <h3>Why BGP for VPN?</h3>
+    <p><strong>BGP (Border Gateway Protocol)</strong> is used in MPLS L3VPN not for internet routing, but as the <strong>VPN route distribution mechanism</strong>. Specifically, we use the <code>inet-vpn</code> (VPNv4) address family to carry customer routes between PE routers.</p>
+
+    <div class="info-box">
+        <strong>BGP is the glue between VRFs:</strong><br>
+        Without BGP, each PE router's VRF would be an isolated routing table with no knowledge of remote sites. BGP VPNv4 distributes VRF routes across the MPLS core, adding:
+        <ul style="margin-top:8px">
+            <li><strong>Route Distinguisher (RD):</strong> Makes customer prefixes unique in BGP (even if two customers use the same subnets)</li>
+            <li><strong>Route Target (RT):</strong> Controls which VRFs import/export which routes</li>
+            <li><strong>VPN Label:</strong> Tells the egress PE which VRF to place the packet into</li>
+            <li><strong>Next-hop:</strong> The advertising PE's loopback (resolved via OSPF + LDP)</li>
+        </ul>
+    </div>
+
+    <h3>iBGP Full Mesh</h3>
+    <p>In our lab, all 6 routers (4 PE + 2 PEX) form an <strong>iBGP full mesh</strong> for VPNv4. Every router peers with every other router. This works for small networks but doesn't scale - in production, you'd use <strong>Route Reflectors (RR)</strong>.</p>
+
+    <table>
+        <tr><th>Router</th><th>Peers With</th><th>Total Peers</th></tr>
+        <tr><td>PE1-KKY (10.255.0.1)</td><td>PE2-KKY, PE1-ORT, PE2-ORT, PEX1-ORT, PEX2-ORT</td><td>5</td></tr>
+        <tr><td>PE2-KKY (10.255.0.2)</td><td>PE1-KKY, PE1-ORT, PE2-ORT, PEX1-ORT, PEX2-ORT</td><td>5</td></tr>
+        <tr><td>PE1-ORT (10.255.0.3)</td><td>PE1-KKY, PE2-KKY, PE2-ORT, PEX1-ORT, PEX2-ORT</td><td>5</td></tr>
+        <tr><td>PE2-ORT (10.255.0.4)</td><td>PE1-KKY, PE2-KKY, PE1-ORT, PEX1-ORT, PEX2-ORT</td><td>5</td></tr>
+        <tr><td>PEX1-ORT (10.255.0.5)</td><td>PE1-KKY, PE2-KKY, PE1-ORT, PE2-ORT, PEX2-ORT</td><td>5</td></tr>
+        <tr><td>PEX2-ORT (10.255.0.6)</td><td>PE1-KKY, PE2-KKY, PE1-ORT, PE2-ORT, PEX1-ORT</td><td>5</td></tr>
+    </table>
+
+    <div class="info-box warning">
+        <strong>Why full mesh?</strong> iBGP does not re-advertise routes learned from another iBGP peer. So every router needs to hear routes directly from the originator. With Route Reflectors, the RR breaks this rule and re-advertises on behalf of its clients.
+    </div>
+
+    <h3>How BGP is Configured in Our Lab</h3>
+    <p>Example from <strong>PEX1-ORT</strong> (the VRF-serving router):</p>
+
+    <span class="config-label bgp">BGP - PEX1-ORT</span>
+    <pre>protocols {
+    bgp {
+        group <span class="highlight">IBGP-VPNv4</span> {
+            type <span class="cmd">internal</span>;                  <span class="comment">/* iBGP - same AS */</span>
+            local-address <span class="ip">10.255.0.5</span>;      <span class="comment">/* Source from loopback */</span>
+            family <span class="cmd">inet-vpn</span> {
+                <span class="cmd">unicast</span>;                   <span class="comment">/* VPNv4 address family */</span>
+            }
+            neighbor <span class="ip">10.255.0.1</span>;           <span class="comment">/* PE1-KKY */</span>
+            neighbor <span class="ip">10.255.0.2</span>;           <span class="comment">/* PE2-KKY */</span>
+            neighbor <span class="ip">10.255.0.3</span>;           <span class="comment">/* PE1-ORT */</span>
+            neighbor <span class="ip">10.255.0.4</span>;           <span class="comment">/* PE2-ORT */</span>
+            neighbor <span class="ip">10.255.0.6</span>;           <span class="comment">/* PEX2-ORT */</span>
+        }
+    }
+}
+
+routing-options {
+    router-id <span class="ip">10.255.0.5</span>;
+    autonomous-system <span class="highlight">65000</span>;          <span class="comment">/* All routers in same AS */</span>
+}</pre>
+
+    <h3>What BGP VPNv4 Route Looks Like</h3>
+    <div class="card">
+        <p>When PEX1-ORT advertises 192.168.1.0/24 from VRF CUSTOMER-A via BGP:</p>
+        <pre style="margin:0"><span class="cmd">Prefix:</span>     <span class="highlight">65000:5</span>:192.168.1.0/24    <span class="comment">/* RD:prefix */</span>
+<span class="cmd">Next-hop:</span>   <span class="ip">10.255.0.5</span>                 <span class="comment">/* PEX1-ORT loopback */</span>
+<span class="cmd">RT:</span>         target:<span class="highlight">65000:100</span>            <span class="comment">/* Route Target - import/export policy */</span>
+<span class="cmd">VPN Label:</span>  <span class="highlight">16</span>                          <span class="comment">/* Label assigned by PEX1-ORT for this VRF */</span>
+<span class="cmd">AS Path:</span>    (empty - iBGP within AS 65000)</pre>
+    </div>
+
+    <h3>Verification Commands</h3>
+    <pre><span class="cmd">show bgp summary</span>                   <span class="comment">/* Peer states - all should be "Establ" */</span>
+<span class="cmd">show bgp neighbor 10.255.0.6</span>       <span class="comment">/* Detailed peer info with PEX2-ORT */</span>
+<span class="cmd">show route table bgp.l3vpn.0</span>       <span class="comment">/* All VPNv4 routes received via BGP */</span>
+<span class="cmd">show route table CUSTOMER-A.inet.0</span> <span class="comment">/* Routes inside VRF CUSTOMER-A */</span></pre>
+</div>
+
+<!-- ==================== VRF ==================== -->
+<div class="section-panel" id="section-vrf">
+    <h2><span class="badge badge-vrf">VRF</span> Virtual Routing and Forwarding</h2>
+
+    <h3>What is VRF?</h3>
+    <p><strong>VRF (Virtual Routing and Forwarding)</strong> creates isolated routing tables within a single router. Each VRF has its own RIB (Routing Information Base) and FIB (Forwarding Information Base). This allows a service provider to serve multiple customers on the same infrastructure without their routes mixing.</p>
+
+    <div class="info-box">
+        <strong>Analogy:</strong> Think of VRFs as separate apartments in the same building. Each apartment has its own address numbering (192.168.1.0/24), completely independent of the other apartments. The hallway (MPLS core) connects them, and the mailman (BGP) knows which apartment to deliver to based on the label (VPN label).
+    </div>
+
+    <h3>RD and RT Explained</h3>
+
+    <div class="grid">
+        <div class="card">
+            <h4>Route Distinguisher (RD)</h4>
+            <p><strong>Makes prefixes unique in BGP.</strong></p>
+            <p>If Customer-A and Customer-B both use 192.168.1.0/24, BGP can't tell them apart. The RD is prepended to create unique VPNv4 prefixes:</p>
+            <pre style="margin:5px 0"><span class="highlight">65000:5</span>:192.168.1.0/24  <span class="comment">/* Customer-A from PEX1 */</span>
+<span class="highlight">65000:6</span>:192.168.2.0/24  <span class="comment">/* Customer-A from PEX2 */</span></pre>
+            <p><strong>RD is per-PE, per-VRF</strong> - each PE uses a different RD even for the same customer. This helps with multipath and troubleshooting.</p>
+        </div>
+        <div class="card">
+            <h4>Route Target (RT)</h4>
+            <p><strong>Controls route import/export between VRFs.</strong></p>
+            <p>When a VRF exports a route, it attaches the RT as a BGP extended community. Remote VRFs only import routes matching their RT policy:</p>
+            <pre style="margin:5px 0"><span class="comment">/* PEX1-ORT exports 192.168.1.0/24 with: */</span>
+vrf-target target:<span class="highlight">65000:100</span>
+
+<span class="comment">/* PEX2-ORT imports routes with RT 65000:100 */</span>
+<span class="comment">/* → It learns 192.168.1.0/24 into its VRF */</span></pre>
+            <p><strong>Same RT = same VPN.</strong> Both PEX1 and PEX2 use RT 65000:100, so they exchange routes.</p>
+        </div>
+    </div>
+
+    <h3>How VRF is Configured in Our Lab</h3>
+    <p>VRFs are only on the <strong>PEX routers</strong> (PEX1-ORT and PEX2-ORT) since they connect to customer CEs.</p>
+
+    <span class="config-label vrf">VRF - PEX1-ORT</span>
+    <pre>routing-instances {
+    <span class="highlight">CUSTOMER-A</span> {
+        instance-type <span class="cmd">vrf</span>;                <span class="comment">/* Creates isolated routing table */</span>
+        interface ge-0/0/1.0;              <span class="comment">/* CE-facing interface in this VRF */</span>
+        route-distinguisher <span class="highlight">65000:5</span>;      <span class="comment">/* Unique per PE per VRF */</span>
+        vrf-target target:<span class="highlight">65000:100</span>;     <span class="comment">/* Import + Export this RT */</span>
+        protocols {
+            ospf {                          <span class="comment">/* CE-PE routing protocol */</span>
+                area 0.0.0.0 {
+                    interface ge-0/0/1.0;  <span class="comment">/* OSPF with CE1 */</span>
+                }
+            }
+        }
+    }
+}</pre>
+
+    <span class="config-label vrf">VRF - PEX2-ORT</span>
+    <pre>routing-instances {
+    <span class="highlight">CUSTOMER-A</span> {
+        instance-type <span class="cmd">vrf</span>;
+        interface ge-0/0/1.0;
+        route-distinguisher <span class="highlight">65000:6</span>;      <span class="comment">/* Different RD from PEX1! */</span>
+        vrf-target target:<span class="highlight">65000:100</span>;     <span class="comment">/* Same RT - same VPN */</span>
+        protocols {
+            ospf {
+                area 0.0.0.0 {
+                    interface ge-0/0/1.0;  <span class="comment">/* OSPF with CE2 */</span>
+                }
+            }
+        }
+    }
+}</pre>
+
+    <h3>VRF Routing Table Flow</h3>
+    <div class="card">
+        <pre style="margin:0"><span class="cmd">PEX1-ORT VRF CUSTOMER-A routing table (CUSTOMER-A.inet.0):</span>
+
+192.168.1.0/24       <span class="comment">/* Local - connected via ge-0/0/1.0 */</span>
+   → Direct, ge-0/0/1.0
+
+192.168.2.0/24       <span class="comment">/* Remote - learned via BGP VPNv4 from PEX2-ORT */</span>
+   → via <span class="ip">10.255.0.6</span> (PEX2-ORT loopback)
+   → Label: VPN label from PEX2-ORT
+   → Transport: LDP label to reach 10.255.0.6</pre>
+    </div>
+
+    <h3>Verification Commands</h3>
+    <pre><span class="cmd">show route instance CUSTOMER-A</span>            <span class="comment">/* VRF instance details */</span>
+<span class="cmd">show route table CUSTOMER-A.inet.0</span>        <span class="comment">/* Routes inside the VRF */</span>
+<span class="cmd">ping routing-instance CUSTOMER-A 192.168.2.1</span>  <span class="comment">/* Ping within VRF */</span>
+
+<span class="comment">/* End-to-end test from CE1 → CE2: */</span>
+<span class="cmd">ping 192.168.2.2 source 192.168.1.2</span></pre>
+</div>
+
+<!-- ==================== ROUTER CONFIGS ==================== -->
+<div class="section-panel" id="section-configs">
+    <h2>Full Router Configurations</h2>
+    <p>Complete configurations for all routers in the lab. Click each tab to see the config.</p>
+
+    <div class="tabs" id="routerTabs">
+        <div class="tab active" onclick="showConfigTab('pe1kky')">PE1-KKY</div>
+        <div class="tab" onclick="showConfigTab('pe2kky')">PE2-KKY</div>
+        <div class="tab" onclick="showConfigTab('pe1ort')">PE1-ORT</div>
+        <div class="tab" onclick="showConfigTab('pe2ort')">PE2-ORT</div>
+        <div class="tab" onclick="showConfigTab('pex1ort')">PEX1-ORT</div>
+        <div class="tab" onclick="showConfigTab('pex2ort')">PEX2-ORT</div>
+        <div class="tab" onclick="showConfigTab('ce1')">CE1</div>
+        <div class="tab" onclick="showConfigTab('ce2')">CE2</div>
+    </div>
+
+    <!-- PE1-KKY -->
+    <div class="tab-content active" id="cfg-pe1kky">
+        <h3>PE1-KKY <span class="badge badge-pe">PE Core</span></h3>
+        <p>Router ID: 10.255.0.1 | Loopback: 10.255.0.1/32 | Image: jnpr-vmx-vcp-23.2R2.21</p>
+        <pre>system {
+    host-name PE1-KKY;
+    root-authentication {
+        encrypted-password "$6$...";
+    }
+    services { ssh; netconf { ssh; } }
+}
+interfaces {
+    ge-0/0/0 {
+        description "to-PE2-KKY";
+        unit 0 { family inet { address <span class="ip">10.0.12.1/30</span>; } family mpls; }
+    }
+    ge-0/0/1 {
+        description "to-PE1-ORT";
+        unit 0 { family inet { address <span class="ip">10.0.13.1/30</span>; } family mpls; }
+    }
+    ge-0/0/2 {
+        description "to-PE2-ORT";
+        unit 0 { family inet { address <span class="ip">10.0.14.1/30</span>; } family mpls; }
+    }
+    lo0 { unit 0 { family inet { address <span class="ip">10.255.0.1/32</span>; } } }
+}
+routing-options {
+    router-id <span class="ip">10.255.0.1</span>;
+    autonomous-system <span class="highlight">65000</span>;
+}
+protocols {
+    ospf { area 0.0.0.0 { interface lo0.0 { passive; } interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; } }
+    ldp { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; }
+    mpls { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; }
+    bgp {
+        group IBGP-VPNv4 {
+            type internal; local-address <span class="ip">10.255.0.1</span>; family inet-vpn { unicast; }
+            neighbor <span class="ip">10.255.0.2</span>; neighbor <span class="ip">10.255.0.3</span>; neighbor <span class="ip">10.255.0.4</span>;
+            neighbor <span class="ip">10.255.0.5</span>; neighbor <span class="ip">10.255.0.6</span>;
+        }
+    }
+}</pre>
+    </div>
+
+    <!-- PE2-KKY -->
+    <div class="tab-content" id="cfg-pe2kky">
+        <h3>PE2-KKY <span class="badge badge-pe">PE Core</span></h3>
+        <p>Router ID: 10.255.0.2 | Loopback: 10.255.0.2/32</p>
+        <pre>system { host-name PE2-KKY; services { ssh; netconf { ssh; } } }
+interfaces {
+    ge-0/0/0 { description "to-PE1-KKY"; unit 0 { family inet { address <span class="ip">10.0.12.2/30</span>; } family mpls; } }
+    ge-0/0/1 { description "to-PE1-ORT"; unit 0 { family inet { address <span class="ip">10.0.23.1/30</span>; } family mpls; } }
+    ge-0/0/2 { description "to-PE2-ORT"; unit 0 { family inet { address <span class="ip">10.0.24.1/30</span>; } family mpls; } }
+    lo0 { unit 0 { family inet { address <span class="ip">10.255.0.2/32</span>; } } }
+}
+routing-options { router-id <span class="ip">10.255.0.2</span>; autonomous-system <span class="highlight">65000</span>; }
+protocols {
+    ospf { area 0.0.0.0 { interface lo0.0 { passive; } interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; } }
+    ldp { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; }
+    mpls { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; }
+    bgp {
+        group IBGP-VPNv4 {
+            type internal; local-address <span class="ip">10.255.0.2</span>; family inet-vpn { unicast; }
+            neighbor <span class="ip">10.255.0.1</span>; neighbor <span class="ip">10.255.0.3</span>; neighbor <span class="ip">10.255.0.4</span>;
+            neighbor <span class="ip">10.255.0.5</span>; neighbor <span class="ip">10.255.0.6</span>;
+        }
+    }
+}</pre>
+    </div>
+
+    <!-- PE1-ORT -->
+    <div class="tab-content" id="cfg-pe1ort">
+        <h3>PE1-ORT <span class="badge badge-pe">PE Core</span></h3>
+        <p>Router ID: 10.255.0.3 | Loopback: 10.255.0.3/32</p>
+        <pre>system { host-name PE1-ORT; services { ssh; netconf { ssh; } } }
+interfaces {
+    ge-0/0/0 { description "to-PE2-ORT"; unit 0 { family inet { address <span class="ip">10.0.34.1/30</span>; } family mpls; } }
+    ge-0/0/1 { description "to-PE1-KKY"; unit 0 { family inet { address <span class="ip">10.0.13.2/30</span>; } family mpls; } }
+    ge-0/0/2 { description "to-PE2-KKY"; unit 0 { family inet { address <span class="ip">10.0.23.2/30</span>; } family mpls; } }
+    ge-0/0/3 { description "to-PEX1-ORT"; unit 0 { family inet { address <span class="ip">10.0.35.1/30</span>; } family mpls; } }
+    lo0 { unit 0 { family inet { address <span class="ip">10.255.0.3/32</span>; } } }
+}
+routing-options { router-id <span class="ip">10.255.0.3</span>; autonomous-system <span class="highlight">65000</span>; }
+protocols {
+    ospf { area 0.0.0.0 { interface lo0.0 { passive; } interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; interface ge-0/0/3.0; } }
+    ldp { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; interface ge-0/0/3.0; }
+    mpls { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; interface ge-0/0/3.0; }
+    bgp {
+        group IBGP-VPNv4 {
+            type internal; local-address <span class="ip">10.255.0.3</span>; family inet-vpn { unicast; }
+            neighbor <span class="ip">10.255.0.1</span>; neighbor <span class="ip">10.255.0.2</span>; neighbor <span class="ip">10.255.0.4</span>;
+            neighbor <span class="ip">10.255.0.5</span>; neighbor <span class="ip">10.255.0.6</span>;
+        }
+    }
+}</pre>
+    </div>
+
+    <!-- PE2-ORT -->
+    <div class="tab-content" id="cfg-pe2ort">
+        <h3>PE2-ORT <span class="badge badge-pe">PE Core</span></h3>
+        <p>Router ID: 10.255.0.4 | Loopback: 10.255.0.4/32</p>
+        <pre>system { host-name PE2-ORT; services { ssh; netconf { ssh; } } }
+interfaces {
+    ge-0/0/0 { description "to-PE1-ORT"; unit 0 { family inet { address <span class="ip">10.0.34.2/30</span>; } family mpls; } }
+    ge-0/0/1 { description "to-PE2-KKY"; unit 0 { family inet { address <span class="ip">10.0.24.2/30</span>; } family mpls; } }
+    ge-0/0/2 { description "to-PE1-KKY"; unit 0 { family inet { address <span class="ip">10.0.14.2/30</span>; } family mpls; } }
+    ge-0/0/3 { description "to-PEX2-ORT"; unit 0 { family inet { address <span class="ip">10.0.46.1/30</span>; } family mpls; } }
+    lo0 { unit 0 { family inet { address <span class="ip">10.255.0.4/32</span>; } } }
+}
+routing-options { router-id <span class="ip">10.255.0.4</span>; autonomous-system <span class="highlight">65000</span>; }
+protocols {
+    ospf { area 0.0.0.0 { interface lo0.0 { passive; } interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; interface ge-0/0/3.0; } }
+    ldp { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; interface ge-0/0/3.0; }
+    mpls { interface ge-0/0/0.0; interface ge-0/0/1.0; interface ge-0/0/2.0; interface ge-0/0/3.0; }
+    bgp {
+        group IBGP-VPNv4 {
+            type internal; local-address <span class="ip">10.255.0.4</span>; family inet-vpn { unicast; }
+            neighbor <span class="ip">10.255.0.1</span>; neighbor <span class="ip">10.255.0.2</span>; neighbor <span class="ip">10.255.0.3</span>;
+            neighbor <span class="ip">10.255.0.5</span>; neighbor <span class="ip">10.255.0.6</span>;
+        }
+    }
+}</pre>
+    </div>
+
+    <!-- PEX1-ORT -->
+    <div class="tab-content" id="cfg-pex1ort">
+        <h3>PEX1-ORT <span class="badge badge-pex">PE Edge (VRF)</span></h3>
+        <p>Router ID: 10.255.0.5 | Loopback: 10.255.0.5/32 | VRF: CUSTOMER-A</p>
+        <pre>system { host-name PEX1-ORT; services { ssh; netconf { ssh; } } }
+interfaces {
+    ge-0/0/0 { description "to-PE1-ORT"; unit 0 { family inet { address <span class="ip">10.0.35.2/30</span>; } family mpls; } }
+    ge-0/0/1 { description "VRF-CUSTOMER-A"; unit 0 { family inet { address <span class="ip">192.168.1.1/24</span>; } } }
+    lo0 { unit 0 { family inet { address <span class="ip">10.255.0.5/32</span>; } } }
+}
+routing-options { router-id <span class="ip">10.255.0.5</span>; autonomous-system <span class="highlight">65000</span>; }
+protocols {
+    ospf { area 0.0.0.0 { interface lo0.0 { passive; } interface ge-0/0/0.0; } }
+    ldp { interface ge-0/0/0.0; }
+    mpls { interface ge-0/0/0.0; }
+    bgp {
+        group IBGP-VPNv4 {
+            type internal; local-address <span class="ip">10.255.0.5</span>; family inet-vpn { unicast; }
+            neighbor <span class="ip">10.255.0.1</span>; neighbor <span class="ip">10.255.0.2</span>; neighbor <span class="ip">10.255.0.3</span>;
+            neighbor <span class="ip">10.255.0.4</span>; neighbor <span class="ip">10.255.0.6</span>;
+        }
+    }
+}
+routing-instances {
+    <span class="highlight">CUSTOMER-A</span> {
+        instance-type vrf;
+        interface ge-0/0/1.0;
+        route-distinguisher <span class="highlight">65000:5</span>;
+        vrf-target target:<span class="highlight">65000:100</span>;
+        protocols { ospf { area 0.0.0.0 { interface ge-0/0/1.0; } } }
+    }
+}</pre>
+    </div>
+
+    <!-- PEX2-ORT -->
+    <div class="tab-content" id="cfg-pex2ort">
+        <h3>PEX2-ORT <span class="badge badge-pex">PE Edge (VRF)</span></h3>
+        <p>Router ID: 10.255.0.6 | Loopback: 10.255.0.6/32 | VRF: CUSTOMER-A</p>
+        <pre>system { host-name PEX2-ORT; services { ssh; netconf { ssh; } } }
+interfaces {
+    ge-0/0/0 { description "to-PE2-ORT"; unit 0 { family inet { address <span class="ip">10.0.46.2/30</span>; } family mpls; } }
+    ge-0/0/1 { description "VRF-CUSTOMER-A"; unit 0 { family inet { address <span class="ip">192.168.2.1/24</span>; } } }
+    lo0 { unit 0 { family inet { address <span class="ip">10.255.0.6/32</span>; } } }
+}
+routing-options { router-id <span class="ip">10.255.0.6</span>; autonomous-system <span class="highlight">65000</span>; }
+protocols {
+    ospf { area 0.0.0.0 { interface lo0.0 { passive; } interface ge-0/0/0.0; } }
+    ldp { interface ge-0/0/0.0; }
+    mpls { interface ge-0/0/0.0; }
+    bgp {
+        group IBGP-VPNv4 {
+            type internal; local-address <span class="ip">10.255.0.6</span>; family inet-vpn { unicast; }
+            neighbor <span class="ip">10.255.0.1</span>; neighbor <span class="ip">10.255.0.2</span>; neighbor <span class="ip">10.255.0.3</span>;
+            neighbor <span class="ip">10.255.0.4</span>; neighbor <span class="ip">10.255.0.5</span>;
+        }
+    }
+}
+routing-instances {
+    <span class="highlight">CUSTOMER-A</span> {
+        instance-type vrf;
+        interface ge-0/0/1.0;
+        route-distinguisher <span class="highlight">65000:6</span>;
+        vrf-target target:<span class="highlight">65000:100</span>;
+        protocols { ospf { area 0.0.0.0 { interface ge-0/0/1.0; } } }
+    }
+}</pre>
+    </div>
+
+    <!-- CE1 -->
+    <div class="tab-content" id="cfg-ce1">
+        <h3>CE1 <span class="badge badge-ce">Customer Edge (Alpine)</span></h3>
+        <p>Connected to: PEX1-ORT ge-0/0/1 (VRF CUSTOMER-A)</p>
+        <pre>hostname CE1
+ip addr add <span class="ip">192.168.1.2/24</span> dev eth0
+ip link set eth0 up
+ip route add default via <span class="ip">192.168.1.1</span></pre>
+    </div>
+
+    <!-- CE2 -->
+    <div class="tab-content" id="cfg-ce2">
+        <h3>CE2 <span class="badge badge-ce">Customer Edge (Alpine)</span></h3>
+        <p>Connected to: PEX2-ORT ge-0/0/1 (VRF CUSTOMER-A)</p>
+        <pre>hostname CE2
+ip addr add <span class="ip">192.168.2.2/24</span> dev eth0
+ip link set eth0 up
+ip route add default via <span class="ip">192.168.2.1</span></pre>
+    </div>
+</div>
+
+<!-- ==================== VERIFICATION ==================== -->
+<div class="section-panel" id="section-verification">
+    <h2>Verification Commands</h2>
+    <p>Essential commands to verify each protocol layer is working correctly.</p>
+
+    <div class="grid">
+        <div class="card">
+            <h3><span class="badge badge-ospf">OSPF</span></h3>
+            <pre style="margin:8px 0"><span class="cmd">show ospf neighbor</span>
+<span class="cmd">show ospf interface brief</span>
+<span class="cmd">show ospf database</span>
+<span class="cmd">show route protocol ospf</span></pre>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-ldp">LDP</span></h3>
+            <pre style="margin:8px 0"><span class="cmd">show ldp neighbor</span>
+<span class="cmd">show ldp interface</span>
+<span class="cmd">show ldp session</span>
+<span class="cmd">show ldp database</span></pre>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-mpls">MPLS</span></h3>
+            <pre style="margin:8px 0"><span class="cmd">show mpls interface</span>
+<span class="cmd">show mpls lsp</span>
+<span class="cmd">show route table mpls.0</span></pre>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-bgp">BGP / VPN</span></h3>
+            <pre style="margin:8px 0"><span class="cmd">show bgp summary</span>
+<span class="cmd">show bgp neighbor</span>
+<span class="cmd">show route table bgp.l3vpn.0</span>
+<span class="cmd">show route table CUSTOMER-A.inet.0</span></pre>
+        </div>
+        <div class="card">
+            <h3><span class="badge badge-vrf">VRF</span></h3>
+            <pre style="margin:8px 0"><span class="cmd">show route instance CUSTOMER-A</span>
+<span class="cmd">show route table CUSTOMER-A.inet.0</span>
+<span class="cmd">ping routing-instance CUSTOMER-A 192.168.2.1</span>
+<span class="comment">/* CE1 to CE2 test: */</span>
+<span class="cmd">ping 192.168.2.2 source 192.168.1.2</span></pre>
+        </div>
+        <div class="card">
+            <h3>General</h3>
+            <pre style="margin:8px 0"><span class="cmd">show interfaces terse</span>
+<span class="cmd">show configuration | display set</span>
+<span class="cmd">show system uptime</span>
+<span class="cmd">show chassis fpc</span></pre>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== INVENTORY ==================== -->
+<div class="section-panel" id="section-inventory">
+    <h2>Node Inventory</h2>
+    <p>CML Lab ID: 3923f067-261d-4cbe-9d0c-d471e6ddd42a | 16 Nodes | 23 Links</p>
+
+    <h3>Router Nodes</h3>
+    <table>
+        <tr><th>Node</th><th>Role</th><th>Image</th><th>CPU</th><th>RAM</th><th>State</th></tr>
+        <tr><td>PE1-KKY-VCP</td><td><span class="badge badge-pe">PE</span></td><td>jnpr-vmx-vcp-23.2R2.21</td><td>1</td><td>1024 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE1-KKY-VFP</td><td>FPC</td><td>jnpr-vmx-vfp-23.2R2.21</td><td>3</td><td>4096 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE2-KKY-VCP</td><td><span class="badge badge-pe">PE</span></td><td>jnpr-vmx-vcp-23.2R2.21</td><td>1</td><td>1024 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE2-KKY-VFP</td><td>FPC</td><td>jnpr-vmx-vfp-23.2R2.21</td><td>3</td><td>4096 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE1-ORT-VCP</td><td><span class="badge badge-pe">PE</span></td><td>jnpr-vmx-vcp-23.2R2.21</td><td>1</td><td>1024 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE1-ORT-VFP</td><td>FPC</td><td>jnpr-vmx-vfp-23.2R2.21</td><td>3</td><td>4096 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE2-ORT-VCP</td><td><span class="badge badge-pe">PE</span></td><td>jnpr-vmx-vcp-23.2R2.21</td><td>1</td><td>1024 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PE2-ORT-VFP</td><td>FPC</td><td>jnpr-vmx-vfp-23.2R2.21</td><td>3</td><td>4096 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PEX1-ORT-VCP</td><td><span class="badge badge-pex">PEX</span></td><td>jnpr-vmx-vcp-23.2R2.21</td><td>1</td><td>1024 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PEX1-ORT-VFP</td><td>FPC</td><td>jnpr-vmx-vfp-23.2R2.21</td><td>3</td><td>4096 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PEX2-ORT-VCP</td><td><span class="badge badge-pex">PEX</span></td><td>jnpr-vmx-vcp-23.2R2.21</td><td>1</td><td>1024 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>PEX2-ORT-VFP</td><td>FPC</td><td>jnpr-vmx-vfp-23.2R2.21</td><td>3</td><td>4096 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>CE1</td><td><span class="badge badge-ce">CE</span></td><td>alpine-base-3-21-3</td><td>1</td><td>512 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+        <tr><td>CE2</td><td><span class="badge badge-ce">CE</span></td><td>alpine-base-3-21-3</td><td>1</td><td>512 MB</td><td style="color:var(--accent-green)">BOOTED</td></tr>
+    </table>
+
+    <h3>Data Plane Links</h3>
+    <table>
+        <tr><th>#</th><th>Node A</th><th>Interface</th><th>IP A</th><th>Node B</th><th>Interface</th><th>IP B</th></tr>
+        <tr><td>1</td><td>PE1-KKY</td><td>ge-0/0/0</td><td>10.0.12.1/30</td><td>PE2-KKY</td><td>ge-0/0/0</td><td>10.0.12.2/30</td></tr>
+        <tr><td>2</td><td>PE1-KKY</td><td>ge-0/0/1</td><td>10.0.13.1/30</td><td>PE1-ORT</td><td>ge-0/0/1</td><td>10.0.13.2/30</td></tr>
+        <tr><td>3</td><td>PE1-KKY</td><td>ge-0/0/2</td><td>10.0.14.1/30</td><td>PE2-ORT</td><td>ge-0/0/2</td><td>10.0.14.2/30</td></tr>
+        <tr><td>4</td><td>PE2-KKY</td><td>ge-0/0/1</td><td>10.0.23.1/30</td><td>PE1-ORT</td><td>ge-0/0/2</td><td>10.0.23.2/30</td></tr>
+        <tr><td>5</td><td>PE2-KKY</td><td>ge-0/0/2</td><td>10.0.24.1/30</td><td>PE2-ORT</td><td>ge-0/0/1</td><td>10.0.24.2/30</td></tr>
+        <tr><td>6</td><td>PE1-ORT</td><td>ge-0/0/0</td><td>10.0.34.1/30</td><td>PE2-ORT</td><td>ge-0/0/0</td><td>10.0.34.2/30</td></tr>
+        <tr><td>7</td><td>PE1-ORT</td><td>ge-0/0/3</td><td>10.0.35.1/30</td><td>PEX1-ORT</td><td>ge-0/0/0</td><td>10.0.35.2/30</td></tr>
+        <tr><td>8</td><td>PE2-ORT</td><td>ge-0/0/3</td><td>10.0.46.1/30</td><td>PEX2-ORT</td><td>ge-0/0/0</td><td>10.0.46.2/30</td></tr>
+        <tr><td>9</td><td>CE1</td><td>eth0</td><td>192.168.1.2/24</td><td>PEX1-ORT</td><td>ge-0/0/1</td><td>192.168.1.1/24</td></tr>
+        <tr><td>10</td><td>CE2</td><td>eth0</td><td>192.168.2.2/24</td><td>PEX2-ORT</td><td>ge-0/0/1</td><td>192.168.2.1/24</td></tr>
+    </table>
+</div>
+
+</main>
+
+<script>
+function showSection(id) {
+    document.querySelectorAll('.section-panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
+    const panel = document.getElementById('section-' + id);
+    if (panel) {
+        panel.classList.add('active');
+        panel.scrollTop = 0;
+    }
+    // Activate all nav items pointing to this section
+    document.querySelectorAll('.sidebar-nav a[data-section="' + id + '"]').forEach(el => el.classList.add('active'));
+    // Close mobile sidebar
+    document.querySelector('.sidebar').classList.remove('open');
+    // Scroll content to top
+    document.querySelector('.content-area').scrollTop = 0;
+    // Update hash
+    window.location.hash = id;
+}
+
+function showConfigTab(id) {
+    document.querySelectorAll('#section-configs .tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#section-configs .tab').forEach(el => el.classList.remove('active'));
+    const tab = document.getElementById('cfg-' + id);
+    if (tab) tab.classList.add('active');
+    const names = {'pe1kky':'PE1-KKY','pe2kky':'PE2-KKY','pe1ort':'PE1-ORT','pe2ort':'PE2-ORT','pex1ort':'PEX1-ORT','pex2ort':'PEX2-ORT','ce1':'CE1','ce2':'CE2'};
+    document.querySelectorAll('#section-configs .tab').forEach(t => {
+        if (t.textContent === names[id]) t.classList.add('active');
+    });
+}
+
+// Handle hash on load
+window.addEventListener('load', function() {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) showSection(hash);
+});
+
+// Close sidebar on content click (mobile)
+document.querySelector('.content-area').addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.remove('open');
+});
+</script>
+
+</body>
+</html>
