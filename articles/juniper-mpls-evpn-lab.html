@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Juniper MPLS/EVPN Lab - IS-IS, LDP, MPLS, iBGP VPNv4+EVPN, BFD, VRF, LACP - Vodafone KKTC Migration on Juniper vMX 23.2 CML">
-    <title>Juniper MPLS/EVPN Lab - Vodafone KKTC | Eniz Aksoy</title>
+    <meta name="description" content="Juniper MPLS/EVPN Lab - IS-IS, LDP, MPLS, iBGP VPNv4+EVPN, BFD, VRF, LACP - Cisco-to-Juniper Migration on Juniper vMX 23.2 CML">
+    <title>Juniper MPLS/EVPN Lab - SP Migration | Eniz Aksoy</title>
     <style>
         :root {
             --bg-dark: #1a1a2e;
@@ -265,7 +265,7 @@
 <nav class="sidebar">
     <div class="sidebar-header">
         <h1>Juniper MPLS/EVPN Lab</h1>
-        <div class="subtitle">Vodafone KKTC Migration<br>IS-IS, LDP, MPLS, iBGP VPNv4+EVPN, BFD, VRF<br>Juniper vMX 23.2 on CML | AS 65000</div>
+        <div class="subtitle">Cisco-to-Juniper Migration Lab<br>IS-IS, LDP, MPLS, iBGP VPNv4+EVPN, BFD, VRF<br>Juniper vMX 23.2 on CML | AS 65000</div>
         <div class="lab-badges">
             <span class="lab-badge">IS-IS</span>
             <span class="lab-badge">LDP</span>
@@ -334,11 +334,11 @@
 
 <!-- ==================== OVERVIEW ==================== -->
 <div class="section-panel active" id="section-overview">
-    <h1>Juniper MPLS/EVPN Lab - Vodafone KKTC Migration</h1>
+    <h1>Juniper MPLS/EVPN Lab - Cisco-to-Juniper Migration</h1>
     <p class="subtitle">IS-IS, LDP, MPLS, iBGP VPNv4+EVPN, BFD, VRF - Juniper vMX 23.2 on CML</p>
 
     <h2>What This Lab Demonstrates</h2>
-    <p>This lab replicates a <strong>Vodafone KKTC (North Cyprus) production network</strong> being migrated from Cisco IOS-XR to Juniper vMX. It consists of <strong>8 vMX routers</strong> (4 P core + 4 PE edge) connected via full-mesh LAG bundles with LACP, running the complete MPLS/VPN protocol stack required for mobile operator services.</p>
+    <p>This lab replicates a <strong>service provider production network</strong> being migrated from Cisco IOS-XR to Juniper vMX. It consists of <strong>8 vMX routers</strong> (4 P core + 4 PE edge) connected via full-mesh LAG bundles with LACP, running the complete MPLS/VPN protocol stack required for mobile operator services.</p>
 
     <div class="info-box">
         <strong>Key Design Points:</strong>
@@ -412,7 +412,7 @@
     <div style="text-align:center; margin: 20px 0; padding: 20px; background: #fff; border-radius: 12px;">
         <img src="juniper_mpls_evpn_topology.png" alt="Lab Topology Diagram" style="max-width:100%; height:auto; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p style=color:#666>Topology image not found. Open juniper_mpls_evpn_topology.drawio in draw.io to view.</p>'">
     </div>
-    <p>The lab models the Vodafone KKTC backbone with <strong>4 P (core) routers</strong> and <strong>4 PE (edge) routers</strong>. All inter-router links use <strong>ae (LAG) bundles</strong> with 2x GE member links and LACP active. The topology forms a dual-plane core with PE routers on the edges.</p>
+    <p>The lab models a service provider backbone with <strong>4 P (core) routers</strong> and <strong>4 PE (edge) routers</strong>. All inter-router links use <strong>ae (LAG) bundles</strong> with 2x GE member links and LACP active. The topology forms a dual-plane core with PE routers on the edges.</p>
 
     <div class="topology-ascii">
                     <span class="t-ip">P Region (Core)</span>                              <span class="t-ip">PE Region (Edge)</span>
@@ -537,7 +537,7 @@
 
     <div class="info-box">
         <strong>Why IS-IS instead of OSPF?</strong><br>
-        Service providers (like Vodafone) typically prefer IS-IS over OSPF for several reasons:
+        Service providers typically prefer IS-IS over OSPF for several reasons:
         <ul style="margin-top:8px">
             <li><strong>Stability:</strong> IS-IS runs on Layer 2, so IP routing table changes don't affect IS-IS adjacencies</li>
             <li><strong>Scalability:</strong> IS-IS handles large LSDBs better and has simpler flooding behavior</li>
@@ -847,11 +847,11 @@ routing-options {
     <p><strong>VRF (Virtual Routing and Forwarding)</strong> creates isolated routing tables within a single router. Each VRF has its own RIB and FIB. In Junos, VRFs are configured as <code>routing-instances</code> with <code>instance-type vrf</code>.</p>
 
     <div class="info-box">
-        <strong>In this lab:</strong> Each PE router has <strong>40 VRFs</strong> - 20 production VRFs representing real Vodafone KKTC services, and 20 lab VRFs (VRF10-VRF29) for testing. All VRFs use dot1q sub-interfaces on ge-0/0/6 and ge-0/0/7.
+        <strong>In this lab:</strong> Each PE router has <strong>40 VRFs</strong> - 20 production VRFs representing real SP services, and 20 lab VRFs (VRF10-VRF29) for testing. All VRFs use dot1q sub-interfaces on ge-0/0/6 and ge-0/0/7.
     </div>
 
     <h3>Production VRFs (20)</h3>
-    <p>These VRFs represent actual Vodafone KKTC network services:</p>
+    <p>These VRFs represent actual service provider network services:</p>
     <table>
         <tr><th>VRF Name</th><th>Service</th><th>VRF Name</th><th>Service</th></tr>
         <tr><td><strong>CHU</strong></td><td>Charging Unit</td><td><strong>PCRF</strong></td><td>Policy Control</td></tr>
@@ -863,7 +863,7 @@ routing-options {
         <tr><td><strong>INTERNET</strong></td><td>Internet Breakout</td><td><strong>4G-IPSEC</strong></td><td>4G IPSec VPN</td></tr>
         <tr><td><strong>3GPS_DATA</strong></td><td>3G Packet Switched Data</td><td><strong>CSDB_AAA</strong></td><td>Subscriber DB/AAA</td></tr>
         <tr><td><strong>USERPLANE</strong></td><td>User Plane Traffic</td><td><strong>CSDB_ENS</strong></td><td>Subscriber DB/ENS</td></tr>
-        <tr><td><strong>VF</strong></td><td>Vodafone Global</td><td><strong>INTERMEDIA</strong></td><td>Intermediate Services</td></tr>
+        <tr><td><strong>VF</strong></td><td>SP Global</td><td><strong>INTERMEDIA</strong></td><td>Intermediate Services</td></tr>
     </table>
 
     <h3>Lab VRFs (20)</h3>

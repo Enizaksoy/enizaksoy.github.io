@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MPLS L3VPN Lab - LDP, BGP, OSPF, VRF on Juniper vMX - Kibris Network Lab by Eniz Aksoy">
-    <title>MPLS L3VPN Lab - Kibris | Eniz Aksoy</title>
+    <meta name="description" content="MPLS L3VPN Lab - LDP, BGP, OSPF, VRF on Juniper vMX - SP Network Lab by Eniz Aksoy">
+    <title>MPLS L3VPN Lab | Eniz Aksoy</title>
     <style>
         :root {
             --bg-dark: #1a1a2e;
@@ -248,7 +248,7 @@
 <nav class="sidebar">
     <div class="sidebar-header">
         <h1>MPLS L3VPN Lab</h1>
-        <div class="subtitle">Kibris Network - Juniper vMX<br>CML Lab | AS 65000</div>
+        <div class="subtitle">SP Network - Juniper vMX<br>CML Lab | AS 65000</div>
         <div class="lab-badges">
             <span class="lab-badge">OSPF</span>
             <span class="lab-badge">LDP</span>
@@ -303,11 +303,11 @@
 
 <!-- ==================== OVERVIEW ==================== -->
 <div class="section-panel active" id="section-overview">
-    <h1>MPLS L3VPN Lab - Kibris Network</h1>
+    <h1>MPLS L3VPN Lab - SP Network</h1>
     <p class="subtitle">Building an MPLS backbone with L3VPN services using Juniper vMX on CML</p>
 
     <h2>What This Lab Demonstrates</h2>
-    <p>This lab builds a complete <strong>MPLS L3VPN service provider network</strong> connecting two sites (KKY and ORT) in Kibris (Cyprus). It covers the full protocol stack required to deliver VPN services over an MPLS backbone:</p>
+    <p>This lab builds a complete <strong>MPLS L3VPN service provider network</strong> connecting two sites (KKY and ORT). It covers the full protocol stack required to deliver VPN services over an MPLS backbone:</p>
 
     <div class="grid">
         <div class="card">
@@ -363,10 +363,10 @@
 <!-- ==================== TOPOLOGY ==================== -->
 <div class="section-panel" id="section-topology">
     <h2>Lab Topology</h2>
-    <p>The lab simulates a two-site service provider network: <strong>KKY (Kibris)</strong> and <strong>ORT (Ortakoy)</strong>. The MPLS core has 4 PE routers in a full-mesh, with 2 PEX routers at the edge providing VRF services to customers.</p>
+    <p>The lab simulates a two-site service provider network: <strong>KKY (Site-A)</strong> and <strong>ORT (Site-B)</strong>. The MPLS core has 4 PE routers in a full-mesh, with 2 PEX routers at the edge providing VRF services to customers.</p>
 
     <div class="topology-ascii">
-                          <span class="t-ip">KIBRIS (KKY)</span>                                    <span class="t-ip">ORTAKOY (ORT)</span>
+                          <span class="t-ip">SITE-A (KKY)</span>                                    <span class="t-ip">SITE-B (ORT)</span>
 
      <span class="t-pe">PE1-KKY</span> <span class="t-ip">(10.255.0.1)</span>  ───── ge0/0/1 ─────  <span class="t-pe">PE1-ORT</span> <span class="t-ip">(10.255.0.3)</span>  ─── ge0/0/3 ───  <span class="t-pex">PEX1-ORT</span> <span class="t-ip">(10.255.0.5)</span> ─── <span class="t-ce">CE1</span>
        │  <span class="t-ip">10.0.13.1/30</span>                  <span class="t-ip">10.0.13.2/30</span>  │  <span class="t-ip">10.0.35.1/30</span>        <span class="t-ip">10.0.35.2/30</span>       <span class="t-ip">192.168.1.1/24</span>  <span class="t-ip">192.168.1.2/24</span>
