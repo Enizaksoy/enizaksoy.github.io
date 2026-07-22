@@ -94,17 +94,16 @@
   nav.links a:hover { color: var(--teal); border-color: var(--teal); }
 
   /* ---------- hero ---------- */
-  .hero { padding: 72px 0 56px; border-bottom: 1px solid var(--line); }
+  .hero { padding: 44px 0 36px; border-bottom: 1px solid var(--line); }
   .eyebrow {
     font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em;
-    color: var(--copper); text-transform: uppercase; margin: 0 0 14px;
+    color: var(--copper); text-transform: uppercase; margin: 0 0 10px;
   }
-  h1.title {
-    font-family: var(--font-display); font-weight: 700;
-    font-size: clamp(3rem, 7vw, 5.2rem); line-height: 0.92;
-    letter-spacing: -0.01em; margin: 0 0 20px; text-wrap: balance;
+  h1.lede {
+    font-family: var(--font-body); font-weight: 400;
+    font-size: 1.15rem; color: var(--ink-soft); max-width: 58ch;
+    margin: 0 0 18px; text-wrap: balance;
   }
-  .lede { font-size: 1.18rem; color: var(--ink-soft); max-width: 58ch; margin: 0 0 22px; }
   .hero-links { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 0.85rem; }
   .hero-links a { text-decoration: none; color: var(--teal-ink); }
   .hero-links a:hover { text-decoration: underline; }
@@ -171,8 +170,7 @@
   <section class="hero">
     <div class="wrap">
       <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
-      <h1 class="title">Eniz Aksoy</h1>
-      <p class="lede">Notes from building EVPN fabrics, SD-WAN deployments, and AI clusters.</p>
+      <h1 class="lede">Notes from building EVPN fabrics, SD-WAN deployments, and AI clusters.</h1>
       <div class="hero-links">
         <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
         <a href="#field-labs">→ Browse the labs</a>
