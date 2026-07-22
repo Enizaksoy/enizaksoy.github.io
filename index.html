@@ -95,7 +95,6 @@
 
   /* ---------- hero ---------- */
   .hero { padding: 72px 0 56px; border-bottom: 1px solid var(--line); }
-  .hero-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 56px; align-items: start; }
   .eyebrow {
     font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em;
     color: var(--copper); text-transform: uppercase; margin: 0 0 14px;
@@ -109,28 +108,6 @@
   .hero-links { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 0.85rem; }
   .hero-links a { text-decoration: none; color: var(--teal-ink); }
   .hero-links a:hover { text-decoration: underline; }
-
-  .readout {
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-top: 3px solid var(--teal);
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-  }
-  .readout-head {
-    padding: 12px 16px; border-bottom: 1px solid var(--line);
-    color: var(--slate); letter-spacing: 0.03em;
-  }
-  .readout dl { margin: 0; padding: 4px 16px 14px; }
-  .readout-row {
-    display: flex; justify-content: space-between; gap: 12px;
-    padding: 7px 0; border-bottom: 1px dashed var(--line);
-    font-variant-numeric: tabular-nums;
-  }
-  .readout-row:last-child { border-bottom: none; }
-  .readout-row dt { color: var(--ink-soft); }
-  .readout-row dd { margin: 0; color: var(--ink); font-weight: 600; }
-  .readout-row dd.hot { color: var(--teal-ink); }
 
   /* ---------- sections ---------- */
   section.grid-section { padding: 56px 0; border-bottom: 1px solid var(--line); }
@@ -192,27 +169,13 @@
 
 <main>
   <section class="hero">
-    <div class="wrap hero-grid">
-      <div>
-        <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
-        <h1 class="title">Line Rate</h1>
-        <p class="lede">I build EVPN VXLAN fabrics, SD-WAN deployments, and lossless RDMA clusters for AI training — then write up what actually broke, what the packet capture showed, and what fixed it. Multi-vendor, always on real hardware.</p>
-        <div class="hero-links">
-          <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
-          <a href="#field-labs">→ Browse the labs</a>
-        </div>
-      </div>
-      <div class="readout">
-        <div class="readout-head">show engineer status</div>
-        <dl>
-          <div class="readout-row"><dt>CCIE #</dt><dd>23970</dd></div>
-          <div class="readout-row"><dt>Years in SD-WAN</dt><dd>8+</dd></div>
-          <div class="readout-row"><dt>RDMA bandwidth (same-rail)</dt><dd class="hot">38.98 Gb/s</dd></div>
-          <div class="readout-row"><dt>RDMA latency (same-rail)</dt><dd class="hot">~3 µs</dd></div>
-          <div class="readout-row"><dt>ECN packets tracked</dt><dd>40M+</dd></div>
-          <div class="readout-row"><dt>Pause frames tracked</dt><dd>133M+</dd></div>
-          <div class="readout-row"><dt>Packet-drop reduction</dt><dd class="hot">96%</dd></div>
-        </dl>
+    <div class="wrap">
+      <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
+      <h1 class="title">Line Rate</h1>
+      <p class="lede">Notes from building EVPN fabrics, SD-WAN deployments, and AI clusters — by Eniz Aksoy.</p>
+      <div class="hero-links">
+        <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
+        <a href="#field-labs">→ Browse the labs</a>
       </div>
     </div>
   </section>
