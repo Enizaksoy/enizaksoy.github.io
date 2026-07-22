@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Versa FlexVNF IPv6 NPT-66 Configuration Guide</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #0d47a1;
+            --success: #0f9d58;
+            --danger: #db4437;
+            --warning: #f4b400;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #202124;
+            --text-light: #5f6368;
+            --border: #dadce0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        .header h1 { font-size: 2em; margin-bottom: 8px; }
+        .header .subtitle { opacity: 0.9; font-size: 1.1em; }
+        .header .meta { opacity: 0.7; font-size: 0.9em; margin-top: 12px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+        .nav {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav h3 { margin-bottom: 10px; color: var(--primary); }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 8px; }
+        .nav-links a {
+            padding: 6px 14px;
+            background: var(--bg);
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--primary);
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-links a:hover { background: var(--primary); color: white; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: var(--primary-dark);
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card h3 { color: var(--text); margin: 20px 0 10px; font-size: 1.1em; }
+        .card h4 { color: var(--text-light); margin: 15px 0 8px; font-size: 1em; }
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85em;
+            line-height: 1.7;
+            margin: 12px 0;
+        }
+        code {
+            background: #e8eaed;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        pre code { background: none; padding: 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        tr:hover td { background: #f1f3f4; }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .badge-pass { background: #e6f4ea; color: var(--success); }
+        .badge-fail { background: #fce8e6; color: var(--danger); }
+        .badge-warn { background: #fef7e0; color: #e37400; }
+        .badge-info { background: #e8f0fe; color: var(--primary); }
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .alert-danger { background: #fce8e6; border-left: 4px solid var(--danger); }
+        .alert-success { background: #e6f4ea; border-left: 4px solid var(--success); }
+        .alert-warning { background: #fef7e0; border-left: 4px solid var(--warning); }
+        .alert-info { background: #e8f0fe; border-left: 4px solid var(--primary); }
+        .alert .icon { font-size: 1.3em; flex-shrink: 0; }
+        .topology {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 25px;
+            border-radius: 8px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8em;
+            line-height: 1.8;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        .flow-diagram {
+            background: linear-gradient(135deg, #f8f9fa, #e8eaed);
+            border-radius: 8px;
+            padding: 25px;
+            margin: 15px 0;
+        }
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 8px 0;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+        .flow-step.fail { border-left-color: var(--danger); }
+        .flow-step.success { border-left-color: var(--success); }
+        .step-num {
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .step-num.fail-num { background: var(--danger); }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        .comparison-box {
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+        .comparison-box h4 {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text) !important;
+        }
+        .comparison-box.good { border-color: var(--success); }
+        .comparison-box.bad { border-color: var(--danger); }
+        .comparison-box.good h4 { color: var(--success) !important; }
+        .comparison-box.bad h4 { color: var(--danger) !important; }
+        @media (max-width: 768px) {
+            .comparison-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.5em; }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Versa FlexVNF IPv6 NPT-66 Guide</h1>
+    <div class="subtitle">Network Prefix Translation for IPv6 (RFC 6296) &mdash; Configuration &amp; Troubleshooting</div>
+    <div class="meta">FlexVNF 22.1.4 (GA) | Lab-tested | Bug 140313 (proxy NDP /56 enhancement)</div>
+</div>
+
+<div class="container">
+
+    <nav class="nav">
+        <h3>Quick Navigation</h3>
+        <div class="nav-links">
+            <a href="#topology">Topology</a>
+            <a href="#translation">Translation Map</a>
+            <a href="#config-flexvnf">FlexVNF Config</a>
+            <a href="#tvi-paired">Paired TVI Interfaces</a>
+            <a href="#config-upstream">Upstream Routes</a>
+            <a href="#traffic-flow">Traffic Flow</a>
+            <a href="#proxy-ndp">Proxy NDP (Alternative)</a>
+            <a href="#why-no-proxy">Why Not Proxy NDP</a>
+            <a href="#comparison">IPv4 vs IPv6 NAT</a>
+            <a href="#errors">Common Errors</a>
+            <a href="#test-results">Test Results</a>
+            <a href="#lessons">Key Lessons</a>
+        </div>
+    </nav>
+
+    <!-- TOPOLOGY -->
+    <div class="card" id="topology">
+        <h2>&#128421; Lab Topology</h2>
+        <div class="topology">
+  Client (LAN)                   FlexVNF                                Upstream Router (WAN)
+                                 Release: 22.1.4 (GA)
+                                 Org: CUSTOMER-ORG
+
+  +-------------------+      +----------------------------+      +-------------------+
+  |  VLAN100-VR       |      |                            |      |                   |
+  |  Po1.100 native   |      |   ae0.0                    |      |                   |
+  |  :100::10/64     -|------|-  :100::1/64               |      |                   |
+  |                   |      |                            |      |                   |
+  |  VLAN101-VR       |      |   ae0.101 (dot1Q)          |      |                   |
+  |  Po1.101          |      |   :101::1/64               |      |                   |
+  |  :101::10/64     -|------|-                           |      |                   |
+  |                   |      |          NPT-66            |      |                   |
+  |  VLAN102-VR       |      |   ae0.102 (dot1Q)          |      |   Gig3.20        |
+  |  Po1.102          |      |   :102::1/64               |      |   :200::2/56     |
+  |  :102::10/64     -|------|-                           |      |                   |
+  |                   |      |        vni-0/0.0 ----------|------|-                  |
+  |                   |      |        :200::1/56           |      |                   |
+  +-------------------+      +----------------------------+      +-------------------+
+        LAN side                    CGNAT Engine                    WAN / Internet
+      Zone: LAN-ZONE          Enterprise VRF                     Upstream Router
+                          INET-1-Transport-VR
+
+  All prefixes: 2009:dde8:c0fd:XXX::/64
+        </div>
+    </div>
+
+    <!-- TRANSLATION MAP -->
+    <div class="card" id="translation">
+        <h2>&#128260; NPT-66 Translation Mapping</h2>
+        <p>Each inside /64 maps to a unique outside /64. Host portion is <strong>preserved</strong> (stateless 1:1).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>VLAN</th>
+                    <th>Inside Prefix (LAN)</th>
+                    <th>&#8594;</th>
+                    <th>Outside Prefix (Pool)</th>
+                    <th>Pool Name</th>
+                    <th>Rule Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge badge-info">100</span></td>
+                    <td><code>2009:dde8:c0fd:100::/64</code></td>
+                    <td>&#8594;</td>
+                    <td><code>2009:dde8:c0fd:200::/64</code></td>
+                    <td>IPv6-NPT66-VLAN1-Pool</td>
+                    <td>IPv6-NPT66-VLAN1-Rule</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-info">101</span></td>
+                    <td><code>2009:dde8:c0fd:101::/64</code></td>
+                    <td>&#8594;</td>
+                    <td><code>2009:dde8:c0fd:201::/64</code></td>
+                    <td>IPv6-NPT66-VLAN2-Pool</td>
+                    <td>IPv6-NPT66-VLAN2-Rule</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-info">102</span></td>
+                    <td><code>2009:dde8:c0fd:102::/64</code></td>
+                    <td>&#8594;</td>
+                    <td><code>2009:dde8:c0fd:202::/64</code></td>
+                    <td>IPv6-NPT66-VLAN3-Pool</td>
+                    <td>IPv6-NPT66-VLAN3-Rule</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="alert alert-info">
+            <span class="icon">&#128161;</span>
+            <div><strong>Example:</strong> Host <code>2009:dde8:c0fd:101::10</code> translates to <code>2009:dde8:c0fd:201::10</code> &mdash; the <code>::10</code> host portion stays the same.</div>
+        </div>
+    </div>
+
+    <!-- FLEXVNF CONFIG -->
+    <div class="card" id="config-flexvnf">
+        <h2>&#9881; FlexVNF Configuration</h2>
+
+        <h3>CGNAT Pools</h3>
+        <pre><code>set orgs org-services CUSTOMER-ORG cgnat pools IPv6-NPT66-VLAN1-Pool address-list [ 2009:dde8:c0fd:200::/64 ]
+set orgs org-services CUSTOMER-ORG cgnat pools IPv6-NPT66-VLAN1-Pool routing-instance INET-1-Transport-VR
+
+set orgs org-services CUSTOMER-ORG cgnat pools IPv6-NPT66-VLAN2-Pool address-list [ 2009:dde8:c0fd:201::/64 ]
+set orgs org-services CUSTOMER-ORG cgnat pools IPv6-NPT66-VLAN2-Pool routing-instance INET-1-Transport-VR
+
+set orgs org-services CUSTOMER-ORG cgnat pools IPv6-NPT66-VLAN3-Pool address-list [ 2009:dde8:c0fd:202::/64 ]
+set orgs org-services CUSTOMER-ORG cgnat pools IPv6-NPT66-VLAN3-Pool routing-instance INET-1-Transport-VR</code></pre>
+
+        <h3>CGNAT Rules</h3>
+        <pre><code>set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN1-Rule from source-zone [ LAN-ZONE ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN1-Rule from destination-zone [ SPLIT-TUNNEL-ZONE ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN1-Rule from source-address [ 2009:dde8:c0fd:100::/64 ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN1-Rule then translated translation-type npt-66
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN1-Rule then translated source-pool IPv6-NPT66-VLAN1-Pool
+
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN2-Rule from source-zone [ LAN-ZONE ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN2-Rule from destination-zone [ SPLIT-TUNNEL-ZONE ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN2-Rule from source-address [ 2009:dde8:c0fd:101::/64 ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN2-Rule then translated translation-type npt-66
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN2-Rule then translated source-pool IPv6-NPT66-VLAN2-Pool
+
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN3-Rule from source-zone [ LAN-ZONE ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN3-Rule from destination-zone [ SPLIT-TUNNEL-ZONE ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN3-Rule from source-address [ 2009:dde8:c0fd:102::/64 ]
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN3-Rule then translated translation-type npt-66
+set orgs org-services CUSTOMER-ORG cgnat rules IPv6-NPT66-VLAN3-Rule then translated source-pool IPv6-NPT66-VLAN3-Pool</code></pre>
+
+        <h3>LAN Interfaces</h3>
+        <pre><code>ae0.0:    2009:dde8:c0fd:100::1/64   (native VLAN, zone LAN-ZONE)
+ae0.101:  2009:dde8:c0fd:101::1/64   (VLAN 101, zone LAN-ZONE)
+ae0.102:  2009:dde8:c0fd:102::1/64   (VLAN 102, zone LAN-ZONE)
+
+networks LAN-NETWORK interfaces [ ae0.0 ae0.101 ae0.102 ]</code></pre>
+
+        <h3>WAN Interface</h3>
+        <pre><code>vni-0/0.0:  2009:dde8:c0fd:200::1/56
+            (INET-1 network, INET-1-Transport-VR)</code></pre>
+    </div>
+
+    <!-- PAIRED TVI INTERFACES -->
+    <div class="card" id="tvi-paired">
+        <h2>&#128279; Paired TVI Interfaces (Split-Tunnel between VRFs)</h2>
+        <p>The FlexVNF uses <strong>paired TVI (Tunnel Virtual Interface)</strong> interfaces to route traffic between the Enterprise VRF (LAN side) and the INET-1-Transport-VR (WAN side). This is how split-tunnel / DIA (Direct Internet Access) traffic crosses VRF boundaries internally.</p>
+
+        <h3>Architecture</h3>
+        <div class="topology">
+  LAN Side                          FlexVNF Internal                          WAN Side
+  --------                          ----------------                          --------
+
+  ae0.0 / ae0.101 / ae0.102        Paired TVI Interfaces                     vni-0/0.0
+  (LAN-ZONE)                                                                 (INET-1 Network)
+       |                                                                          |
+       v                                                                          v
+  +--------------------+       +----------------------------+       +--------------------+
+  |  Enterprise VRF    |       |    TVI Pair (L3 link)      |       | INET-1-Transport-VR|
+  |                    |       |                            |       |                    |
+  |  tvi-0/3.0  -------+-------+--  169.254.0.3/31  -------+-------+  tvi-0/2.0         |
+  |  (LAN-VR side)     |       |    169.254.0.2/31          |       |  (WAN-VR side)     |
+  |                    |       |                            |       |                    |
+  +--------------------+       +----------------------------+       +--------------------+
+
+  Traffic flow:
+  Client --> ae0.x --> Enterprise VRF --> tvi-0/3.0 --> tvi-0/2.0 --> INET-1-Transport-VR --> vni-0/0.0 --> Internet
+                                          169.254.0.3     169.254.0.2
+        </div>
+
+        <h3>TVI Interface Configuration</h3>
+        <pre><code>! Enterprise VRF side (LAN VR)
+set interfaces tvi-0/3 unit 0 family inet address 169.254.0.3/31
+set routing-instances CUSTOMER-ORG-Enterprise interfaces tvi-0/3.0
+
+! INET-1-Transport-VR side (WAN VR)
+set interfaces tvi-0/2 unit 0 family inet address 169.254.0.2/31
+set routing-instances INET-1-Transport-VR interfaces tvi-0/2.0</code></pre>
+
+        <h3>IPv6 Static Route via Split-Tunnel (Enterprise VRF)</h3>
+        <p>For NPT-66 to work, the Enterprise VRF must know how to reach the translated pool prefix. IPv6 next-hop uses <strong>IPv4-mapped IPv6 address</strong> format <code>::ffff:x.x.x.x</code>:</p>
+        <pre><code>! Route translated /56 pool range toward INET-1-Transport-VR via TVI pair
+set routing-instances CUSTOMER-ORG-Enterprise routing-options static route 2009:dde8:c0fd:200::/56 ::ffff:169.254.0.2
+
+! This tells Enterprise VRF:
+!   "To reach the NAT pool prefix 2009:dde8:c0fd:200::/56,
+!    send traffic to 169.254.0.2 (tvi-0/2.0 in INET-1-Transport-VR)"</code></pre>
+
+        <div class="alert alert-warning">
+            <span class="icon">&#9888;</span>
+            <div><strong>Critical:</strong> Without this route in Enterprise VRF, NAT never matches. Sessions show <code>natted: No</code>, <code>forward-egress-interface: n/a</code>, all packets dropped silently.</div>
+        </div>
+
+        <h3>IPv6 Next-Hop Format Explained</h3>
+        <table>
+            <thead>
+                <tr><th>Format</th><th>Example</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>IPv4-mapped IPv6</td>
+                    <td><code>::ffff:169.254.0.2</code></td>
+                    <td>IPv6 static route using IPv4 next-hop 169.254.0.2</td>
+                </tr>
+                <tr>
+                    <td>Why needed</td>
+                    <td colspan="2">TVI pair only has IPv4 addresses (169.254.0.x/31). IPv6 routes need this mapping to traverse IPv4-only internal links</td>
+                </tr>
+                <tr>
+                    <td>Suffix <code>none</code></td>
+                    <td><code>... ::ffff:169.254.0.2 none</code></td>
+                    <td>The <code>none</code> keyword means no specific outgoing interface; resolved by routing table</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Full IPv6 Routing Summary</h3>
+        <pre><code>! Enterprise VRF static routes
+set routing-instances CUSTOMER-ORG-Enterprise routing-options static route 2009:dde8:c0fd:200::/56 ::ffff:169.254.0.2
+
+! What happens at each hop:
+!  1. Client sends to 2009:dde8:c0fd:200::2 (upstream router)
+!  2. Enterprise VRF matches :200::/56 static route
+!  3. Forwards to 169.254.0.2 via tvi-0/3.0 -> tvi-0/2.0
+!  4. Arrives in INET-1-Transport-VR
+!  5. CGNAT engine performs NPT-66 translation (source prefix swap)
+!  6. Packet exits vni-0/0.0 toward upstream router</code></pre>
+    </div>
+
+    <!-- UPSTREAM ROUTES -->
+    <div class="card" id="config-upstream">
+        <h2>&#128739; Upstream Router Static Routes (Recommended)</h2>
+        <p>The upstream router must have <strong>/64 static routes</strong> for each translated pool, pointing to the FlexVNF WAN IP as next-hop.</p>
+        <pre><code>! On upstream router (e.g., Cisco IOS-XE)
+ipv6 route 2009:DDE8:C0FD:200::/64 2009:DDE8:C0FD:200::1
+ipv6 route 2009:DDE8:C0FD:201::/64 2009:DDE8:C0FD:200::1
+ipv6 route 2009:DDE8:C0FD:202::/64 2009:DDE8:C0FD:200::1</code></pre>
+        <div class="alert alert-success">
+            <span class="icon">&#10004;</span>
+            <div><strong>Why this works:</strong> The /64 static route is more specific than the /56 connected route on the upstream router. <strong>Longest prefix match wins</strong> &mdash; the router forwards to FlexVNF instead of doing NDP on the wire.</div>
+        </div>
+
+        <h3>Verification on upstream router:</h3>
+        <pre><code>Router# show ipv6 route 2009:DDE8:C0FD:201::10
+
+Routing entry for 2009:DDE8:C0FD:201::/64        &lt;-- /64 static wins
+  Known via "static", distance 1, metric 0
+  Route count is 1/1, share count 0
+    via 2009:DDE8:C0FD:200::1                     &lt;-- forwards to FlexVNF</code></pre>
+    </div>
+
+    <!-- TRAFFIC FLOW -->
+    <div class="card" id="traffic-flow">
+        <h2>&#128640; Traffic Flow &mdash; Step by Step</h2>
+
+        <h3>Outbound: Client &#8594; Internet (through NPT-66)</h3>
+        <div class="flow-diagram">
+            <div class="flow-step success">
+                <div class="step-num">1</div>
+                <div>Client sends: <code>src=2009:dde8:c0fd:101::10</code> &#8594; <code>dst=2009:dde8:c0fd:200::2</code></div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">2</div>
+                <div>FlexVNF ae0.101 receives in LAN-ZONE, Enterprise VRF looks up destination</div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">3</div>
+                <div>Static route <code>:200::/56 via ::ffff:169.254.0.2</code> &mdash; forwards through paired TVI to INET-1-Transport-VR</div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">4</div>
+                <div>NPT-66 rule matches: source <code>:101::/64</code> &#8594; translates to <code>:201::10</code></div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">5</div>
+                <div>Packet exits vni-0/0.0: <code>src=2009:dde8:c0fd:201::10</code> &#8594; <code>dst=2009:dde8:c0fd:200::2</code> &#10004;</div>
+            </div>
+        </div>
+
+        <h3>Return: Internet &#8594; Client (with static /64 routes on upstream)</h3>
+        <div class="flow-diagram">
+            <div class="flow-step success">
+                <div class="step-num">1</div>
+                <div>Upstream router replies to <code>2009:dde8:c0fd:201::10</code></div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">2</div>
+                <div>Route lookup: <code>:201::/64</code> static (/64) beats <code>:200::/56</code> connected (/56) &mdash; <strong>longest match wins</strong></div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">3</div>
+                <div>Forwards to next-hop <code>:200::1</code> (FlexVNF) &mdash; NDP already resolved for this address</div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">4</div>
+                <div>FlexVNF reverse-translates: <code>dst=:201::10</code> &#8594; <code>dst=:101::10</code></div>
+            </div>
+            <div class="flow-step success">
+                <div class="step-num">5</div>
+                <div>Packet delivered to Client via ae0.101 &#10004;</div>
+            </div>
+        </div>
+
+        <h3>Return: WITHOUT static routes (broken &mdash; NDP failure)</h3>
+        <div class="flow-diagram">
+            <div class="flow-step">
+                <div class="step-num">1</div>
+                <div>Upstream router replies to <code>2009:dde8:c0fd:201::10</code></div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">2</div>
+                <div>Route lookup: only <code>:200::/56</code> connected on Gig3.20</div>
+            </div>
+            <div class="flow-step fail">
+                <div class="step-num fail-num">3</div>
+                <div><strong>Router thinks :201::10 is on the local segment</strong> &mdash; sends NDP Neighbor Solicitation on Gig3.20</div>
+            </div>
+            <div class="flow-step fail">
+                <div class="step-num fail-num">4</div>
+                <div><strong>Nobody answers NDP</strong> &mdash; :201::10 is a virtual translated address, no real device has it &#10008;</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROXY NDP (ALTERNATIVE) -->
+    <div class="card" id="proxy-ndp">
+        <h2>&#128272; Proxy NDP &mdash; Alternative Approach</h2>
+        <p>Proxy NDP allows FlexVNF to respond to Neighbor Solicitation (NS) requests on behalf of translated IPv6 addresses. When the upstream router sends an NS for a translated address (e.g., <code>2009:dde8:c0fd:201::10</code>), FlexVNF replies with its own MAC address.</p>
+
+        <h3>Configuration</h3>
+        <pre><code>! On FlexVNF WAN interface - one entry per translated /64 pool
+set interfaces vni-0/0 unit 0 family inet6 proxy-ndp address [
+    2009:dde8:c0fd:200::/64
+    2009:dde8:c0fd:201::/64
+    2009:dde8:c0fd:202::/64
+]</code></pre>
+
+        <h3>When Proxy NDP Might Be Needed</h3>
+        <table>
+            <thead>
+                <tr><th>Scenario</th><th>Static Routes</th><th>Proxy NDP</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>You control the upstream router</td>
+                    <td><span class="badge badge-pass">Use this</span></td>
+                    <td>Not needed</td>
+                </tr>
+                <tr>
+                    <td>ISP-managed CPE (can't add routes)</td>
+                    <td>Not possible</td>
+                    <td><span class="badge badge-warn">Only option</span></td>
+                </tr>
+                <tr>
+                    <td>Dedicated point-to-point WAN link</td>
+                    <td><span class="badge badge-pass">Preferred</span></td>
+                    <td>Safe (no other devices)</td>
+                </tr>
+                <tr>
+                    <td>Shared L2 segment with other devices</td>
+                    <td><span class="badge badge-pass">Use this</span></td>
+                    <td><span class="badge badge-fail">Risk of NDP conflict</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Platform Limitations</h3>
+        <div class="alert alert-warning">
+            <span class="icon">&#9888;</span>
+            <div>
+                <strong>Proxy NDP prefix restrictions:</strong>
+                <ul style="margin-top:8px; padding-left:20px;">
+                    <li>Only prefix length <strong>&gt;= /64</strong> supported (cannot use /56 or shorter)</li>
+                    <li>Bug ID 140313 filed for /56 support &mdash; pending engineering</li>
+                    <li>Maximum <strong>16 proxy-ndp entries</strong> per interface</li>
+                    <li>If customer has &gt;16 VLANs, proxy NDP alone cannot cover all pools</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Workaround: Multiple /64 entries for /56 coverage</h3>
+        <p>If proxy NDP for /56 is needed, split into individual /64 entries (max 16):</p>
+        <pre><code>set interfaces vni-0/0 unit 0 family inet6 proxy-ndp address [
+    2009:dde8:c0fd:200::/64
+    2009:dde8:c0fd:201::/64
+    2009:dde8:c0fd:202::/64
+    2009:dde8:c0fd:203::/64
+    2009:dde8:c0fd:204::/64
+    2009:dde8:c0fd:205::/64
+    2009:dde8:c0fd:206::/64
+    2009:dde8:c0fd:207::/64
+    2009:dde8:c0fd:208::/64
+    2009:dde8:c0fd:209::/64
+    2009:dde8:c0fd:20a::/64
+    2009:dde8:c0fd:20b::/64
+    2009:dde8:c0fd:20c::/64
+    2009:dde8:c0fd:20d::/64
+    2009:dde8:c0fd:20e::/64
+    2009:dde8:c0fd:20f::/64
+]
+! This covers :200::/60 (16 x /64 = first half of /56)
+! Maximum 16 entries per interface - cannot cover full /56 (256 x /64)</code></pre>
+    </div>
+
+    <!-- WHY NOT PROXY NDP -->
+    <div class="card" id="why-no-proxy">
+        <h2>&#9888; Why Proxy NDP is NOT Recommended</h2>
+
+        <div class="comparison-grid">
+            <div class="comparison-box bad">
+                <h4>&#10008; Proxy NDP Approach (Risky)</h4>
+                <ul style="padding-left: 20px; margin-top: 10px;">
+                    <li>FlexVNF answers NS for <strong>every address</strong> in the /64 range</li>
+                    <li>If real devices exist on the same L2 segment within that /64, you get <strong>duplicate NA responses</strong></li>
+                    <li>Traffic may <strong>black-hole</strong> or split unpredictably</li>
+                    <li>Proxy NDP only supports &gt;= /64 prefix (no /56 support &mdash; Bug 140313)</li>
+                    <li>Maximum 16 proxy-ndp entries per interface</li>
+                    <li>Difficult to troubleshoot &mdash; intermittent traffic loss</li>
+                </ul>
+            </div>
+            <div class="comparison-box good">
+                <h4>&#10004; Static Route Approach (Recommended)</h4>
+                <ul style="padding-left: 20px; margin-top: 10px;">
+                    <li>/64 static route beats /56 connected via <strong>longest prefix match</strong></li>
+                    <li>No NDP conflict with existing devices</li>
+                    <li>No dependency on proxy NDP feature enhancement</li>
+                    <li>Standard routing &mdash; works on any upstream router</li>
+                    <li>Or use a single summary: <code>/56 route via FlexVNF</code> if transit link uses separate prefix</li>
+                    <li>Scales to any number of VLANs</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>NDP Conflict Scenario Explained</h3>
+        <div class="flow-diagram">
+            <div class="flow-step fail">
+                <div class="step-num fail-num">1</div>
+                <div>FlexVNF has proxy-ndp for <code>:200::/64</code>. A real server at <code>:200::50</code> also exists on the same L2 segment</div>
+            </div>
+            <div class="flow-step fail">
+                <div class="step-num fail-num">2</div>
+                <div>Upstream router sends NS: "Who has <code>:200::50</code>?"</div>
+            </div>
+            <div class="flow-step fail">
+                <div class="step-num fail-num">3</div>
+                <div><strong>Both respond:</strong> Real server (MAC: aa:bb:cc:...) AND FlexVNF (MAC: 52:54:00:...) send Neighbor Advertisement</div>
+            </div>
+            <div class="flow-step fail">
+                <div class="step-num fail-num">4</div>
+                <div><strong>Result:</strong> Upstream router's NDP table flaps between two MACs. Traffic to :200::50 randomly goes to either device &#10008;</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPARISON -->
+    <div class="card" id="comparison">
+        <h2>&#128203; IPv4 NAPT-44 vs IPv6 NPT-66</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    <th>NAPT-44 (IPv4)</th>
+                    <th>NPT-66 (IPv6)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Pool type</strong></td>
+                    <td><code>egress-network</code> (interface IP)</td>
+                    <td><code>address-list</code> (explicit prefix)</td>
+                </tr>
+                <tr>
+                    <td><strong>Translation</strong></td>
+                    <td>Many-to-one (PAT)</td>
+                    <td>One-to-one (prefix swap)</td>
+                </tr>
+                <tr>
+                    <td><strong>Stateful?</strong></td>
+                    <td>Yes</td>
+                    <td>No (stateless)</td>
+                </tr>
+                <tr>
+                    <td><strong>Proxy ARP/NDP needed?</strong></td>
+                    <td>No (translates to interface's own IP)</td>
+                    <td>No, if static routes used on upstream</td>
+                </tr>
+                <tr>
+                    <td><strong>Port translation</strong></td>
+                    <td>Yes</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td><strong>Return path</strong></td>
+                    <td>Automatic (interface IP is known)</td>
+                    <td>Requires static routes on upstream</td>
+                </tr>
+                <tr>
+                    <td><strong>filtering-type / mapping-type</strong></td>
+                    <td>Supported</td>
+                    <td>Not applicable (stateless)</td>
+                </tr>
+                <tr>
+                    <td><strong>Enterprise VRF route</strong></td>
+                    <td>Usually auto-provisioned</td>
+                    <td>Manual static route via paired TVI needed</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- COMMON ERRORS -->
+    <div class="card" id="errors">
+        <h2>&#128375; Common Errors &amp; Fixes</h2>
+
+        <div class="alert alert-danger" style="margin-top:0">
+            <span class="icon">&#10060;</span>
+            <div>
+                <strong>Error:</strong> "Egress network can only be configured with napt-44 or twice-napt-44"<br>
+                <strong>Cause:</strong> Used <code>egress-network</code> in NPT-66 pool<br>
+                <strong>Fix:</strong> Use <code>address-list</code> instead of <code>egress-network</code>
+            </div>
+        </div>
+
+        <div class="alert alert-danger">
+            <span class="icon">&#10060;</span>
+            <div>
+                <strong>Error:</strong> "IPv6 prefix length should be &gt;= 64"<br>
+                <strong>Cause:</strong> Tried to use /56 prefix in proxy-ndp<br>
+                <strong>Fix:</strong> Use multiple /64 entries (max 16) or use static routes on upstream instead
+            </div>
+        </div>
+
+        <div class="alert alert-danger">
+            <span class="icon">&#10060;</span>
+            <div>
+                <strong>Error:</strong> "element does not exist" for filtering-type/mapping-type<br>
+                <strong>Cause:</strong> These options don't exist for npt-66 (stateless)<br>
+                <strong>Fix:</strong> Simply omit them &mdash; npt-66 has no port mapping options
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            <span class="icon">&#9888;</span>
+            <div>
+                <strong>Issue:</strong> Session shows <code>natted: No</code>, all packets dropped<br>
+                <strong>Cause:</strong> No IPv6 route in Enterprise VRF for the destination /56 pool range<br>
+                <strong>Fix:</strong> Add <code>route 2009:dde8:c0fd:200::/56 ::ffff:169.254.0.2</code> in Enterprise VRF via paired TVI
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            <span class="icon">&#9888;</span>
+            <div>
+                <strong>Issue:</strong> Config lost between SSH sessions<br>
+                <strong>Cause:</strong> Versa CLI uses private config mode per SSH session<br>
+                <strong>Fix:</strong> Always <code>commit</code> before disconnecting
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            <span class="icon">&#9888;</span>
+            <div>
+                <strong>Issue:</strong> VLAN100 pool fails while VLAN101/102 work<br>
+                <strong>Cause:</strong> Pool :200::/64 overlaps with the connected transit link /64 on the upstream router. Static route /64 = connected /64 &rarr; connected wins (AD 0 vs AD 1)<br>
+                <strong>Fix:</strong> Use a different /64 for the transit link or for the VLAN100 pool. Ensure translated pools don't share the same /64 as the point-to-point link
+            </div>
+        </div>
+    </div>
+
+    <!-- TEST RESULTS -->
+    <div class="card" id="test-results">
+        <h2>&#128202; Lab Test Results</h2>
+        <p>Tested with static /64 routes on upstream router, <strong>no proxy NDP</strong> on FlexVNF.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Source VRF</th>
+                    <th>Source IP</th>
+                    <th>Translated Source</th>
+                    <th>Destination</th>
+                    <th>Result</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>VLAN100-VR</td>
+                    <td><code>:100::10</code></td>
+                    <td><code>:200::10</code></td>
+                    <td><code>:200::2</code></td>
+                    <td><span class="badge badge-fail">FAIL 0%</span></td>
+                    <td>Pool :200::/64 overlaps with transit link connected /64</td>
+                </tr>
+                <tr>
+                    <td>VLAN101-VR</td>
+                    <td><code>:101::10</code></td>
+                    <td><code>:201::10</code></td>
+                    <td><code>:200::2</code></td>
+                    <td><span class="badge badge-pass">PASS 100%</span></td>
+                    <td>Static /64 route wins over connected /56</td>
+                </tr>
+                <tr>
+                    <td>VLAN102-VR</td>
+                    <td><code>:102::10</code></td>
+                    <td><code>:202::10</code></td>
+                    <td><code>:200::2</code></td>
+                    <td><span class="badge badge-pass">PASS 100%</span></td>
+                    <td>Static /64 route wins over connected /56</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="alert alert-warning">
+            <span class="icon">&#128161;</span>
+            <div>
+                <strong>VLAN100 failure explained:</strong> The translated pool <code>:200::/64</code> is the SAME prefix as the connected transit link. A static route for <code>:200::/64</code> cannot override the connected <code>:200::/64</code> &mdash; same prefix length means connected always wins (AD 0 vs AD 1). Solution: use a different /64 for the transit link or for the VLAN100 pool.
+            </div>
+        </div>
+    </div>
+
+    <!-- LESSONS LEARNED -->
+    <div class="card" id="lessons">
+        <h2>&#127891; Key Lessons &amp; Best Practices</h2>
+        <table>
+            <thead>
+                <tr><th>#</th><th>Lesson</th><th>Detail</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><strong>Use static routes, not proxy NDP</strong></td>
+                    <td>Static /64 routes on upstream router are safer and don't conflict with live devices on the L2 segment</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><strong>Don't overlap pool prefix with transit link</strong></td>
+                    <td>If pool /64 = connected /64 on upstream, static route can't override connected. Use separate transit prefix</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><strong>Enterprise VRF needs a route via paired TVI</strong></td>
+                    <td>Without <code>route :200::/56 via ::ffff:169.254.0.2</code> (split-tunnel), traffic never reaches CGNAT engine</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><strong>npt-66 = address-list only</strong></td>
+                    <td><code>egress-network</code> is only for napt-44. NPT-66 requires explicit pool prefix via <code>address-list</code></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><strong>Per-VLAN pools prevent collision</strong></td>
+                    <td>Each VLAN gets its own /64 pool &rarr; no host-portion overlap between VLANs</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><strong>npt-66 is stateless</strong></td>
+                    <td>No filtering-type, no mapping-type, no port translation. Pure prefix-to-prefix swap (RFC 6296)</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><strong>Commit before disconnect</strong></td>
+                    <td>Versa ConfD CLI uses private config per SSH session &mdash; uncommitted changes are lost</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td><strong>Proxy NDP limits</strong></td>
+                    <td>Only prefix &gt;= /64 supported (Bug 140313 for /56). Max 16 entries per interface. Risk of NDP conflicts on shared L2 segments</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td><strong>IPv4-mapped IPv6 next-hop</strong></td>
+                    <td>Use <code>::ffff:x.x.x.x</code> format for IPv6 static routes via IPv4-only paired TVI interfaces</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="text-align:center; padding: 30px; color: var(--text-light); font-size: 0.85em;">
+        Versa FlexVNF 22.1.4 | Lab-tested configuration | Bug ID: 140313 (proxy NDP /56 enhancement)<br>
+        RFC 6296: IPv6-to-IPv6 Network Prefix Translation
+    </div>
+</div>
+
+</body>
+</html>
