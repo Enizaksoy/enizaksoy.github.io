@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multi-Site BGP EVPN VXLAN Data Center Fabric on Cisco CML — 5-stage Clos, 2 PODs, Super-Spine interconnect">
+    <title>Cisco Multi-Site EVPN Implementation | Eniz Aksoy</title>
+    <style>
+        :root { --primary: #6366f1; --secondary: #4f46e5; --accent: #06b6d4; --text: #1f2937; --text-light: #6b7280; --bg: #ffffff; --bg-alt: #f3f4f6; --bg-code: #1e293b; --border: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.7; color: var(--text); background: var(--bg); }
+        .hero { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #06b6d4 100%); color: white; padding: 80px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .hero .subtitle { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+        .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.8rem; color: var(--secondary); margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 3px solid var(--primary); }
+        h3 { font-size: 1.3rem; margin: 25px 0 15px; }
+        p { margin-bottom: 15px; }
+        ul { margin-left: 20px; margin-bottom: 15px; }
+        pre { background: var(--bg-code); color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; font-family: 'Consolas', monospace; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px 15px; text-align: left; border: 1px solid var(--border); }
+        th { background: var(--primary); color: white; }
+        tr:nth-child(even) { background: var(--bg-alt); }
+        .info-box { padding: 20px; border-radius: 8px; margin: 20px 0; background: #eef2ff; border-left: 4px solid var(--primary); }
+        .diagram { background: var(--bg-code); color: #e2e8f0; padding: 25px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; margin: 20px 0; }
+        .status-ok { color: #34d399; font-weight: 600; }
+        .status-warn { color: #fbbf24; font-weight: 600; }
+        .author { background: linear-gradient(135deg, var(--bg-alt) 0%, #e0e7ff 100%); padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center; }
+        .author-links { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .author-links a { padding: 10px 20px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--secondary); text-decoration: none; }
+        footer { background: var(--bg-code); color: #94a3b8; text-align: center; padding: 30px 20px; margin-top: 50px; }
+        footer a { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <h1>Cisco Multi-Site EVPN Implementation</h1>
+    <p class="subtitle">5-Stage Clos BGP EVPN VXLAN Fabric — 2 PODs via Super-Spine</p>
+    <div class="badges">
+        <span class="badge">EVPN</span>
+        <span class="badge">VXLAN</span>
+        <span class="badge">Cisco NX-OS</span>
+        <span class="badge">Multi-Site</span>
+        <span class="badge">Clos</span>
+    </div>
+</header>
+
+<main class="container">
+    <a href="../index.html" class="back-link">&larr; Back to Portfolio</a>
+
+    <section>
+        <h2>Overview</h2>
+        <p>A complete BGP EVPN VXLAN multi-site data center fabric built on Cisco CML, using AI-assisted configuration. The lab implements a production-style 5-stage Clos topology with two PODs interconnected through a Super-Spine layer — 20 network devices in total (14 NX-OS 9000v, 6 IOSvL2 access switches), each running its own BGP AS for optimal multipath.</p>
+    </section>
+
+    <section>
+        <h2>Network Topology</h2>
+        <div class="diagram">                    ┌─────────────────────────────────────┐
+                    │         SUPER-SPINE LAYER           │
+                    │   Super-Spine-1    Super-Spine-2    │
+                    │    (AS 65000)       (AS 65000)      │
+                    └───────────┬─────────────┬───────────┘
+                                │             │
+           ┌────────────────────┴─────────────┴────────────────────┐
+           │                                                        │
+    ┌──────┴──────┐                                          ┌──────┴──────┐
+    │    POD 1    │                                          │    POD 2    │
+    ├─────────────┤                                          ├─────────────┤
+    │ Spine 1-4   │                                          │ Spine 5-6   │
+    │ Leaf 1-4    │                                          │ Leaf 5-6    │
+    │ iosvl2 0-3  │                                          │ iosvl2 4-5  │
+    └─────────────┘                                          └─────────────┘</div>
+    </section>
+
+    <section>
+        <h2>Device Inventory</h2>
+        <h3>Super-Spine Layer</h3>
+        <table>
+            <tr><th>Device</th><th>Role</th><th>BGP AS</th><th>Loopback0 (VTEP)</th></tr>
+            <tr><td>Super-Spine-1</td><td>Super Spine</td><td>65000</td><td>10.0.0.1</td></tr>
+            <tr><td>Super-Spine-2</td><td>Super Spine</td><td>65000</td><td>10.0.0.2</td></tr>
+        </table>
+
+        <h3>POD 1 — Spine &amp; Leaf</h3>
+        <table>
+            <tr><th>Device</th><th>Role</th><th>BGP AS</th><th>Loopback0 (VTEP)</th></tr>
+            <tr><td>Spine-1</td><td>Spine</td><td>65001</td><td>10.2.1.0</td></tr>
+            <tr><td>Spine-2</td><td>Spine</td><td>65002</td><td>10.2.2.0</td></tr>
+            <tr><td>Spine-3</td><td>Spine</td><td>65003</td><td>10.2.3.0</td></tr>
+            <tr><td>Spine-4</td><td>Spine</td><td>65004</td><td>10.2.4.0</td></tr>
+            <tr><td>Leaf-1</td><td>Leaf/VTEP</td><td>65101</td><td>10.0.2.1</td></tr>
+            <tr><td>Leaf-2</td><td>Leaf/VTEP</td><td>65102</td><td>10.0.2.2</td></tr>
+            <tr><td>Leaf-3</td><td>Leaf/VTEP</td><td>65103</td><td>10.0.2.3</td></tr>
+            <tr><td>Leaf-4</td><td>Leaf/VTEP</td><td>65104</td><td>10.0.2.4</td></tr>
+        </table>
+
+        <h3>POD 2 — Spine &amp; Leaf</h3>
+        <table>
+            <tr><th>Device</th><th>Role</th><th>BGP AS</th><th>Loopback0 (VTEP)</th></tr>
+            <tr><td>Spine-5</td><td>Spine</td><td>65005</td><td>10.2.5.0</td></tr>
+            <tr><td>Spine-6</td><td>Spine</td><td>65006</td><td>10.2.6.0</td></tr>
+            <tr><td>Leaf-5</td><td>Leaf/VTEP</td><td>65105</td><td>10.0.2.5</td></tr>
+            <tr><td>Leaf-6</td><td>Leaf/VTEP</td><td>65106</td><td>10.0.2.6</td></tr>
+        </table>
+
+        <div class="info-box">
+            <p style="margin-bottom:0;">Six IOSvL2 access switches (iosvl2-0 through iosvl2-5) hang off Leaf-1 through Leaf-6 respectively, trunking VLANs 10, 20, and 40 down to the endpoints.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>BGP EVPN VXLAN Design</h2>
+        <h3>VNI Mapping</h3>
+        <table>
+            <tr><th>VLAN</th><th>Name</th><th>VNI</th><th>Type</th><th>Purpose</th></tr>
+            <tr><td>10</td><td>VLAN10_Data</td><td>10010</td><td>L2VNI</td><td>Data traffic</td></tr>
+            <tr><td>20</td><td>VLAN20_Voice</td><td>10020</td><td>L2VNI</td><td>Voice traffic</td></tr>
+            <tr><td>30</td><td>VLAN30_Management</td><td>10030</td><td>L2VNI</td><td>Management</td></tr>
+            <tr><td>40</td><td>VLAN40_Guest</td><td>10040</td><td>L2VNI</td><td>Guest access</td></tr>
+            <tr><td>100</td><td>L3VNI_mylab</td><td>50000</td><td>L3VNI</td><td>VRF inter-VLAN routing</td></tr>
+        </table>
+
+        <h3>Key Features</h3>
+        <div class="info-box">
+            <ul>
+                <li><strong>eBGP EVPN overlay</strong> with a unique ASN per device for optimal multipath</li>
+                <li><strong>Anycast gateway</strong> — same IP (192.168.x.1) and MAC on every leaf</li>
+                <li><strong>VRF <code>mylab</code></strong> with L3VNI 50000 for inter-VLAN routing</li>
+                <li><strong>Ingress replication</strong> (BGP-based) for BUM traffic — no multicast required</li>
+                <li><strong>Multi-site design</strong> — POD isolation with Super-Spine interconnect</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Verified Working</h2>
+        <div class="diagram">### Cross-POD NVE Peering — WORKING ###
+
+Leaf-1# show nve peers   (now sees POD2 Leafs)
+Interface Peer-IP          State LearnType Router-Mac
+nve1      10.0.2.2         Up    CP        52b6.6784.1b08  (Leaf-2)
+nve1      10.0.2.3         Up    CP        52c0.6d7c.1b08  (Leaf-3)
+nve1      10.0.2.4         Up    CP        521e.a310.1b08  (Leaf-4)
+nve1      10.0.2.5         Up    CP        n/a             (Leaf-5 POD2)  CROSS-POD
+nve1      10.0.2.6         Up    CP        n/a             (Leaf-6 POD2)  CROSS-POD
+
+Super-Spine-1# show bgp l2vpn evpn summary   (all 6 spines up)
+Neighbor        V    AS    State/PfxRcd
+10.1.1.1        4 65001   43  (Spine-1)
+10.1.1.3        4 65002   43  (Spine-2)
+10.1.1.5        4 65003   43  (Spine-3)
+10.1.1.7        4 65004   43  (Spine-4)
+10.1.1.9        4 65005   21  (Spine-5 POD2)
+10.1.1.11       4 65006   21  (Spine-6 POD2)</div>
+        <p>Cross-POD NVE peering and the Super-Spine EVPN/underlay adjacencies to both PODs were the two milestones that made this a genuinely multi-site fabric rather than two independent PODs sharing a README.</p>
+    </section>
+
+    <section>
+        <h2>Known Issues</h2>
+        <table>
+            <tr><th>Issue</th><th>Status</th><th>Description</th></tr>
+            <tr><td>Super-Spine to POD2</td><td class="status-ok">Fixed</td><td>All 6 spines (POD1 + POD2) connected to Super-Spines</td></tr>
+            <tr><td>Cross-POD NVE peers</td><td class="status-ok">Working</td><td>Leaf-1 sees Leaf-5/6, Leaf-5 sees Leaf-1/2/3/4</td></tr>
+            <tr><td>Underlay IPv4 BGP</td><td class="status-ok">Working</td><td>VTEP loopbacks now reachable across PODs</td></tr>
+            <tr><td>Leaf-4 BGP</td><td class="status-warn">Idle</td><td>Leaf-4 to Spine-1 showing Idle — needs investigation</td></tr>
+            <tr><td>IOSvL2 ARP duplicate</td><td class="status-warn">Warning</td><td>iosvl2-0 sending anycast GW back — check STP/trunk</td></tr>
+        </table>
+    </section>
+
+    <div class="author">
+        <h3>Eniz Aksoy</h3>
+        <p>CCIE #23970 | Senior Network Architect | AI/ML Infrastructure</p>
+        <div class="author-links">
+            <a href="https://github.com/Enizaksoy/cisco-multi-site-evpn-implementation" target="_blank">View on GitHub</a>
+            <a href="https://linkedin.com/in/enizaksoy" target="_blank">LinkedIn</a>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2026 Eniz Aksoy. CCIE #23970</p>
+    <p><a href="../index.html">Back to Portfolio</a></p>
+</footer>
+
+</body>
+</html>
