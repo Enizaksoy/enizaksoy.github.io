@@ -133,21 +133,38 @@
 
   /* ---------- archive panel (fixed, wide screens only) ---------- */
   .archive-panel {
-    display: none; position: fixed; top: 150px; right: 32px; width: 168px;
+    display: none; position: fixed; top: 100px; right: 32px; width: 220px;
+    max-height: calc(100vh - 130px); overflow-y: auto;
     font-family: var(--font-mono);
   }
-  @media (min-width: 1500px) { .archive-panel { display: block; } }
+  @media (min-width: 1550px) { .archive-panel { display: block; } }
   .archive-panel .archive-title {
     text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.68rem;
-    color: var(--slate); margin-bottom: 10px;
+    color: var(--slate); margin: 18px 0 8px;
   }
-  .archive-panel a {
+  .archive-panel .archive-title:first-child { margin-top: 0; }
+  .archive-panel details.archive-month {
+    border-bottom: 1px solid var(--line);
+  }
+  .archive-panel summary.archive-month-head {
     display: flex; justify-content: space-between; gap: 8px;
-    text-decoration: none; color: var(--ink-soft); font-size: 0.8rem;
-    padding: 6px 0; border-bottom: 1px solid var(--line); transition: color .15s;
+    cursor: pointer; list-style: none;
+    color: var(--ink-soft); font-size: 0.8rem;
+    padding: 6px 0; transition: color .15s;
   }
-  .archive-panel a:hover { color: var(--teal); }
-  .archive-panel a span { color: var(--slate); }
+  .archive-panel summary.archive-month-head::-webkit-details-marker { display: none; }
+  .archive-panel summary.archive-month-head:hover { color: var(--teal); }
+  .archive-panel summary.archive-month-head span { color: var(--slate); }
+  .archive-panel details[open] > summary.archive-month-head { color: var(--teal); }
+  .archive-panel .archive-articles {
+    display: flex; flex-direction: column; gap: 2px; padding: 0 0 8px 10px;
+  }
+  .archive-panel .archive-articles a {
+    text-decoration: none; color: var(--slate); font-size: 0.72rem;
+    line-height: 1.4; padding: 3px 0; border-left: 2px solid var(--line);
+    padding-left: 8px; transition: color .15s, border-color .15s;
+  }
+  .archive-panel .archive-articles a:hover { color: var(--teal); border-color: var(--teal); }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-mono); font-size: 0.7rem; }
   .tags span {
     border: 1px solid var(--line-strong); color: var(--slate);
@@ -189,12 +206,81 @@
 
 <main>
   <aside class="archive-panel">
-    <div class="archive-title">Archive</div>
-    <a href="#m-2026-07">2026 July<span>4</span></a>
-    <a href="#m-2026-05">2026 May<span>1</span></a>
-    <a href="#m-2026-03">2026 March<span>2</span></a>
-    <a href="#m-2026-02">2026 February<span>4</span></a>
-    <a href="#m-2026-01">2026 January<span>1</span></a>
+    <div class="archive-title">Field Labs</div>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 July<span>4</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/Versa-GRE-PBF-and-EVPN-Peering-Lab/">Versa GRE/PBF Hairpin + Direct EVPN Peering</a>
+        <a href="https://enizaksoy.github.io/Versa-Arista-VXLAN-EVPN-Lab/">Versa ↔ Arista Direct VXLAN EVPN</a>
+        <a href="https://enizaksoy.github.io/Arista-EVPN-ESI-LAG-Fabric-with-Versa-Inline-L2-Firewall/">Arista ESI-LAG Fabric + Versa Inline Firewall</a>
+        <a href="https://enizaksoy.github.io/Cisco-VXLAN-EVPN-Multi-AS-Lab/">Cisco VXLAN EVPN Multi-AS Lab</a>
+      </div>
+    </details>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 May<span>1</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/versa-vms-install-guide/">Versa VMS Install Guide</a>
+      </div>
+    </details>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 March<span>2</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/Juniper-MPLS-EVPN-Lab/">Juniper MPLS/EVPN Lab</a>
+        <a href="https://enizaksoy.github.io/versa-flexvnf-cli-guide/">Versa FlexVNF CLI Reference</a>
+      </div>
+    </details>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 February<span>4</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/Cisco-SD-Access-Lab-with-SXP-Integration/">Cisco SD-Access with SXP Integration</a>
+        <a href="https://enizaksoy.github.io/CML-Performance-Comparison-BM-vs-ESXi/">CML Performance: Bare Metal vs. ESXi</a>
+        <a href="https://enizaksoy.github.io/ai-lab/">AI/GPU Cluster Lab</a>
+        <a href="https://enizaksoy.github.io/Multi-Vendor-VXLAN-EVPN-TEST-Cisco-Versa-Cumulus/">Multi-Vendor VXLAN EVPN: Cisco + Versa + Cumulus</a>
+      </div>
+    </details>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 January<span>1</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/lab-baremetal-gpu-cluster/">Bare-Metal GPU Cluster</a>
+      </div>
+    </details>
+
+    <div class="archive-title">Deep Dives</div>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 July<span>2</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/versa-ipv6-npt66-guide.html">Versa FlexVNF IPv6 NPT-66 Configuration</a>
+        <a href="https://enizaksoy.github.io/articles/cisco-multi-site-evpn.html">Cisco Multi-Site EVPN Implementation</a>
+      </div>
+    </details>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 March<span>2</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/mpls-ldp-vrf-lab.html">MPLS LDP + VRF Lab</a>
+        <a href="https://enizaksoy.github.io/articles/juniper-mpls-evpn-lab.html">Juniper MPLS/EVPN, Full Write-up</a>
+      </div>
+    </details>
+
+    <details class="archive-month">
+      <summary class="archive-month-head">2026 January<span>8</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/rdma-ai-cluster.html">Building a Lossless RDMA Network for AI Training</a>
+        <a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">Monitoring Lossless Ethernet with Prometheus + Grafana</a>
+        <a href="https://enizaksoy.github.io/articles/mpi-ai-cluster-benchmark.html">MPI Benchmarks on an RDMA AI Cluster</a>
+        <a href="https://enizaksoy.github.io/articles/evpn-cisco-versa.html">EVPN Integration: Cisco + Versa</a>
+        <a href="https://enizaksoy.github.io/articles/ipsec-cisco-versa.html">IPSec Tunnel: Cisco IOS-XE ↔ Versa SD-WAN</a>
+        <a href="https://enizaksoy.github.io/articles/nvidia-dc-lab.html">NVIDIA Cumulus Linux Data Center Lab</a>
+        <a href="https://enizaksoy.github.io/articles/lisp-mobility.html">Cisco LISP Mobility</a>
+        <a href="https://enizaksoy.github.io/articles/rocev2-ecn-cnp-deep-dive.html">RoCEv2 ECN &amp; CNP: A Packet-Level Deep Dive</a>
+      </div>
+    </details>
   </aside>
   <section class="hero">
     <div class="wrap">
