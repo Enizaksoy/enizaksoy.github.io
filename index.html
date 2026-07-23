@@ -137,11 +137,11 @@
     font-family: var(--font-mono);
   }
   @media (min-width: 1100px) {
-    main { display: grid; grid-template-columns: minmax(0, 1fr) 200px; column-gap: 32px; align-items: start; }
-    main > .archive-panel { grid-column: 2; grid-row: 1 / -1; }
-    main > section { grid-column: 1; }
+    .labs-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; column-gap: 32px; align-items: start; }
+    .labs-content { grid-column: 1; min-width: 0; }
     .archive-panel {
-      display: block; position: sticky; top: 90px;
+      display: block; grid-column: 2;
+      position: sticky; top: 90px;
       max-height: calc(100vh - 110px); overflow-y: auto;
     }
   }
@@ -212,6 +212,18 @@
 </header>
 
 <main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
+      <h1 class="lede">Notes from building EVPN fabrics, SD-WAN deployments, and AI clusters.</h1>
+      <div class="hero-links">
+        <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
+        <a href="#field-labs">→ Browse the labs</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="labs-grid">
   <aside class="archive-panel">
     <div class="archive-title">Field Labs</div>
 
@@ -289,17 +301,7 @@
       </div>
     </details>
   </aside>
-  <section class="hero">
-    <div class="wrap">
-      <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
-      <h1 class="lede">Notes from building EVPN fabrics, SD-WAN deployments, and AI clusters.</h1>
-      <div class="hero-links">
-        <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
-        <a href="#field-labs">→ Browse the labs</a>
-      </div>
-    </div>
-  </section>
-
+  <div class="labs-content">
   <section class="grid-section" id="field-labs">
     <div class="wrap">
       <div class="section-head">
@@ -541,6 +543,8 @@
       </div>
     </div>
   </section>
+  </div>
+  </div>
 </main>
 
 <footer>
