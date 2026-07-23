@@ -139,8 +139,8 @@
   @media (min-width: 1100px) {
     .labs-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; column-gap: 32px; align-items: start; }
     .labs-content { grid-column: 1; min-width: 0; }
-    .archive-panel {
-      display: block; grid-column: 2;
+    .archive-panel { display: block; grid-column: 2; min-width: 0; }
+    .archive-panel-inner {
       position: sticky; top: 90px;
       max-height: calc(100vh - 110px); overflow-y: auto;
     }
@@ -225,6 +225,7 @@
 
   <div class="labs-grid">
   <aside class="archive-panel">
+    <div class="archive-panel-inner">
     <div class="archive-title">Field Labs</div>
 
     <details class="archive-month">
@@ -300,6 +301,7 @@
         <a href="https://enizaksoy.github.io/articles/rocev2-ecn-cnp-deep-dive.html">RoCEv2 ECN &amp; CNP: A Packet-Level Deep Dive</a>
       </div>
     </details>
+    </div>
   </aside>
   <div class="labs-content">
   <section class="grid-section" id="field-labs">
