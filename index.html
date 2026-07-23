@@ -127,6 +127,7 @@
   .card:hover { background: color-mix(in srgb, var(--teal) 6%, var(--paper-raised)); }
   .card h3 { font-family: var(--font-display); font-size: 1.18rem; font-weight: 700; margin: 0; letter-spacing: -0.005em; }
   .card p { margin: 0; font-size: 0.92rem; color: var(--ink-soft); flex: 1; }
+  .card-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--slate); letter-spacing: 0.02em; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-mono); font-size: 0.7rem; }
   .tags span {
     border: 1px solid var(--line-strong); color: var(--slate);
@@ -188,27 +189,8 @@
       <div class="card-grid">
 
         <article class="card">
-          <h3>AI/GPU Cluster Lab</h3>
-          <p>2-Spine / 2-Leaf Clos fabric on Cisco Nexus 9332PQ — RDMA rail design, QoS/PFC/ECN tuned for lossless RoCEv2. 38.98 Gb/s same-rail, ~3 µs latency.</p>
-          <div class="tags"><span>RDMA</span><span>Cisco Nexus</span><span>Clos</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/ai-lab/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/enizaksoy.github.io">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>Arista ESI-LAG Fabric + Versa Inline Firewall</h3>
-          <p>Arista EVPN ESI-LAG all-active fabric with a Versa FlexVNF transparent L2 firewall inline — VLAN translation, Type-4/DF election, stateful inspection of bridged traffic.</p>
-          <div class="tags"><span>Arista</span><span>Versa</span><span>ESI-LAG</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/Arista-EVPN-ESI-LAG-Fabric-with-Versa-Inline-L2-Firewall/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/Arista-EVPN-ESI-LAG-Fabric-with-Versa-Inline-L2-Firewall">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
           <h3>Versa GRE/PBF Hairpin + Direct EVPN Peering</h3>
+          <div class="card-date">2026-07-23</div>
           <p>Two follow-ups to the Arista/Versa ESI-LAG lab: a zero-control-plane GRE + Versa Policy-Based Forwarding hairpin, and Versa peering as a genuine third-party BGP EVPN VTEP directly against Arista — five interop bugs found and fixed along the way.</p>
           <div class="tags"><span>Versa</span><span>GRE</span><span>BGP EVPN</span></div>
           <div class="card-links">
@@ -218,67 +200,8 @@
         </article>
 
         <article class="card">
-          <h3>Cisco SD-Access with SXP Integration</h3>
-          <p>Cisco SD-Access on CML — Catalyst Center, ISE 3.5, 802.1X, SGT/TrustSec, SXP propagation across the fabric.</p>
-          <div class="tags"><span>Cisco</span><span>ISE</span><span>SXP</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/Cisco-SD-Access-Lab-with-SXP-Integration/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/Cisco-SD-Access-Lab-with-SXP-Integration">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>Cisco VXLAN EVPN Multi-AS Lab</h3>
-          <p>NX-OS VXLAN EVPN Multi-AS fabric — eBGP underlay/overlay per RFC 7938, three tenant VRFs with symmetric IRB, anycast gateway, VRF-aware DHCP relay deep dive.</p>
-          <div class="tags"><span>Cisco NX-OS</span><span>eBGP</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/Cisco-VXLAN-EVPN-Multi-AS-Lab/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/Cisco-VXLAN-EVPN-Multi-AS-Lab">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>CML Performance: Bare Metal vs. ESXi</h3>
-          <p>CML 2.9.1 benchmarks on a Lenovo P920 — bare metal vs. ESXi across 40 nodes and three image types (NX-OS 9000v, CSR1000v, IOL-XE).</p>
-          <div class="tags"><span>CML</span><span>Benchmark</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/CML-Performance-Comparison-BM-vs-ESXi/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/CML-Performance-Comparison-BM-vs-ESXi">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>Juniper MPLS/EVPN Lab</h3>
-          <p>Juniper vMX MPLS/EVPN on CML — IS-IS, LDP, iBGP VPNv4 + EVPN, 40 VRFs, L2 EVPN, PE-CE eBGP, BFD, LACP, full lab with CE devices.</p>
-          <div class="tags"><span>Juniper</span><span>MPLS</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/Juniper-MPLS-EVPN-Lab/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/Juniper-MPLS-EVPN-Lab">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>Bare-Metal GPU Cluster</h3>
-          <p>Building a bare metal AI training cluster with V100 GPUs, RDMA networking, and distributed training — a hands-on guide from the ground up.</p>
-          <div class="tags"><span>RDMA</span><span>GPU</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/lab-baremetal-gpu-cluster/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/lab-baremetal-gpu-cluster">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>Multi-Vendor VXLAN EVPN: Cisco + Versa + Cumulus</h3>
-          <p>Multi-vendor BGP EVPN VXLAN fabric — Cisco Catalyst 9300, Versa FlexVNF, and Cumulus Linux (NVIDIA), with a VXLAN-GBP interop fix.</p>
-          <div class="tags"><span>Cisco</span><span>Versa</span><span>Cumulus</span></div>
-          <div class="card-links">
-            <a href="https://enizaksoy.github.io/Multi-Vendor-VXLAN-EVPN-TEST-Cisco-Versa-Cumulus/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/Multi-Vendor-VXLAN-EVPN-TEST-Cisco-Versa-Cumulus">Source</a>
-          </div>
-        </article>
-
-        <article class="card">
           <h3>Versa ↔ Arista Direct VXLAN EVPN</h3>
+          <div class="card-date">2026-07-22</div>
           <p>Versa FlexVNF direct BGP EVPN/VXLAN peering with Arista EOS — no ESI-LAG fabric, no VLAN-translation hairpin. The simpler sibling of the ESI-LAG build above.</p>
           <div class="tags"><span>Versa</span><span>Arista</span></div>
           <div class="card-links">
@@ -288,7 +211,52 @@
         </article>
 
         <article class="card">
+          <h3>Arista ESI-LAG Fabric + Versa Inline Firewall</h3>
+          <div class="card-date">2026-07-16</div>
+          <p>Arista EVPN ESI-LAG all-active fabric with a Versa FlexVNF transparent L2 firewall inline — VLAN translation, Type-4/DF election, stateful inspection of bridged traffic.</p>
+          <div class="tags"><span>Arista</span><span>Versa</span><span>ESI-LAG</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/Arista-EVPN-ESI-LAG-Fabric-with-Versa-Inline-L2-Firewall/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/Arista-EVPN-ESI-LAG-Fabric-with-Versa-Inline-L2-Firewall">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Cisco VXLAN EVPN Multi-AS Lab</h3>
+          <div class="card-date">2026-07-14</div>
+          <p>NX-OS VXLAN EVPN Multi-AS fabric — eBGP underlay/overlay per RFC 7938, three tenant VRFs with symmetric IRB, anycast gateway, VRF-aware DHCP relay deep dive.</p>
+          <div class="tags"><span>Cisco NX-OS</span><span>eBGP</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/Cisco-VXLAN-EVPN-Multi-AS-Lab/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/Cisco-VXLAN-EVPN-Multi-AS-Lab">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Versa VMS Install Guide</h3>
+          <div class="card-date">2026-05-07</div>
+          <p>VMS 5.2.2 + Director + FlexVNF + WMI/AD end-to-end install guide, with automation scripts for the repetitive parts.</p>
+          <div class="tags"><span>Versa</span><span>Install</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/versa-vms-install-guide/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/versa-vms-install-guide">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Juniper MPLS/EVPN Lab</h3>
+          <div class="card-date">2026-03-29</div>
+          <p>Juniper vMX MPLS/EVPN on CML — IS-IS, LDP, iBGP VPNv4 + EVPN, 40 VRFs, L2 EVPN, PE-CE eBGP, BFD, LACP, full lab with CE devices.</p>
+          <div class="tags"><span>Juniper</span><span>MPLS</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/Juniper-MPLS-EVPN-Lab/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/Juniper-MPLS-EVPN-Lab">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
           <h3>Versa FlexVNF CLI Reference</h3>
+          <div class="card-date">2026-03-16</div>
           <p>Versa FlexVNF CLI command reference for VOS 22.1.4 — 2,069 commands, indexed and searchable.</p>
           <div class="tags"><span>Versa</span><span>Reference</span></div>
           <div class="card-links">
@@ -298,12 +266,57 @@
         </article>
 
         <article class="card">
-          <h3>Versa VMS Install Guide</h3>
-          <p>VMS 5.2.2 + Director + FlexVNF + WMI/AD end-to-end install guide, with automation scripts for the repetitive parts.</p>
-          <div class="tags"><span>Versa</span><span>Install</span></div>
+          <h3>Cisco SD-Access with SXP Integration</h3>
+          <div class="card-date">2026-02-27</div>
+          <p>Cisco SD-Access on CML — Catalyst Center, ISE 3.5, 802.1X, SGT/TrustSec, SXP propagation across the fabric.</p>
+          <div class="tags"><span>Cisco</span><span>ISE</span><span>SXP</span></div>
           <div class="card-links">
-            <a href="https://enizaksoy.github.io/versa-vms-install-guide/">View lab →</a>
-            <a class="source" href="https://github.com/Enizaksoy/versa-vms-install-guide">Source</a>
+            <a href="https://enizaksoy.github.io/Cisco-SD-Access-Lab-with-SXP-Integration/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/Cisco-SD-Access-Lab-with-SXP-Integration">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>CML Performance: Bare Metal vs. ESXi</h3>
+          <div class="card-date">2026-02-17</div>
+          <p>CML 2.9.1 benchmarks on a Lenovo P920 — bare metal vs. ESXi across 40 nodes and three image types (NX-OS 9000v, CSR1000v, IOL-XE).</p>
+          <div class="tags"><span>CML</span><span>Benchmark</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/CML-Performance-Comparison-BM-vs-ESXi/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/CML-Performance-Comparison-BM-vs-ESXi">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>AI/GPU Cluster Lab</h3>
+          <div class="card-date">2026-02-13</div>
+          <p>2-Spine / 2-Leaf Clos fabric on Cisco Nexus 9332PQ — RDMA rail design, QoS/PFC/ECN tuned for lossless RoCEv2. 38.98 Gb/s same-rail, ~3 µs latency.</p>
+          <div class="tags"><span>RDMA</span><span>Cisco Nexus</span><span>Clos</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/ai-lab/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/enizaksoy.github.io">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Multi-Vendor VXLAN EVPN: Cisco + Versa + Cumulus</h3>
+          <div class="card-date">2026-02-09</div>
+          <p>Multi-vendor BGP EVPN VXLAN fabric — Cisco Catalyst 9300, Versa FlexVNF, and Cumulus Linux (NVIDIA), with a VXLAN-GBP interop fix.</p>
+          <div class="tags"><span>Cisco</span><span>Versa</span><span>Cumulus</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/Multi-Vendor-VXLAN-EVPN-TEST-Cisco-Versa-Cumulus/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/Multi-Vendor-VXLAN-EVPN-TEST-Cisco-Versa-Cumulus">Source</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Bare-Metal GPU Cluster</h3>
+          <div class="card-date">2026-01-20</div>
+          <p>Building a bare metal AI training cluster with V100 GPUs, RDMA networking, and distributed training — a hands-on guide from the ground up.</p>
+          <div class="tags"><span>RDMA</span><span>GPU</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/lab-baremetal-gpu-cluster/">View lab →</a>
+            <a class="source" href="https://github.com/Enizaksoy/lab-baremetal-gpu-cluster">Source</a>
           </div>
         </article>
 
@@ -321,75 +334,87 @@
       <div class="card-grid">
 
         <article class="card">
-          <h3>Building a Lossless RDMA Network for AI Training</h3>
-          <p>PFC and ECN tuning across a distributed training cluster — 96% packet-drop reduction and a 2× bandwidth improvement.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/rdma-ai-cluster.html">Read →</a></div>
+          <h3>Versa FlexVNF IPv6 NPT-66 Configuration</h3>
+          <div class="card-date">2026-07-22</div>
+          <p>RFC 6296 NAT66 on FlexVNF — per-VLAN prefix pools, paired TVI interfaces, and why static routes beat proxy NDP for the return path.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/versa-ipv6-npt66-guide.html">Read →</a></div>
         </article>
 
         <article class="card">
-          <h3>RoCEv2 ECN &amp; CNP: A Packet-Level Deep Dive</h3>
-          <p>Congestion control mechanics from real packet captures — what ECN marking and CNP generation actually look like on the wire.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/rocev2-ecn-cnp-deep-dive.html">Read →</a></div>
-        </article>
-
-        <article class="card">
-          <h3>Monitoring Lossless Ethernet with Prometheus + Grafana</h3>
-          <p>Making invisible RoCE/RDMA traffic visible — 40M+ ECN packets and 133M+ pause frames, tracked and graphed.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">Read →</a></div>
-        </article>
-
-        <article class="card">
-          <h3>MPI Benchmarks on an RDMA AI Cluster</h3>
-          <p>Measuring Allreduce, Broadcast, and Alltoall latencies across the cluster, with Prometheus/Grafana monitoring wired in.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/mpi-ai-cluster-benchmark.html">Read →</a></div>
-        </article>
-
-        <article class="card">
-          <h3>EVPN Integration: Cisco + Versa</h3>
-          <p>Getting Cisco NX-OS and Versa FlexVNF to agree on the same EVPN fabric — where the interop friction actually lives.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/evpn-cisco-versa.html">Read →</a></div>
-        </article>
-
-        <article class="card">
-          <h3>IPSec Tunnel: Cisco IOS-XE ↔ Versa SD-WAN</h3>
-          <p>Building and troubleshooting an IPSec tunnel between Cisco IOS-XE and Versa SD-WAN platforms.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/ipsec-cisco-versa.html">Read →</a></div>
-        </article>
-
-        <article class="card">
-          <h3>NVIDIA Cumulus Linux Data Center Lab</h3>
-          <p>Data center fabric design and configuration on NVIDIA Cumulus Linux switches.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/nvidia-dc-lab.html">Read →</a></div>
-        </article>
-
-        <article class="card">
-          <h3>Cisco LISP Mobility</h3>
-          <p>LISP-based mobility on Cisco infrastructure — control-plane behavior when an endpoint moves.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/lisp-mobility.html">Read →</a></div>
+          <h3>Cisco Multi-Site EVPN Implementation</h3>
+          <div class="card-date">2026-07-22</div>
+          <p>5-stage Clos, two PODs joined through a Super-Spine layer — 20 devices, cross-POD NVE peering, AI-assisted configuration.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/cisco-multi-site-evpn.html">Read →</a></div>
         </article>
 
         <article class="card">
           <h3>MPLS LDP + VRF Lab</h3>
+          <div class="card-date">2026-03-29</div>
           <p>A grounding lab in MPLS label distribution and VRF-based traffic separation.</p>
           <div class="card-links"><a href="https://enizaksoy.github.io/articles/mpls-ldp-vrf-lab.html">Read →</a></div>
         </article>
 
         <article class="card">
           <h3>Juniper MPLS/EVPN, Full Write-up</h3>
+          <div class="card-date">2026-03-29</div>
           <p>The narrative walkthrough behind the Juniper MPLS/EVPN field lab — decisions, dead ends, and the working config.</p>
           <div class="card-links"><a href="https://enizaksoy.github.io/articles/juniper-mpls-evpn-lab.html">Read →</a></div>
         </article>
 
         <article class="card">
-          <h3>Cisco Multi-Site EVPN Implementation</h3>
-          <p>5-stage Clos, two PODs joined through a Super-Spine layer — 20 devices, cross-POD NVE peering, AI-assisted configuration.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/cisco-multi-site-evpn.html">Read →</a></div>
+          <h3>Building a Lossless RDMA Network for AI Training</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>PFC and ECN tuning across a distributed training cluster — 96% packet-drop reduction and a 2× bandwidth improvement.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/rdma-ai-cluster.html">Read →</a></div>
         </article>
 
         <article class="card">
-          <h3>Versa FlexVNF IPv6 NPT-66 Configuration</h3>
-          <p>RFC 6296 NAT66 on FlexVNF — per-VLAN prefix pools, paired TVI interfaces, and why static routes beat proxy NDP for the return path.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/versa-ipv6-npt66-guide.html">Read →</a></div>
+          <h3>Monitoring Lossless Ethernet with Prometheus + Grafana</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>Making invisible RoCE/RDMA traffic visible — 40M+ ECN packets and 133M+ pause frames, tracked and graphed.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">Read →</a></div>
+        </article>
+
+        <article class="card">
+          <h3>MPI Benchmarks on an RDMA AI Cluster</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>Measuring Allreduce, Broadcast, and Alltoall latencies across the cluster, with Prometheus/Grafana monitoring wired in.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/mpi-ai-cluster-benchmark.html">Read →</a></div>
+        </article>
+
+        <article class="card">
+          <h3>EVPN Integration: Cisco + Versa</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>Getting Cisco NX-OS and Versa FlexVNF to agree on the same EVPN fabric — where the interop friction actually lives.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/evpn-cisco-versa.html">Read →</a></div>
+        </article>
+
+        <article class="card">
+          <h3>IPSec Tunnel: Cisco IOS-XE ↔ Versa SD-WAN</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>Building and troubleshooting an IPSec tunnel between Cisco IOS-XE and Versa SD-WAN platforms.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/ipsec-cisco-versa.html">Read →</a></div>
+        </article>
+
+        <article class="card">
+          <h3>NVIDIA Cumulus Linux Data Center Lab</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>Data center fabric design and configuration on NVIDIA Cumulus Linux switches.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/nvidia-dc-lab.html">Read →</a></div>
+        </article>
+
+        <article class="card">
+          <h3>Cisco LISP Mobility</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>LISP-based mobility on Cisco infrastructure — control-plane behavior when an endpoint moves.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/lisp-mobility.html">Read →</a></div>
+        </article>
+
+        <article class="card">
+          <h3>RoCEv2 ECN &amp; CNP: A Packet-Level Deep Dive</h3>
+          <div class="card-date">2026-01-12</div>
+          <p>Congestion control mechanics from real packet captures — what ECN marking and CNP generation actually look like on the wire.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/rocev2-ecn-cnp-deep-dive.html">Read →</a></div>
         </article>
 
       </div>
