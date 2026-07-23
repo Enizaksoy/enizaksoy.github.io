@@ -63,6 +63,8 @@
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  .card[id] { scroll-margin-top: 90px; }
   body {
     background: var(--paper);
     color: var(--ink);
@@ -128,6 +130,24 @@
   .card h3 { font-family: var(--font-display); font-size: 1.18rem; font-weight: 700; margin: 0; letter-spacing: -0.005em; }
   .card p { margin: 0; font-size: 0.92rem; color: var(--ink-soft); flex: 1; }
   .card-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--slate); letter-spacing: 0.02em; }
+
+  /* ---------- archive panel (fixed, wide screens only) ---------- */
+  .archive-panel {
+    display: none; position: fixed; top: 150px; right: 32px; width: 168px;
+    font-family: var(--font-mono);
+  }
+  @media (min-width: 1500px) { .archive-panel { display: block; } }
+  .archive-panel .archive-title {
+    text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.68rem;
+    color: var(--slate); margin-bottom: 10px;
+  }
+  .archive-panel a {
+    display: flex; justify-content: space-between; gap: 8px;
+    text-decoration: none; color: var(--ink-soft); font-size: 0.8rem;
+    padding: 6px 0; border-bottom: 1px solid var(--line); transition: color .15s;
+  }
+  .archive-panel a:hover { color: var(--teal); }
+  .archive-panel a span { color: var(--slate); }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-mono); font-size: 0.7rem; }
   .tags span {
     border: 1px solid var(--line-strong); color: var(--slate);
@@ -168,6 +188,14 @@
 </header>
 
 <main>
+  <aside class="archive-panel">
+    <div class="archive-title">Archive</div>
+    <a href="#m-2026-07">2026 July<span>4</span></a>
+    <a href="#m-2026-05">2026 May<span>1</span></a>
+    <a href="#m-2026-03">2026 March<span>2</span></a>
+    <a href="#m-2026-02">2026 February<span>4</span></a>
+    <a href="#m-2026-01">2026 January<span>1</span></a>
+  </aside>
   <section class="hero">
     <div class="wrap">
       <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
@@ -188,7 +216,7 @@
       <p class="section-desc">Full lab documentation, built on CML and real hardware, published as GitHub Pages straight from the repo.</p>
       <div class="card-grid">
 
-        <article class="card">
+        <article class="card" id="m-2026-07">
           <h3>Versa GRE/PBF Hairpin + Direct EVPN Peering</h3>
           <div class="card-date">2026-07-23</div>
           <p>Two follow-ups to the Arista/Versa ESI-LAG lab: a zero-control-plane GRE + Versa Policy-Based Forwarding hairpin, and Versa peering as a genuine third-party BGP EVPN VTEP directly against Arista — five interop bugs found and fixed along the way.</p>
@@ -232,7 +260,7 @@
           </div>
         </article>
 
-        <article class="card">
+        <article class="card" id="m-2026-05">
           <h3>Versa VMS Install Guide</h3>
           <div class="card-date">2026-05-07</div>
           <p>VMS 5.2.2 + Director + FlexVNF + WMI/AD end-to-end install guide, with automation scripts for the repetitive parts.</p>
@@ -243,7 +271,7 @@
           </div>
         </article>
 
-        <article class="card">
+        <article class="card" id="m-2026-03">
           <h3>Juniper MPLS/EVPN Lab</h3>
           <div class="card-date">2026-03-29</div>
           <p>Juniper vMX MPLS/EVPN on CML — IS-IS, LDP, iBGP VPNv4 + EVPN, 40 VRFs, L2 EVPN, PE-CE eBGP, BFD, LACP, full lab with CE devices.</p>
@@ -265,7 +293,7 @@
           </div>
         </article>
 
-        <article class="card">
+        <article class="card" id="m-2026-02">
           <h3>Cisco SD-Access with SXP Integration</h3>
           <div class="card-date">2026-02-27</div>
           <p>Cisco SD-Access on CML — Catalyst Center, ISE 3.5, 802.1X, SGT/TrustSec, SXP propagation across the fabric.</p>
@@ -309,7 +337,7 @@
           </div>
         </article>
 
-        <article class="card">
+        <article class="card" id="m-2026-01">
           <h3>Bare-Metal GPU Cluster</h3>
           <div class="card-date">2026-01-20</div>
           <p>Building a bare metal AI training cluster with V100 GPUs, RDMA networking, and distributed training — a hands-on guide from the ground up.</p>
