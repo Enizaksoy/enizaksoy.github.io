@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AD / LDAP Integration Issues — Versa SASE</title>
+<meta name="description" content="A field guide to Active Directory / LDAP integration on Versa SASE: the LDAP resolution chain, ip2user.log resultCodes, the primary-vs-secondary group trap, and step-by-step troubleshooting.">
+<style>
+  :root{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    color-scheme:dark;}}
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa SASE · User-Identification</div>
+  <h1>AD / LDAP Integration Issues</h1>
+  <p class="lede">Why Active Directory integration fails on a SASE gateway, how to read the logs, and the one group trap that bites nearly everyone — worked as an ordered resolution chain.</p>
+  <div class="meta">2026-08-05 · troubleshooting · Active Directory · LDAP · group mapping</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#chain">1. The LDAP chain</a><a href="#logs">2. Logs &amp; resultCodes</a>
+    <a href="#config">3. Config reference</a><a href="#cases">4. Common misconfigs</a>
+    <a href="#username">5. user-name vs login</a><a href="#groups">6. Primary vs secondary groups ★</a>
+    <a href="#verify">7. Verify from AD</a><a href="#flow">8. Troubleshooting flow</a>
+  </div>
+
+  <p>Versa SASE (and most VPN/SASE products) never truly "know" Active Directory — they run ordinary LDAP operations against it. Almost every AD integration problem is <em>one broken link in a strict, ordered chain</em>, and a failure high in the chain hides everything below it. Fix top-down.</p>
+
+  <div class="call info"><b>Placeholders:</b> this guide uses generic values — domain <code>example.com</code> (base <code>DC=example,DC=com</code>), DC at <code>&lt;dc-ip&gt;</code>, a bind service account <code>svc-ldap-bind</code>, and a sample user <code>alice</code>. Substitute your own.</div>
+
+  <h2 id="chain">1. Why AD integration fails — the LDAP chain</h2>
+  <table>
+    <tr><th>#</th><th>Link</th><th>Must be true</th><th>Fails as</th></tr>
+    <tr><td>1</td><td>Reachability</td><td>GW reaches the DC on 389/636 via the right routing-instance</td><td>TCP timeout / no bind line in log</td></tr>
+    <tr><td>2</td><td>Bind</td><td>Bind account DN + password valid</td><td><code>resultCode(49) Invalid credentials</code></td></tr>
+    <tr><td>3</td><td>Base DN</td><td>Search base is a valid DN that exists</td><td>resultCode 34/32; empty results</td></tr>
+    <tr><td>4</td><td>User search</td><td>Search attribute matches the login format the client sends</td><td>"User &lt;x&gt; not found on LDAP"</td></tr>
+    <tr><td>5</td><td>Attribute mapping</td><td><code>group-name</code>/<code>group-member</code>/object-class point at real AD attrs</td><td>groups pulled but names/members blank</td></tr>
+    <tr><td>6</td><td>Group membership</td><td>User is in a <em>resolvable (non-primary)</em> group</td><td>auth OK, group policy no-match</td></tr>
+    <tr><td>7</td><td>Policy</td><td>Secure-access policy permits the now-known user</td><td>"not allowed to connect…"</td></tr>
+  </table>
+  <div class="call info"><b>The single most useful diagnostic</b> — how full the group table is tells you which link broke:<br>
+  <code>show orgs org-services &lt;ORG&gt; user-identification ldap-server-data groups brief</code><br>
+  Empty = base DN bad (link 3) · only a profile line = bind failing (link 2) · full object list = links 1–5 OK.</div>
+
+  <h2 id="logs">2. Where to look — logs &amp; resultCodes</h2>
+  <p>The authoritative source for user-identification LDAP is one file on the gateway:</p>
+  <pre><code>tail -f /var/log/versa/versa-ip2user.log</code></pre>
+  <table>
+    <tr><th>Log message</th><th>Meaning</th><th>Broken link</th><th>Action</th></tr>
+    <tr><td><code>resultCode(49) Invalid credentials</code></td><td>Bind rejected</td><td>2 — Bind</td><td>Fix bind DN/password. <b>Not</b> routing — TCP already connected.</td></tr>
+    <tr><td><code>resultCode(34)</code> Invalid DN syntax</td><td>Malformed DN</td><td>3 — Base/Bind DN</td><td>Check comma-vs-dot in the DN</td></tr>
+    <tr><td><code>resultCode(32)</code> No such object</td><td>DN valid but absent</td><td>3 — Base DN</td><td>Set base to <code>defaultNamingContext</code></td></tr>
+    <tr><td><code>resultCode(8)</code> Strong auth required</td><td>AD LDAP signing enforced</td><td>1/2 — Transport</td><td>Use LDAPS (636) / enable SSL</td></tr>
+    <tr><td><code>i2u_ldap_authenticate: User &lt;x&gt; not found</code></td><td>User search returned nothing</td><td>4 — Search attr</td><td>Match <code>user-name</code> to the login format</td></tr>
+    <tr><td>(no bind line at all)</td><td>Nothing reached the DC</td><td>1 — Reachability</td><td>Check route / routing-instance / firewall</td></tr>
+  </table>
+  <div class="call warn"><b>resultCode(49) is not a routing problem.</b> A bind failure means the TCP session to the DC was already established and LDAP rejected the credentials. Don't chase routes/tcpdump on a 49 — go straight to the bind DN and password.</div>
+
+  <h2 id="config">3. Configuration reference — AD-correct values</h2>
+  <p>Every LDAP knob answers one question: <em>"which AD attribute holds this?"</em></p>
+  <h3>LDAP server profile</h3>
+  <table>
+    <tr><th>Setting</th><th>Answers</th><th>Correct value (example.com)</th></tr>
+    <tr><td><code>domain-name</code></td><td>DNS domain (NOT a DN)</td><td><code>example.com</code></td></tr>
+    <tr><td><code>server-type</code></td><td>Directory flavour</td><td><code>active-directory</code></td></tr>
+    <tr><td><code>servers … ip-address / port</code></td><td>DC address</td><td><code>&lt;dc-ip&gt;</code> / 389 (or 636 LDAPS)</td></tr>
+    <tr><td><code>routing-instances</code></td><td>VR that reaches the DC</td><td>the transport VR with a route to the DC</td></tr>
+    <tr><td><code>bind accounts account</code></td><td>Service-account DN</td><td><code>CN=svc-ldap-bind,CN=Users,DC=example,DC=com</code></td></tr>
+    <tr><td><code>base users/groups … list</code></td><td>Search base (a DN — commas!)</td><td><code>DC=example,DC=com</code></td></tr>
+  </table>
+  <h3>Group-mapping profile</h3>
+  <table>
+    <tr><th>Setting</th><th>Correct AD value</th><th>Note</th></tr>
+    <tr><td><code>group-object-class</code></td><td><code>group</code></td><td>AD groups are <code>objectClass=group</code></td></tr>
+    <tr><td><code>group-name</code></td><td><code>cn</code></td><td>attribute holding the group's <b>name</b> (not "member")</td></tr>
+    <tr><td><code>group-member</code></td><td><code>member</code></td><td>attribute listing <b>members</b> (not "user", not "memberOf")</td></tr>
+    <tr><td><code>user-object-class</code></td><td><code>user</code></td><td></td></tr>
+    <tr><td><code>user-name</code></td><td><code>sAMAccountName</code> <i>or</i> <code>userPrincipalName</code></td><td>must match the login format the client sends — see §5</td></tr>
+  </table>
+
+  <h2 id="cases">4. Common misconfigurations</h2>
+  <p>These are configuration mistakes seen in real deployments — not product defects.</p>
+  <table>
+    <tr><th>Case</th><th>Symptom / log</th><th>Root cause &amp; fix</th></tr>
+    <tr><td>A. Base DN dot vs comma</td><td>groups/users <code>brief</code> empty</td><td><code>DC=example.DC=com</code> is invalid → use commas: <code>DC=example,DC=com</code></td></tr>
+    <tr><td>B. domain-name as a DN</td><td>AD auth misbehaves</td><td><code>domain-name</code> is a DNS domain, not a DN → <code>example.com</code></td></tr>
+    <tr><td>C. Bad bind account</td><td><code>resultCode(49)</code></td><td>Wrong service-account password/DN → set a valid one; verify with a bind test first</td></tr>
+    <tr><td>D. group-name/group-member reversed</td><td>groups appear, members blank</td><td>Versa terms mislead: <code>group-name=cn</code>, <code>group-member=member</code></td></tr>
+    <tr><td>E. user-name ≠ login format</td><td>"User &lt;x&gt; not found"</td><td>see §5 — attribute must match what the client types AND be populated</td></tr>
+  </table>
+
+  <h2 id="username">5. user-name vs login format — the #1 auth gotcha</h2>
+  <p>Two independent things must line up: the attribute you configure must be <em>populated</em> on the account, and the value the client sends must equal that attribute exactly.</p>
+  <table>
+    <tr><th>Client logs in as…</th><th>Set <code>user-name</code> to…</th><th>Requires in AD</th></tr>
+    <tr><td><code>alice</code> (short name)</td><td><code>sAMAccountName</code></td><td>always present</td></tr>
+    <tr><td><code>alice@example.com</code> (UPN)</td><td><code>userPrincipalName</code></td><td>UPN must be set (often blank on built-ins)</td></tr>
+  </table>
+  <div class="call info"><b>Which way to fix it:</b> the name in the "not found" line tells you. Short name not found with <code>user-name=userPrincipalName</code> → switch to <code>sAMAccountName</code> (or log in with the UPN). If unsure, use <code>sAMAccountName</code> + short-name login — every account has one; UPN is optional.</div>
+
+  <h2 id="groups">6. Primary vs secondary groups — the #1 group-policy trap ★</h2>
+  <div class="call warn"><b>Never gate SASE policy on "Domain Users" (or any primary group).</b> It is every user's <em>primary</em> group, and AD does not store primary membership in the attributes LDAP tools read — so the match fails for every user. Use a dedicated <em>secondary</em> group.</div>
+  <p>Every AD user has exactly <b>one</b> primary group plus any number of secondary groups. They are stored completely differently, and only secondary membership is visible to LDAP membership resolution.</p>
+  <table>
+    <tr><th>Kind</th><th>Stored where</th><th>Attributes</th><th>Resolvable?</th></tr>
+    <tr><td>Secondary (normal "Add…")</td><td>on <b>both</b> objects</td><td><code>group.member</code> AND <code>user.memberOf</code></td><td>✅ yes</td></tr>
+    <tr><td>Primary (default Domain Users, RID 513)</td><td><b>only</b> on the user, as an integer</td><td><code>user.primaryGroupID</code>; NOT in member/memberOf</td><td>❌ no</td></tr>
+  </table>
+  <h3>member vs memberOf — don't confuse them</h3>
+  <table>
+    <tr><th>Attribute</th><th>Lives on</th><th>Lists</th></tr>
+    <tr><td><code>member</code></td><td>the <b>group</b> object</td><td>DNs of users in the group — this is what <code>group-member</code> must be</td></tr>
+    <tr><td><code>memberOf</code></td><td>the <b>user</b> object</td><td>DNs of groups the user is in — a user attribute, not a group attribute</td></tr>
+  </table>
+  <h3>Proof from live AD (raw attributes)</h3>
+  <pre><code># user "alice" (a member of a secondary group VPN-Users; primary = Domain Users)
+(sAMAccountName=alice):
+  primaryGroupID : 513                                   &lt;- = Domain Users (her PRIMARY group)
+  memberOf       : CN=VPN-Users,CN=Users,DC=example,DC=com   (secondary)
+                   *** Domain Users is NOT listed ***
+
+# group Domain Users (primary)
+(cn=Domain Users):  member : &lt;empty&gt;                       &lt;- alice not here; primary membership isn't stored
+
+# group VPN-Users (secondary)
+(cn=VPN-Users):     member : CN=alice,CN=Users,DC=example,DC=com   &lt;- real, two-way link</code></pre>
+  <p>alice <em>is</em> in Domain Users (<code>primaryGroupID 513</code>), yet neither <code>alice.memberOf</code> nor <code>DomainUsers.member</code> mentions it. VPN-Users shows the normal two-way link. The gateway walks <code>member</code>/<code>memberOf</code> → it matches VPN-Users and misses Domain Users.</p>
+  <h3>A/B test (same user, same everything else)</h3>
+  <table>
+    <tr><th>Policy group</th><th>Result</th></tr>
+    <tr><td><code>CN=VPN-Users,…</code> (secondary)</td><td>register → <b>200</b>, client connects</td></tr>
+    <tr><td><code>CN=Domain Users,…</code> (primary)</td><td>register → <b>403</b>, "not allowed to connect…"</td></tr>
+  </table>
+  <h3>To enumerate a primary group you need a special query</h3>
+  <pre><code># member is empty for a primary group; get its members via primaryGroupID:
+(&amp;(objectClass=user)(primaryGroupID=513))     # 513=Domain Users, 512=Domain Admins, 515=Domain Computers</code></pre>
+  <div class="call ok"><b>Rules.</b> (1) Group-based policy → always a dedicated <em>secondary</em> group (e.g. <code>VPN-Users</code>) that users are explicitly added to. (2) <code>group-member=member</code>, never <code>memberof</code>. (3) The policy's group reference must match a <code>group-include-list</code> entry <em>exactly</em> (full DN) — a short-name↔DN mismatch throws "illegal reference".</div>
+
+  <h2 id="verify">7. Verify from the AD side (before blaming the gateway)</h2>
+  <p>Reproduce what the gateway does — a bind + a search — from any Windows box, no RSAT required (built-in .NET ADSI):</p>
+  <pre><code># PowerShell — base DN, bind test, and a user's real attributes
+([ADSI]"LDAP://&lt;dc-ip&gt;/RootDSE").defaultNamingContext        # e.g. DC=example,DC=com
+
+$u="EXAMPLE\svc-ldap-bind"; $p="&lt;bind-password&gt;"
+$de = New-Object System.DirectoryServices.DirectoryEntry("LDAP://&lt;dc-ip&gt;/DC=example,DC=com",$u,$p)
+$ds = New-Object System.DirectoryServices.DirectorySearcher($de)
+$ds.Filter="(sAMAccountName=alice)"
+$r=$ds.FindOne(); $r.Properties["primarygroupid"]; $r.Properties["memberof"]
+
+$ds.Filter="(cn=VPN-Users)"; $ds.FindOne().Properties["member"]   # secondary → lists the user
+$ds.Filter="(cn=Domain Users)"; $ds.FindOne().Properties["member"] # primary  → empty</code></pre>
+  <p>ldapsearch equivalent: <code>ldapsearch -H ldap://&lt;dc-ip&gt; -D "EXAMPLE\svc-ldap-bind" -w '…' -b "DC=example,DC=com" "(sAMAccountName=alice)" primaryGroupID memberOf</code></p>
+
+  <h2 id="flow">8. Step-by-step troubleshooting flow</h2>
+  <ol>
+    <li>Reproduce and read <code>versa-ip2user.log</code> while the user logs in.</li>
+    <li>Decode the resultCode/message (§2) to find the broken link.</li>
+    <li><code>resultCode(49)</code> → fix the bind account (Case C); verify the bind from a PC first (§7).</li>
+    <li>"User not found" → check <code>user-name</code> vs login format (§5) and that the attribute is populated.</li>
+    <li>Empty <code>groups/users brief</code> → fix base-DN commas + <code>domain-name</code> (Cases A/B).</li>
+    <li>Groups pulled but policy denies → check <code>group-name</code>/<code>group-member</code> (Case D) and the primary-group trap (§6).</li>
+    <li>Still "not allowed" after auth succeeds → it's a secure-access <em>policy</em> problem, not LDAP (portal &amp; gateway policies are separate — both must permit the user).</li>
+    <li>After every change: <code>commit</code>, then re-check <code>ldap-server-data</code> and the log. Success is <em>silent</em> in <code>ip2user.log</code> (it records errors only) — confirm via the session history instead.</li>
+  </ol>
+  <div class="call info"><b>Two independent caches.</b> A newly created AD group appears in the appliance's <code>ldap-server-data</code> after a group-mapping refresh (a config commit forces it immediately), but the orchestrator/manager keeps a <em>separate</em> cached group list for building policy. Refresh both, or the group is visible on the device yet unselectable in the policy UI.</div>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, IPs, domains and credentials are generic placeholders — substitute your own environment's values.</div>
+</div></footer>
+</body>
+</html>
