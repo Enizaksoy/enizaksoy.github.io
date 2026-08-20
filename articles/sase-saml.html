@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SASE-SAML — Versa SASE</title>
+<meta name="description" content="SAML authentication on a Versa SASE gateway with Microsoft Entra ID: the message flow, what every profile field actually does, and packet-level evidence from a failing and a working run.">
+<style>
+  :root{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    color-scheme:dark;}}
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa SASE · Authentication</div>
+  <h1>SASE-SAML</h1>
+  <p class="lede">SAML authentication against Microsoft Entra ID, worked end to end — the message flow, what every profile field really does, and packet captures from a failing and a working run that differ by exactly one line.</p>
+  <div class="meta">2026-08-20 · SAML 2.0 · Entra ID · packet capture · DNS</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#summary">1. The misleading error</a><a href="#parts">2. Who talks to whom</a>
+    <a href="#flow">3. The message flow</a><a href="#profile">4. The SAML profile</a>
+    <a href="#host">5. The host field ★</a><a href="#fail">6. Evidence — failing run</a>
+    <a href="#work">7. Evidence — working run</a><a href="#affinity">8. Cross-gateway ACS</a>
+    <a href="#trouble">9. Troubleshooting</a><a href="#tools">10. Two diagnostic traps</a>
+    <a href="#checklist">11. Checklist</a>
+  </div>
+
+  <p>A SASE client registration failed with a message that points squarely at authentication:</p>
+  <pre><code>Could not complete authentication. Please try again.</code></pre>
+  <p>Authentication had in fact <em>succeeded</em>. Entra ID validated the user, signed the assertion and handed it to the browser. The flow broke on the next step — the browser could not deliver that assertion, because the hostname it was told to POST to did not exist in DNS. Adding one DNS record fixed it.</p>
+
+  <div class="call info"><b>Placeholders:</b> this write-up uses generic values — <code>example.com</code> as the domain, <code>&lt;gw-a&gt;</code>/<code>&lt;gw-b&gt;</code> for the two gateway addresses, and <code>&lt;tenant-id&gt;</code> for the Entra directory ID. Substitute your own.</div>
+
+  <h2 id="summary">1. Why the error message is misleading</h2>
+  <p>SAML POST binding is a <b>front-channel</b> protocol. The Service Provider (the SASE gateway) and the Identity Provider (Entra ID) never contact each other. Every message travels through the user's browser as an HTTP redirect or an auto-submitting form POST.</p>
+  <p>Two consequences follow, and both matter more than they first appear:</p>
+  <ul>
+    <li>The gateway needs no outbound access to Entra ID, and Microsoft never needs inbound access to the gateway. <b>All network requirements sit on the client.</b></li>
+    <li>Entra ID cannot observe whether the flow completed. Its work ends when it hands the form to the browser — so a <em>fully successful</em> Entra sign-in log proves nothing about the last steps.</li>
+  </ul>
+  <div class="call warn"><b>"The IdP side is clean" is not evidence.</b> In the failing run below, Entra ID recorded a successful sign-in while the login was already dead.</div>
+
+  <h2 id="parts">2. The components</h2>
+  <table>
+    <tr><th>Component</th><th>Role</th><th>Reaches</th></tr>
+    <tr><td>Client browser</td><td>Carries every SAML message</td><td>Both the gateway and Entra ID</td></tr>
+    <tr><td>SASE gateway</td><td>Service Provider — issues the AuthnRequest, validates the assertion, grants the session</td><td>Nothing, for SAML purposes</td></tr>
+    <tr><td>Entra ID</td><td>Identity Provider — authenticates the user, signs the assertion</td><td>Nothing, for SAML purposes</td></tr>
+    <tr><td>Internal DNS</td><td>Resolves the portal name <em>and</em> the ACS hostname, for the client</td><td>—</td></tr>
+  </table>
+
+  <h2 id="flow">3. The message flow</h2>
+  <pre><code>1.  browser   --- HTTPS 443 ---&gt;   GATEWAY      portal / SSE login page
+2.  browser   &lt;-- 302 redirect ---  GATEWAY      "go to Entra ID" + SAMLRequest
+3.  browser   --- HTTPS 443 ---&gt;   ENTRA ID     user authenticates
+4.  browser   &lt;-- HTML form ------  ENTRA ID     auto-submit, action = ACS URL
+5.  browser   --- HTTPS POST ---&gt;  GATEWAY      SAMLResponse (the assertion)
+6.                                 GATEWAY      validates signature + Destination
+7.  browser   &lt;-- session -------   GATEWAY      login completes</code></pre>
+  <p>The browser talks to the gateway <b>twice</b> (steps 1 and 5) and to Entra ID <b>once</b> (step 3). The two servers never talk to each other at all.</p>
+
+  <h3>Step 4, in detail</h3>
+  <p>Entra ID does not redirect the browser back. It returns an HTML page whose only job is to make the browser POST the assertion onward:</p>
+  <pre><code>&lt;html&gt;
+ &lt;body onload="document.forms[0].submit()"&gt;
+  &lt;form method="POST" action="https://acs.example.com/..."&gt;
+    &lt;input type="hidden" name="SAMLResponse" value="PHNhbWxwOlJlc3BvbnNl..."&gt;
+    &lt;input type="hidden" name="RelayState"   value="..."&gt;
+  &lt;/form&gt;
+ &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+  <div class="call info"><b>Illustrative, not captured.</b> This form is the standard SAML 2.0 HTTP-POST binding shape, reproduced from the specification. The real bytes travel inside TLS to Entra ID and were not decrypted in this test — to capture them, set <code>SSLKEYLOGFILE</code> before launching the browser and point Wireshark at that key log, or use a SAML tracer extension.</div>
+  <p>The <code>onload</code> attribute submits the form immediately. Submitting a form means opening a <em>new</em> HTTP connection to the address in <code>action</code>. A browser cannot connect to a name — only to an IP address — so it must resolve that name first. <b>This is step 5, and this is where a missing DNS record stops everything.</b></p>
+
+  <h2 id="profile">4. The SAML profile — which fields are real destinations</h2>
+  <pre><code>saml-profiles &lt;PROFILE&gt;
+    host                  https://acs.example.com
+    single-signon-url     https://login.microsoftonline.com/&lt;tenant-id&gt;/saml2
+    sp-entity-id          https://vendor.example.net/metadata
+    idp-entity-id         https://sts.windows.net/&lt;tenant-id&gt;/
+    idp-x509-certificate  &lt;local-cert-object&gt;
+    id-prefix             AD
+    group-attribute       member
+    unified-acs-uri       enabled</code></pre>
+  <table>
+    <tr><th>Field</th><th>What it identifies</th><th>Is it ever connected to?</th></tr>
+    <tr><td><code>host</code></td><td>The SP itself — base of the Assertion Consumer Service (ACS) URL</td><td><b>Yes — by the BROWSER, at step 5</b></td></tr>
+    <tr><td><code>single-signon-url</code></td><td>The IdP sign-in endpoint</td><td>Yes — by the browser, at step 3</td></tr>
+    <tr><td><code>sp-entity-id</code></td><td>SP identity string; must match Entra's "Identifier (Entity ID)"</td><td>No — label only</td></tr>
+    <tr><td><code>idp-entity-id</code></td><td>IdP identity string, used to validate the issuer</td><td>No — label only</td></tr>
+    <tr><td><code>idp-x509-certificate</code></td><td>Local certificate object used to verify the assertion signature</td><td>No — stored locally</td></tr>
+    <tr><td><code>group-attribute</code></td><td>Name of the group claim inside the assertion</td><td>—</td></tr>
+    <tr><td><code>unified-acs-uri</code></td><td>Use a unified ACS URI for SAML requests</td><td>—</td></tr>
+  </table>
+  <div class="call warn"><b>Three of these look like URLs but are never visited.</b> Only <code>host</code> and <code>single-signon-url</code> are network destinations. An unreachable <code>sp-entity-id</code> is harmless; an unreachable <code>host</code> breaks the login. This distinction sends a lot of people to fix the wrong field.</div>
+  <div class="call info"><b>Do not omit <code>group-attribute</code>.</b> Without it the assertion's group claim is never read, so authentication succeeds while group-based policy receives nothing and silently matches no rule.</div>
+
+  <h2 id="host">5. The <code>host</code> field, in detail</h2>
+  <p>The CLI schema describes it only as <code>Versa-flexvnf host value</code>. What it actually does: it is the base address used to build the ACS URL — the address the browser returns to after Entra ID authenticates the user. It is the <b>return address</b> the gateway stamps on the request before sending the user away.</p>
+  <p>It lands inside the AuthnRequest the browser carries to Entra ID:</p>
+  <pre><code>&lt;samlp:AuthnRequest
+     Destination                 = "https://login.microsoftonline.com/&lt;tenant-id&gt;/saml2"
+     AssertionConsumerServiceURL = "https://acs.example.com/..."      <b>&lt;-- from host</b>
+     ...&gt;
+   &lt;saml:Issuer&gt;https://vendor.example.net/metadata&lt;/saml:Issuer&gt;
+ &lt;/samlp:AuthnRequest&gt;</code></pre>
+  <div class="call info"><b>Illustrative, not captured</b> — reproduced from the SAML 2.0 specification to show where the value lands. The request itself is carried inside TLS.</div>
+
+  <h3>The same string must appear in three places</h3>
+  <table>
+    <tr><th>Location</th><th>Field name</th></tr>
+    <tr><td>Gateway SAML profile</td><td><code>host</code></td></tr>
+    <tr><td>Entra ID app registration</td><td>Reply URL (Assertion Consumer Service URL)</td></tr>
+    <tr><td>Browser POST after authentication</td><td>form <code>action</code> / assertion <code>Destination</code></td></tr>
+  </table>
+  <p>If they do not match, Entra ID returns <code>AADSTS50011</code> and the user never comes back.</p>
+
+  <h3>Why the gateway has to be told its own address</h3>
+  <p>A server does not know the name by which the outside world reaches it. The gateway knows itself by its interface address; it has no way to learn that clients call it <code>acs.example.com</code>. NAT, load balancers and DNS all sit in between — so the external name is configured by hand.</p>
+  <p>The gateway <b>never dials this address.</b> It uses the value twice, both times as a string: it writes it into the AuthnRequest for the browser to read, and it string-compares it against the <code>Destination</code>/<code>Recipient</code> field of the returned assertion, rejecting the assertion on a mismatch.</p>
+  <div class="call ok"><b>So the gateway performs no DNS lookup for this name.</b> It <em>listens</em> on it — it does not call it. The browser is the only party that resolves it, which is why every check belongs on the client.</div>
+
+  <h2 id="fail">6. Evidence — the failing run</h2>
+  <p>Client-side capture. The <code>host</code> value pointed at a name with no DNS record.</p>
+  <pre><code> 1.912  TLS SNI  portal.example.com        -&gt; &lt;gw-a&gt;        <i>step 1  OK</i>
+ 1.955  TLS SNI  gw-a.example.com          -&gt; &lt;gw-a&gt;        <i>OK</i>
+ 2.841  DNS      login.microsoftonline.com -&gt; rcode 0       <i>OK</i>
+ 2.873  TLS SNI  login.microsoftonline.com -&gt; 40.126.28.21  <i>step 3  OK</i>
+ 2.904  TLS SNI  login.microsoftonline.com -&gt; 40.126.28.21  <i>step 4  OK</i>
+ 3.187  DNS      acs.example.com           -&gt; <b>rcode 3  NXDOMAIN   step 5  FAIL</b>
+ 3.187  DNS      acs.example.com           -&gt; <b>rcode 3  NXDOMAIN</b>
+ 3.188  DNS      acs.example.com           -&gt; <b>rcode 3  NXDOMAIN</b>
+ 3.194  DNS      acs.example.com           -&gt; <b>rcode 3  NXDOMAIN</b>   (8 attempts total)
+        -&gt; browser gives up. No POST is ever sent.</code></pre>
+  <p>Everything before the NXDOMAIN is green. The portal opened, the browser reached Entra ID, the user was authenticated. Entra ID returned the auto-submit form — which means the ACS URL <b>passed its Reply URL check</b>, so the string side of the configuration was already correct. No <code>AADSTS50011</code> was raised.</p>
+  <p>The eight identical queries are the browser's normal retry behaviour before it gives up. The failure is one missing DNS record, nothing else.</p>
+
+  <h2 id="work">7. Evidence — the working run</h2>
+  <p>After adding a single A record for the ACS hostname, the same test was repeated:</p>
+  <pre><code>24.872  TLS SNI  portal.example.com        -&gt; &lt;gw-a&gt;        <i>step 1</i>
+24.937  TLS SNI  gw-a.example.com          -&gt; &lt;gw-a&gt;
+25.440  TLS SNI  login.microsoftonline.com -&gt; 40.126.29.8   <i>step 3</i>
+25.458  TLS SNI  login.microsoftonline.com -&gt; 40.126.29.8   <i>step 4</i>
+25.744  DNS      acs.example.com           -&gt; <i>rcode 0 -&gt; &lt;gw-b&gt;</i>
+25.746  TLS SNI  acs.example.com           -&gt; <i>&lt;gw-b&gt;        step 5  OK</i>
+25.797  TLS SNI  gw-a.example.com          -&gt; &lt;gw-a&gt;        <i>step 7  session</i>
+25.854  TLS SNI  gw-a.example.com          -&gt; &lt;gw-a&gt;</code></pre>
+  <table>
+    <tr><th>Stage</th><th>Failing run</th><th>Working run</th></tr>
+    <tr><td>Step 1 — portal</td><td>OK</td><td>OK</td></tr>
+    <tr><td>Steps 3/4 — Entra ID</td><td>OK</td><td>OK</td></tr>
+    <tr><td>ACS name resolution</td><td><code>rcode 3 NXDOMAIN (×8)</code></td><td><code>rcode 0</code></td></tr>
+    <tr><td>Step 5 — assertion POST</td><td>never sent</td><td>delivered</td></tr>
+    <tr><td>Result</td><td>"Could not complete authentication"</td><td>session established</td></tr>
+  </table>
+  <div class="call ok"><b>One line apart.</b> <code>rcode 3</code> became <code>rcode 0</code>. Everything else in both captures is identical.</div>
+
+  <h2 id="affinity">8. A cross-gateway ACS works</h2>
+  <p>The working capture shows something worth recording. The session started on one gateway and the assertion was delivered to a <em>different</em> one, because the ACS hostname resolved only to the second:</p>
+  <pre><code>session started    -&gt;  GW-A     (portal, AuthnRequest issued here)
+assertion POSTed   -&gt;  <b>GW-B</b>     <b>&lt;-- different gateway</b>
+session completed  -&gt;  GW-A     (browser returns, login succeeds)</code></pre>
+  <p>It still succeeded: GW-B accepted the assertion and sent the browser back to GW-A to complete the session.</p>
+  <div class="call ok"><b>This disproves the session-affinity concern</b> raised before the test. With <code>unified-acs-uri enabled</code>, the ACS URL does not have to resolve to the gateway that issued the AuthnRequest — so a tenant-wide, round-robin FQDN is usable as the ACS host in this configuration.</div>
+
+  <h2 id="trouble">9. Troubleshooting — two failure modes that look nothing alike</h2>
+  <table>
+    <tr><th>Cause</th><th>Symptom</th><th>Entra ID sign-in log</th><th>Where to fix</th></tr>
+    <tr><td>ACS string mismatch</td><td><code>AADSTS50011</code> shown to the user</td><td>shows the error</td><td>Entra Reply URL, or the <code>host</code> value</td></tr>
+    <tr><td>ACS name not resolvable</td><td>browser stalls; client reports an authentication error</td><td><b>shows a SUCCESSFUL sign-in</b></td><td>DNS, verified from the client</td></tr>
+  </table>
+  <p>The second case is the misleading one. Because Entra ID's work finishes at step 4, its logs look perfectly healthy while the flow is dead.</p>
+
+  <h2 id="tools">10. Two diagnostic traps</h2>
+
+  <h3>Resolve-DnsName and nslookup are not the same test</h3>
+  <pre><code>PS&gt; Resolve-DnsName acs.example.com -Server &lt;dns-ip&gt;     -&gt; <b>FAILS</b>
+PS&gt; nslookup        acs.example.com  &lt;dns-ip&gt;            -&gt; <i>resolves fine</i></code></pre>
+  <p><code>Resolve-DnsName</code> goes through the Windows DNS Client service and obeys the <b>Name Resolution Policy Table (NRPT)</b> even when <code>-Server</code> is given. <code>nslookup</code> builds its own query and bypasses NRPT entirely.</p>
+  <div class="call warn"><b>When the two disagree, the fault is in the client's policy layer, not on the DNS server.</b></div>
+  <p>This was hit during the same investigation. A disconnected SASE client had left stale NRPT rules behind — the catch-all rule pinned every unlisted name to a public resolver the client could not reach, so names explicitly listed resolved while everything else timed out:</p>
+  <pre><code>Namespace                 NameServers      <i>&lt;-- left behind after the tunnel went away</i>
+---------                 -----------
+.corp.example.com         &lt;internal-dns&gt;
+gw-a.example.com          &lt;internal-dns&gt;
+portal.example.com        &lt;internal-dns&gt;
+.                         8.8.8.8          <b>&lt;-- catch-all: everything else goes here</b></code></pre>
+  <pre><code>PS&gt; Get-DnsClientNrptPolicy                                  # inspect
+PS&gt; Get-DnsClientNrptRule | Remove-DnsClientNrptRule -Force  # clear (admin)
+PS&gt; Clear-DnsClientCache</code></pre>
+  <div class="call info"><b>NRPT rules can outlive the tunnel.</b> The VPN adapter was gone from <code>Get-NetAdapter</code> while its name-resolution policy was still in force — so "the VPN is disconnected, therefore its settings are not in effect" is not a safe assumption on Windows.</div>
+
+  <h3>tcpdump does not see the gateway data plane</h3>
+  <p><code>tcpdump -i any</code> on the gateway captured <b>zero packets</b> during a run that demonstrably carried traffic. The data-plane interfaces are bound to DPDK and are invisible to the Linux kernel.</p>
+  <div class="call warn"><b>Never read an empty capture taken this way as "no traffic arrived."</b> Use a client-side capture, or the platform's own capture facility.</div>
+
+  <h2 id="checklist">11. Checklist for a new SAML profile</h2>
+  <ol>
+    <li>Set <code>host</code> to a <b>resolvable</b> FQDN that points at a gateway.</li>
+    <li>Register the identical string in Entra ID as the Reply URL (ACS URL).</li>
+    <li>Verify resolution <b>from the client</b>, not from the gateway — the gateway never resolves this name.</li>
+    <li>Confirm the client trusts the CA that signs the certificate presented at that name.</li>
+    <li>Match <code>sp-entity-id</code> to Entra's "Identifier (Entity ID)", or expect <code>AADSTS700016</code>.</li>
+    <li>Set <code>group-attribute</code>, or group-based policy receives nothing.</li>
+    <li>Compare against a known-good profile in the same tenant before troubleshooting from scratch — four fields differed between the working and the test profile here, and each one was a separate failure mode.</li>
+  </ol>
+
+  <div class="call ok"><b>The one-line summary.</b> In SAML POST binding every network requirement is on the client. If the login stalls and the IdP log looks clean, resolve the ACS hostname from the client machine before looking anywhere else.</div>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, IPs, domains, tenant identifiers and credentials are generic placeholders — substitute your own environment's values.</div>
+</div></footer>
+</body>
+</html>
