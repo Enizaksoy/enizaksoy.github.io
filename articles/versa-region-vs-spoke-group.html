@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Region vs Spoke Group — Versa Concerto</title>
+<meta name="description" content="Active/active hub redundancy under Versa Concerto without PBF: two regions with inverted hub priority plus a shared spoke-group community, verified on live devices.">
+<style>
+  :root{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    color-scheme:dark;}}
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+  figure{margin:1.5em 0}
+  figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:6px;background:#fff;padding:6px}
+  figcaption{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:9px;line-height:1.55}
+  .verdict{font-family:var(--font-display);letter-spacing:.3px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa Concerto &middot; SD-WAN Topology</div>
+  <h1>Region vs Spoke Group</h1>
+  <p class="lede">Active/active hub redundancy under Concerto &mdash; two hubs carrying branch traffic simultaneously, each able to absorb the other, with direct branch-to-branch preserved and no policy-based forwarding anywhere.</p>
+  <div class="meta">2026-08-21 &middot; Concerto 12.2.2 &middot; VOS 22.1.4 &middot; live CLI + REST evidence</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#question">1. The question</a><a href="#answers">2. Answers</a>
+    <a href="#topology">3. Lab topology</a><a href="#regions">4. Region configuration</a>
+    <a href="#dimensions">5. Two independent dimensions &#9733;</a><a href="#evidence">6. Evidence from live devices</a>
+    <a href="#why">7. Why the region boundary does not block it</a><a href="#build">8. How to build it</a>
+    <a href="#compare">9. Comparison with alternatives</a><a href="#nottested">10. What was not tested</a>
+  </div>
+
+  <div class="call info"><b>Labelling convention:</b> unlabelled statements are read verbatim from live device output or from the Concerto REST API. <b>[Inference]</b> marks an interpretation derived from that evidence rather than from vendor documentation. Section 10 lists what was deliberately <em>not</em> tested.</div>
+
+  <h2 id="question">1. The question</h2>
+  <p>In Director, multiple <b>spoke groups</b> can be created inside one region. Some branches prefer Hub-A as primary with Hub-B as backup; other branches in the same region prefer Hub-B as primary with Hub-A as backup. Both hubs carry production traffic and either can absorb all branches on failure.</p>
+  <p>In Concerto, hub priority is defined at the <b>region</b> level under <code>Deploy &gt; Regions</code>, so every site in that region inherits the same hub preference order &mdash; and a site can be assigned to only one region. The portal therefore appears to offer no way to split branches within a region by hub preference.</p>
+  <p>Three questions follow:</p>
+  <ul>
+    <li><b>Q1</b> &mdash; Is there any way to set hub priority per branch, per site group, or per template within a single region?</li>
+    <li><b>Q2</b> &mdash; If not, is the intended workaround two regions that share the same hubs with inverted priorities, splitting the branches between them?</li>
+    <li><b>Q3</b> &mdash; If so, will a branch in Region-A actually establish a backup tunnel to Hub-B, given Hub-B is assigned to another region? Or does region membership limit which hubs a branch can reach?</li>
+  </ul>
+  <p>The common conclusion is that no routing-based solution exists and that PBF is the answer. <b>That conclusion is incorrect</b> &mdash; and Q3, which decides the whole matter, usually goes unanswered.</p>
+
+  <h2 id="answers">2. Answers</h2>
+  <table>
+    <tr><th>Question</th><th>Answer</th><th>Evidence</th></tr>
+    <tr><td><b>Q1</b> Per-site hub priority inside one region?</td><td><b>No.</b></td>
+        <td>Priority is an attribute of the region object only (<code>regionHubAppliances[].priority</code>). The site object carries no priority field &mdash; it inherits an ordered <code>controllerList</code>. A site has exactly one <code>regionUuid</code>.</td></tr>
+    <tr><td><b>Q2</b> Two regions, shared hubs, inverted priority?</td><td><b>Yes</b> &mdash; verified working.</td>
+        <td>Both US regions reference all six hubs with mutually inverted priority. Section 4.</td></tr>
+    <tr><td><b>Q3</b> Will a branch reach a hub in another region?</td><td><b>Yes.</b> Region sets <b>preference</b>, not <b>reachability</b>.</td>
+        <td>Every spoke holds SLA paths to all six hubs and a <code>0.0.0.0/0</code> from all six. Sections 6.1 and 6.2.</td></tr>
+    <tr><td><b>Bonus</b> Does splitting cost direct spoke-to-spoke?</td><td><b>No</b> &mdash; if the profiles share a spoke-group community.</td>
+        <td>Spoke-1 (Region 1) reaches the Spoke-3 LAN via next-hop <code>172.25.0.21</code> = Spoke-3, direct. Section 6.3.</td></tr>
+  </table>
+
+  <div class="call ok"><b>Bottom line.</b> Region controls hub priority. Spoke group controls direct spoke-to-spoke. They are configured in different places and <em>do not constrain each other</em>. Setting them independently reproduces Director spoke-group behaviour exactly &mdash; active/active hubs, routed failover, direct branch-to-branch, and no policy-based forwarding.</div>
+
+  <h2 id="topology">3. Lab topology</h2>
+  <p>Three regions, six hubs, six spokes, one tenant. Region 1 and Region 2 are the pair under test; Region 3 contributes the shared priority-2 hubs.</p>
+  <figure>
+    <img src="region-spokegroup-fig1-topology.png" alt="Three regions, six hubs and six spokes. Region 1 and Region 2 each prefer their own hub pair and hold the others at lower priority.">
+    <figcaption>Region 1 and Region 2 each prefer their own hub pair, hold Hub-5/Hub-6 as priority 2, and hold each other as priority 3. All three regions carry the same spoke community (100) &mdash; which is what allows direct spoke-to-spoke to cross the region boundary.</figcaption>
+  </figure>
+
+  <h2 id="regions">4. Region configuration &mdash; hub priority</h2>
+  <p>Read live from the Concerto REST API, <code>GET /portalapi/v1/tenants/{tenant}/regions/{uuid}</code>.</p>
+  <figure>
+    <img src="region-spokegroup-fig2-priority-matrix.png" alt="Priority matrix showing the same hub carrying different priority values in different regions.">
+    <figcaption>The same hub carries a <em>different</em> priority in each region that references it. This is the mechanism Q2 asked about, and the data model supports it &mdash; priority lives on the region-to-hub relationship, not on the hub.</figcaption>
+  </figure>
+  <table>
+    <tr><th>Region</th><th>regionId</th><th>Priority 1</th><th>Priority 2</th><th>Priority 3</th></tr>
+    <tr><td>Region_1_US</td><td>1</td><td>Hub-1, Hub-2</td><td>Hub-5, Hub-6</td><td>Hub-3, Hub-4</td></tr>
+    <tr><td>Region_2_US</td><td>2</td><td>Hub-3, Hub-4</td><td>Hub-5, Hub-6</td><td>Hub-1, Hub-2</td></tr>
+    <tr><td>Region_3_EU</td><td>3</td><td>Hub-5, Hub-6</td><td>&mdash;</td><td>&mdash;</td></tr>
+  </table>
+  <p>Site-to-region binding, from <code>GET /portalapi/v1/tenants/{tenant}/sites/{uuid}</code>:</p>
+  <table>
+    <tr><th>Site group</th><th>Appliances</th><th>Region</th><th><code>controllerList</code> order</th></tr>
+    <tr><td>Region1_Spokes1_2</td><td>Spoke-1-HA1/HA2, Spoke-2-HA1/HA2</td><td>Region_1_US</td><td>Hub-1, Hub-2, Hub-5, Hub-6, Hub-3, Hub-4</td></tr>
+    <tr><td>Region2_Spokes3_4</td><td>Spoke-3, Spoke-4</td><td>Region_2_US</td><td>Hub-3, Hub-4, Hub-5, Hub-6, Hub-1, Hub-2</td></tr>
+  </table>
+  <p>Both site groups carry <b>the same six hubs</b> &mdash; only the order differs, and that order derives from the owning region's priority. This is the first indication that region does not restrict which hubs a branch may use.</p>
+
+  <h2 id="dimensions">5. Two independent dimensions</h2>
+  <p>The confusion comes from treating &ldquo;region&rdquo; as a single setting that governs everything. It does not. <b>Two separate BGP community namespaces</b> are at work, set in two different parts of the product.</p>
+  <figure>
+    <img src="region-spokegroup-fig3-two-dimensions.png" alt="Two independent BGP community namespaces: the region community drives hub priority, the spoke-group community drives direct spoke-to-spoke.">
+    <figcaption>Hub priority rides on the region community <code>8011:&lt;region-id&gt;</code>. Direct spoke-to-spoke rides on the spoke-group community <code>8010:&lt;group-id&gt;</code>. Changing one does not disturb the other.</figcaption>
+  </figure>
+  <table>
+    <tr><th>Namespace</th><th>Controls</th><th>Value in this lab</th><th>Configured in</th></tr>
+    <tr><td><code>8011:&lt;region-id&gt;</code></td><td>Region membership &mdash; drives hub priority</td><td>Spoke-1 = <code>8011:1</code>, Spoke-3 = <code>8011:2</code></td><td><code>Deploy &gt; Regions</code></td></tr>
+    <tr><td><code>8010:&lt;group-id&gt;</code></td><td>Spoke group &mdash; direct spoke-to-spoke eligibility</td><td>Both = <code>8010:100</code></td><td>Master Profile &gt; VPN policy rule</td></tr>
+    <tr><td><code>target:16102L:101/102/111/112</code></td><td>Hub priority tier 1 / 2 / 3 / 4</td><td>matched by <code>Hub-Priority1..4</code> terms</td><td>derived from region priority</td></tr>
+    <tr><td><code>8000:1</code></td><td>Wildcard spoke</td><td>both spokes</td><td>derived</td></tr>
+    <tr><td><code>8019:103</code></td><td>Active/active HA peer</td><td>Spoke-1 only (it is an HA pair)</td><td>derived</td></tr>
+  </table>
+
+  <h2 id="evidence">6. Evidence from the live devices</h2>
+
+  <h3>6.1 &nbsp;Default route &mdash; the active/active proof</h3>
+  <p>This is the single most important output in the write-up. Each spoke receives <code>0.0.0.0/0</code> from <b>all six hubs</b>; only its own region's priority-1 pair is marked active (<code>+</code>).</p>
+  <p><b>Spoke-1-HA1</b> &nbsp;(Region_1_US)</p>
+  <pre><code>admin@Spoke-1-HA1-cli&gt; show route routing-instance TEST-100-Enterprise | nomore
+
++ - Active Route
+
+Prot  Type  Dest Address/Mask   Next-hop      Age       Nexthop name
+----  ----  -----------------   -----------   --------  --------------
+BGP   N/A   <b>+0.0.0.0/0</b>          172.25.0.5    01:18:35  <b>Hub-1-Region-1</b>
+BGP   N/A   <b>+0.0.0.0/0</b>          172.25.0.7    01:18:35  <b>Hub-2-Region-1</b>
+BGP   N/A    0.0.0.0/0          172.25.0.17   00:00:57  Hub-3-Region-2
+BGP   N/A    0.0.0.0/0          172.25.0.19   00:01:13  Hub-4-Region-2
+BGP   N/A    0.0.0.0/0          172.25.0.25   00:56:31  Hub-5-Region-3
+BGP   N/A    0.0.0.0/0          172.25.0.27   00:55:42  Hub-6-Region-3</code></pre>
+  <p><b>Spoke-3</b> &nbsp;(Region_2_US)</p>
+  <pre><code>admin@Spoke-3-cli&gt; show route routing-instance TEST-100-Enterprise | nomore
+
+Prot  Type  Dest Address/Mask   Next-hop      Age       Nexthop name
+----  ----  -----------------   -----------   --------  --------------
+BGP   N/A   <b>+0.0.0.0/0</b>          172.25.0.17   00:47:36  <b>Hub-3-Region-2</b>
+BGP   N/A   <b>+0.0.0.0/0</b>          172.25.0.19   00:53:39  <b>Hub-4-Region-2</b>
+BGP   N/A    0.0.0.0/0          172.25.0.25   00:58:41  Hub-5-Region-3
+BGP   N/A    0.0.0.0/0          172.25.0.27   00:58:42  Hub-6-Region-3
+BGP   N/A    0.0.0.0/0          172.25.0.5    00:15:40  Hub-1-Region-1
+BGP   N/A    0.0.0.0/0          172.25.0.7    00:15:40  Hub-2-Region-1</code></pre>
+  <div class="call warn"><b>Read this carefully.</b> Spoke-1 exits via Hub-1/Hub-2. Spoke-3 exits via Hub-3/Hub-4. <b>Both hub pairs are carrying production traffic at the same time</b> &mdash; that is active/active. The non-preferred defaults are already installed in the RIB, dormant. Failover is a best-path recompute on the branch &mdash; not a policy fallback, and not a control-plane round trip through the backup hub.</div>
+
+  <h3>6.2 &nbsp;SLA paths &mdash; Q3 answered</h3>
+  <p>Q3 asked whether region membership limits which hubs a branch can reach. It does not. Columns trimmed for legibility; one representative <em>up</em> path shown per remote site.</p>
+  <pre><code>admin@Spoke-1-HA1-cli&gt; show orgs org TEST-100 sd-wan sla-monitor status | tab | nomore
+
+PATH      REMOTE SITE      FWD    LOCAL WAN  REMOTE    PATH  PATH           CONN
+HANDLE    NAME             CLASS  LINK       WAN LINK  MTU   STATE          STATE
+-------   --------------   -----  ---------  --------  ----  -------------  -----
+6627840   Hub-1-Region-1   fc_nc  MPLS-1     MPLS      1500  disable        <i>up</i>
+6693376   Hub-2-Region-1   fc_nc  MPLS-1     MPLS      1500  disable        <i>up</i>
+7028992   Hub-3-Region-2   fc_nc  INET-2     INET      1500  disable        <i>up</i>
+7094528   Hub-4-Region-2   fc_nc  INET-2     INET      1500  disable        <i>up</i>
+7291136   Hub-5-Region-3   fc_nc  INET-2     INET      1500  disable        <i>up</i>
+7356672   Hub-6-Region-3   fc_nc  INET-2     INET      1500  disable        <i>up</i>
+6889988   Spoke-2-HA1      fc_ef  MPLS-1     MPLS-1    1500  suspend        <i>up</i>
+6955524   Spoke-2-HA2      fc_ef  MPLS-1     MPLS-2    1500  suspend        <i>up</i>
+7160068   <b>Spoke-3</b>          fc_ef  INET-2     INET-1    1500  suspend        <i>up</i>
+7225604   <b>Spoke-4</b>          fc_ef  INET-2     INET-1    1500  suspend        <i>up</i></code></pre>
+  <p>All six hubs are up from a Region-1 branch. Spoke-3 and Spoke-4 &mdash; <b>both in Region 2</b> &mdash; appear as direct spoke-to-spoke peers. The reciprocal view from Spoke-3 confirms it:</p>
+  <pre><code>admin@Spoke-3-cli&gt; show orgs org TEST-100 sd-wan sla-monitor status | tab | nomore
+
+6755332   Spoke-1-HA1      fc_ef  INET-1     INET-2    1500  suspend-retry  <i>up</i>
+6820868   Spoke-1-HA2      fc_ef  INET-1     INET-1    1500  suspend-retry  <i>up</i></code></pre>
+  <div class="call info"><b>Why <code>suspend</code> / <code>suspend-retry</code> matters.</b> These are dormant on-demand tunnels &mdash; no traffic is flowing over them, yet they are still listed as candidate paths. Presence in this table therefore does <em>not</em> require active traffic. If a spoke-to-spoke path is absent from the list, it is because the peer is not a candidate at all.</div>
+
+  <h3>6.3 &nbsp;Cross-region spoke-to-spoke is DIRECT, not hairpinned</h3>
+  <p>The obvious risk of splitting one region into two is that branch-to-branch traffic starts transiting a hub &mdash; which would defeat the purpose of spreading hub load. It does not happen here. From Spoke-1 (Region 1), reaching the Region-2 branches:</p>
+  <pre><code>BGP   N/A   <b>+172.17.111.0/24</b>    172.25.0.21   00:10:10  <b>Spoke-3</b>          &lt;- DIRECT
+BGP   N/A   <b>+172.17.112.0/24</b>    172.25.0.23   00:10:09  <b>Spoke-4</b>          &lt;- DIRECT
+BGP   N/A    172.17.111.0/24    172.25.0.17   00:00:58  Hub-3-Region-2
+BGP   N/A    172.17.111.0/24    172.25.0.19   00:01:14  Hub-4-Region-2
+BGP   N/A    172.17.111.0/24    172.25.0.25   00:22:57  Hub-5-Region-3
+BGP   N/A    172.17.111.0/24    172.25.0.5    00:22:55  Hub-1-Region-1</code></pre>
+  <p>The <b>active</b> route to each Region-2 branch is the branch itself. The hub paths are installed as fallbacks. This is exactly the behaviour a Director spoke group produces.</p>
+
+  <h3>6.4 &nbsp;The BGP communities</h3>
+  <p>Outbound stamping policy on each branch &mdash; where the two dimensions become visible side by side.</p>
+  <p><b>Spoke-1-HA1</b> &nbsp;(Region_1_US)</p>
+  <pre><code>show configuration routing-instances TEST-100-Control-VR protocols bgp 11 \
+     routing-peer-policy TO_SDWAN | display set | nomore
+
+term SpokeGroup-Community-VersaPvt-1  action community <b>8010:100</b>     &lt;- SPOKE GROUP
+term SpokeGroup-Community-VersaPvt-2  action community 8010:1
+term VersaPvt-Region                  action community <b>8011:1</b>       &lt;- REGION
+term VersaPvt-Wildcard-Spoke          action community 8000:1
+term VersaPvt-Spoke-AA-Peer           action community 8019:103</code></pre>
+  <p><b>Spoke-3</b> &nbsp;(Region_2_US)</p>
+  <pre><code>term SpokeGroup-Community-VersaPvt-1  action community <b>8010:100</b>     &lt;- SAME
+term SpokeGroup-Community-VersaPvt-2  action community 8010:0
+term VersaPvt-Region                  action community <b>8011:2</b>       &lt;- DIFFERENT
+term VersaPvt-Global-Region           action community 8011:0
+term VersaPvt-Wildcard-Spoke          action community 8000:1</code></pre>
+  <table>
+    <tr><th></th><th>Spoke-1 (Region 1)</th><th>Spoke-3 (Region 2)</th><th>Result</th></tr>
+    <tr><td>Spoke group <code>8010:x</code></td><td><code>8010:100</code></td><td><code>8010:100</code></td><td><b>MATCH</b> &rarr; direct spoke-to-spoke</td></tr>
+    <tr><td>Region <code>8011:x</code></td><td><code>8011:1</code></td><td><code>8011:2</code></td><td><b>DIFFER</b> &rarr; different hub priority</td></tr>
+  </table>
+
+  <h2 id="why">7. Why the region boundary does not block it</h2>
+  <p>The branch <b>import</b> policy explains the whole behaviour. Terms are evaluated top-down and <b>the first match wins</b>.</p>
+  <figure>
+    <img src="region-spokegroup-fig4-policy-order.png" alt="Import policy term order: the spoke-group accept term sits above the remote-region reject term.">
+    <figcaption><code>Accept-Direct-VersaPvt-Spokes</code> matches the spoke-group community and sits <em>above</em> <code>Reject-Remote-Region-Rts</code>, which matches any region community. A route from another region carrying a matching spoke-group community is therefore accepted before the region gate is ever consulted.</figcaption>
+  </figure>
+  <p>Verbatim from Spoke-1-HA1:</p>
+  <pre><code>Import-From-Hubs-Policy term <b>Accept-Direct-VersaPvt-Spokes</b>-TEST-100-Enterprise
+    match community "((^|,)<b>8010:100</b>($|,))|((^|,)8010:1($|,))"
+    action community 8009:8009
+
+Import-From-Hubs-Policy term <b>Reject-Remote-Region-Rts</b>
+    match community "((^|,)8011:.*($|,))"
+
+Import-From-Hubs-Policy term Accept-Local-Region-Versa-Rts
+    match community "((^|,)8011:1($|,))"</code></pre>
+  <p>Spoke-3 advertises with <b>both</b> <code>8010:100</code> and <code>8011:2</code>. The <code>8011:2</code> alone would be dropped by <code>Reject-Remote-Region-Rts</code>. The <code>8010:100</code> is matched <em>first</em>, so the route is accepted. <b>That single ordering fact is the entire answer.</b></p>
+
+  <h2 id="build">8. How to build it</h2>
+  <table>
+    <tr><th>Step</th><th>Where</th><th>What</th></tr>
+    <tr><td>1</td><td><code>Deploy &gt; Regions</code></td><td>Create Region-A. Add Hub-A priority 1, Hub-B priority 2.</td></tr>
+    <tr><td>2</td><td><code>Deploy &gt; Regions</code></td><td>Create Region-B. Add Hub-B priority 1, Hub-A priority 2. <b>The inversion is the point.</b></td></tr>
+    <tr><td>3</td><td><code>Deploy &gt; Sites</code></td><td>Assign half the branch sites to Region-A, half to Region-B.</td></tr>
+    <tr><td>4</td><td>Master Profile &gt; VPN policy rule</td><td>On <b>both</b> profiles set the <b>same</b> <code>spokeGroupCommunities</code> value (here: 100) and the same topology (here: Full Mesh).</td></tr>
+    <tr><td>5</td><td>Verify</td><td><code>show route routing-instance &lt;org&gt;-Enterprise</code> &mdash; confirm <code>0.0.0.0/0</code> active via its own priority-1 hubs, installed-but-inactive via the rest.</td></tr>
+    <tr><td>6</td><td>Verify</td><td><code>show orgs org &lt;org&gt; sd-wan sla-monitor status | tab</code> &mdash; confirm all hubs up and the other region's branches present as peers.</td></tr>
+  </table>
+  <div class="call warn"><b>The one thing not to get wrong.</b> Step 4 is what preserves direct branch-to-branch across the split. If the two profiles carry <em>different</em> <code>spokeGroupCommunities</code> values, hub priority still works perfectly &mdash; but branch-to-branch traffic between the two halves will hairpin through a hub. Keep the value identical.</div>
+
+  <h3>8.1 &nbsp;The master profile fields</h3>
+  <p>Read from <code>GET /portalapi/v1/tenants/{tenant}/profiles/basic/{federatedPath}/deep</code>. Both spoke profiles carry an identical rule:</p>
+  <pre><code>"Enterprise-VPN": {
+    "topology"                      : "Full Mesh",
+    "spokeGroupCommunities"         : { "value": [ { "value": "<b>100</b>" } ] },
+    "scope"                         : "Region",       // null on the Region-2 profile
+    "otherRegionHubLanRoutes"       : "REACH_VIA_LOCAL_HUB",
+    "rejectOtherRegionHubLanRoutes" : true
+}</code></pre>
+  <p>The last two fields generate the <code>Reject-Remote-Region-Rts</code> and <code>Accept-Local-Region-Hub-Lan-Rts</code> policy terms seen in section 7. The region gate is therefore a <b>profile setting, not hardcoded behaviour</b>. <b>[Inference]</b></p>
+  <p>Note the scope asymmetry: the Region-1 profile is scoped <code>Region</code>, the Region-2 profile is null (global), which is why Spoke-3 additionally stamps <code>8011:0</code> and <code>8010:0</code>. Functionally irrelevant here &mdash; the overlap that matters is <code>8010:100</code> &mdash; but matching scope across both profiles makes the two sides symmetric.</p>
+
+  <h2 id="compare">9. Comparison with the alternatives</h2>
+  <table>
+    <tr><th></th><th>Director spoke groups</th><th>Two Concerto regions + shared spoke group</th><th>Concerto PBF</th></tr>
+    <tr><td>Splits hub preference</td><td>Yes</td><td>Yes</td><td>Yes, per matched traffic only</td></tr>
+    <tr><td>Failover semantic</td><td>Routing convergence</td><td>Routing convergence</td><td>Policy next-hop fallback</td></tr>
+    <tr><td>Covers all traffic</td><td>Yes</td><td>Yes</td><td>Only what the rule matches</td></tr>
+    <tr><td>Direct spoke-to-spoke kept</td><td>Yes</td><td>Yes, if the spoke group matches</td><td>Yes</td></tr>
+    <tr><td>Visible in <code>show route</code></td><td>Yes</td><td>Yes</td><td>No &mdash; policy hit counters instead</td></tr>
+    <tr><td>Config surface</td><td>Group membership</td><td>Region + profile VPN rule</td><td>Rule per site</td></tr>
+  </table>
+  <p>PBF remains the right tool when steering must <em>diverge</em> from routing preference &mdash; per-application, per-source-zone, or per-user hub selection. For &ldquo;these branches prefer Hub-A, those prefer Hub-B, with automatic failover&rdquo;, the region plus spoke-group approach is the lighter and more transparent answer.</p>
+
+  <h2 id="nottested">10. What was not tested</h2>
+  <ul>
+    <li><b>Failover timing.</b> The backup routes are installed and dormant; promotion time was not measured. Shutting Hub-1 and Hub-2 and timing the <code>0.0.0.0/0</code> flip to active on Spoke-1 would produce a convergence number.</li>
+    <li><b>Spoke-4</b> was not logged into directly &mdash; its management address is not on the lab management subnet. It is confirmed as an SLA peer and an active next-hop from Spoke-1, Spoke-2 and Spoke-3.</li>
+    <li><b>Version.</b> This is Concerto 12.2.2 with VOS 22.1.4. On this build the mesh topology rule endpoint returns <code>HTTP 500 &quot;MESH Not supported at this time!&quot;</code>, so Concerto 13.x may expose the same settings through a different object.</li>
+    <li><b>Scale.</b> Two regions and four branches. No conclusion is offered about behaviour with many regions or hub counts beyond six.</li>
+  </ul>
+
+  <h3>10.1 &nbsp;Commands used</h3>
+  <pre><code>show route routing-instance &lt;ORG&gt;-Enterprise | nomore
+show orgs org &lt;ORG&gt; sd-wan sla-monitor status | tab | nomore
+show interfaces brief | tab
+show configuration routing-instances &lt;ORG&gt;-Control-VR protocols bgp 11 \
+     routing-peer-policy TO_SDWAN | display set | nomore
+show configuration | display set | match community | nomore
+
+GET /portalapi/v1/tenants/{tenant}/regions/{uuid}
+GET /portalapi/v1/tenants/{tenant}/sites/{uuid}
+GET /portalapi/v1/tenants/{tenant}/profiles/basic/{federatedPath}/deep</code></pre>
+
+  <div class="call ok"><b>Summary.</b> Q1 is <b>no</b> &mdash; hub priority is region-level only. Q2 is <b>yes</b>, and is verified working. Q3 is <b>yes</b> &mdash; region sets preference, not reachability; every branch reaches every hub. And splitting branches across two regions does <em>not</em> cost direct spoke-to-spoke, provided both master profiles carry the same spoke-group community. Active/active hub redundancy is achievable with plain routing. <b>PBF is not required.</b></div>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes &middot; Eniz Aksoy &middot; <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, IPs, tenant identifiers and credentials are generic lab placeholders &mdash; substitute your own environment's values.</div>
+</div></footer>
+</body>
+</html>
