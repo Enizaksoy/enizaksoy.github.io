@@ -865,13 +865,13 @@
                 <th>OS</th>
                 <th>NIC</th>
                 <th>Mgmt IP</th>
-                <th>ens6d1 (Rail 0)</th>
-                <th>ens6 (Rail 1)</th>
+                <th>Rail 0 IP (Leaf1)</th>
+                <th>Rail 1 IP (Leaf2)</th>
             </tr>
             <tr>
                 <td><strong>gpuserver1</strong></td>
                 <td>Ubuntu</td>
-                <td>Mellanox ConnectX-3 Pro (Dual-port 40G)</td>
+                <td>Mellanox ConnectX-5 Ex (Dual-port 100GbE, QSFP28)</td>
                 <td><code>192.168.51.73</code></td>
                 <td><code>10.0.0.1/24</code></td>
                 <td><code>10.0.1.1/24</code></td>
@@ -879,12 +879,16 @@
             <tr>
                 <td><strong>gpuserver2</strong></td>
                 <td>Ubuntu</td>
-                <td>Mellanox ConnectX-3 Pro (Dual-port 40G)</td>
+                <td>Mellanox ConnectX-5 Ex (Dual-port 100GbE, QSFP28)</td>
                 <td><code>192.168.51.71</code></td>
                 <td><code>10.0.0.2/24</code></td>
                 <td><code>10.0.1.2/24</code></td>
             </tr>
         </table>
+        <div class="card" style="margin-top:12px;">
+            <p><strong class="highlight">NIC note.</strong> Each server carries a <strong>Mellanox ConnectX-5 Ex</strong> (MCX556A-EDAS, dual-port QSFP28, VPI, <code>MT4121</code>, FW 16.21.2024, <code>mlx5_core</code>) as the active RDMA NIC. The ports negotiate <strong>40G</strong> because the Nexus 9332PQ is a 40G switch &mdash; the link, not the card, is the ceiling. A ConnectX-3 Pro (dual-port 40GbE) also remains installed in each chassis but holds no IP and is not cabled.</p>
+            <p style="margin-bottom:0;">The benchmark captures in sections 13 and below were recorded on the ConnectX-3 Pro, before the ConnectX-5 was fitted &mdash; which is why those outputs show <code>ens6</code>/<code>ens6d1</code> and <code>rocep130s0</code> rather than the ConnectX-5 device names. Re-run on the ConnectX-5, raw same-rail bandwidth was effectively unchanged (<strong>~37.8 Gb/s</strong> vs <strong>38.98 Gb/s</strong>) since both saturate the same 40G link. The generational gain appears in collectives instead: <strong>NCCL all-reduce rose from 3.66 to 5.27&ndash;6.08 GB/s (+66%)</strong>.</p>
+        </div>
 
         <h3>Other Devices</h3>
         <table>
