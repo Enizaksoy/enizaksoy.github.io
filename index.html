@@ -271,18 +271,18 @@
         <h2>AI / GPU Cluster Fabric</h2>
         <span class="feat-sub">lossless RoCEv2 on Cisco Nexus 9332PQ</span>
       </div>
-      <p class="feat-desc">A 2-spine / 2-leaf Clos built on real hardware, not simulation &mdash; eBGP underlay, dual RDMA rails, and PFC/ECN/DCQCN tuned until the fabric stopped dropping under congestion. Every number below was measured, then re-measured after tuning.</p>
+      <p class="feat-desc">A 2-spine / 2-leaf Clos built on real hardware, not simulation &mdash; eBGP underlay, dual RDMA rails, and PFC/ECN/DCQCN tuned until the fabric stopped dropping under congestion. Raw bandwidth is capped by the 40G fabric, so the NIC generation shows up in collectives instead: NCCL all-reduce went from 3.66 to 6.08 GB/s. Every number was measured, then re-measured after tuning.</p>
 
       <div class="feat-stats">
         <div class="feat-stat"><b>38.98 Gb/s</b><span>same-rail RDMA</span></div>
         <div class="feat-stat"><b>~3 &micro;s</b><span>same-rail latency</span></div>
         <div class="feat-stat"><b>96%</b><span>drop reduction</span></div>
-        <div class="feat-stat"><b>9216</b><span>fabric MTU</span></div>
+        <div class="feat-stat"><b>+66%</b><span>NCCL all-reduce</span></div>
       </div>
 
       <p class="feat-spec">
         <em>fabric</em> &nbsp;Cisco Nexus 9332PQ &middot; 2-spine / 2-leaf Clos &middot; eBGP underlay &middot; ECMP &middot; BFD<br>
-        <em>rdma</em> &nbsp;&nbsp;&nbsp;Mellanox ConnectX-3 Pro dual-port 40G &middot; one leaf per rail &middot; no LACP<br>
+        <em>rdma</em> &nbsp;&nbsp;&nbsp;Mellanox ConnectX-5 Ex dual-port 100GbE &middot; 40G link (switch-limited) &middot; one leaf per rail &middot; no LACP<br>
         <em>lossless</em> PFC &middot; ECN marking &middot; DCQCN &middot; strict-priority queue<br>
         <em>telemetry</em> sFlow &middot; Prometheus &middot; Grafana &middot; ERSPAN capture
       </p>
