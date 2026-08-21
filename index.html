@@ -1,39 +1,24 @@
 <title>Eniz Aksoy</title>
 <style>
   :root {
-    --paper: #F1F3F4;
-    --paper-raised: #FFFFFF;
-    --ink: #10151B;
-    --ink-soft: #3C444C;
-    --line: #D8DDE1;
-    --line-strong: #B8C0C6;
-    --teal: #0E8F82;
-    --teal-ink: #086158;
-    --copper: #B96A25;
-    --slate: #5B6672;
+    --paper: #0B0E12;
+    --paper-raised: #141A20;
+    --ink: #E7EAED;
+    --ink-soft: #AEB7BF;
+    --line: #262E36;
+    --line-strong: #384049;
+    --teal: #2FC7B6;
+    --teal-ink: #7FE0D3;
+    --copper: #E2984F;
+    --slate: #8B96A1;
 
     --font-display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Haettenschweiler", sans-serif;
     --font-body: Charter, "Iowan Old Style", Georgia, "Times New Roman", serif;
     --font-mono: "Cascadia Code", Consolas, "SF Mono", "JetBrains Mono", ui-monospace, monospace;
 
-    color-scheme: light;
+    color-scheme: dark;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #0B0E12;
-      --paper-raised: #141A20;
-      --ink: #E7EAED;
-      --ink-soft: #AEB7BF;
-      --line: #262E36;
-      --line-strong: #384049;
-      --teal: #2FC7B6;
-      --teal-ink: #7FE0D3;
-      --copper: #E2984F;
-      --slate: #8B96A1;
-      color-scheme: dark;
-    }
-  }
   :root[data-theme="dark"] {
     --paper: #0B0E12;
     --paper-raised: #141A20;
@@ -207,9 +192,7 @@
   /* ---- featured work band ---- */
   .featured {
     border-bottom: 1px solid var(--line);
-    background:
-      linear-gradient(180deg, rgba(20,160,145,0.055), rgba(20,160,145,0) 70%),
-      var(--paper-raised, transparent);
+    background: transparent;
   }
   .featured .wrap { padding: 30px 0 32px; }
   .feat-tag {
