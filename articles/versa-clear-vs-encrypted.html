@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clear vs Encrypted — Versa SD-WAN</title>
+<meta name="description" content="Versa SD-WAN carries every branch both a clear and an encrypted overlay tunnel. How to steer one flow onto the clear tunnel, three independent proofs of clear vs encrypted on the wire, and where the keys actually live — with a Wireshark dissector patch for VOS 23.x.">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+  /* supplemental — SA/SPI diagram */
+  figure.dgm{margin:1.4em 0 .4em;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:16px}
+  .dgm svg{display:block;width:100%;height:auto;color:var(--ink-soft)}
+  .dgm figcaption{color:var(--slate);font-family:var(--font-mono);font-size:12px;margin-top:10px;line-height:1.55}
+  .dgm .bx{fill:var(--paper);stroke:var(--line-strong);stroke-width:1.5}
+  .dgm .lbl{font:600 12.5px var(--font-display);fill:var(--ink)}
+  .dgm .sub{font:11px var(--font-body);fill:var(--slate)}
+  .dgm .mo{font:11px var(--font-mono);fill:var(--ink-soft)}
+  .dgm .ar{font:600 10.5px var(--font-mono);fill:var(--slate)}
+  .dgm .ok{fill:color-mix(in srgb,var(--teal) 16%,transparent);stroke:var(--teal)}
+  .dgm .oktext{fill:var(--teal-ink)}
+  .dgm .drop{fill:var(--copper)}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa SD-WAN · Overlay Security</div>
+  <h1>Clear vs Encrypted Tunnels</h1>
+  <p class="lede">Versa builds every branch both a clear and an encrypted overlay tunnel over the same circuits. Here is how to steer one flow onto the clear tunnel, three independent proofs of clear vs encrypted on the wire, and where the keys actually live — plus a Wireshark dissector patch for VOS 23.x.</p>
+  <div class="meta">2026-09-01 · VOS 23.1 · VXLAN-GPE · IPSec-ESP · MP-BGP · Wireshark</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#model">1. The dual-tunnel model</a><a href="#force">2. Forcing a flow clear</a>
+    <a href="#p1">3. Proof — session table</a><a href="#p2">4. Proof — packet length</a>
+    <a href="#p3">5. Proof — byte decode</a><a href="#ws">6. Reading it in Wireshark</a>
+    <a href="#keys">7. Where the keys live</a><a href="#take">8. Takeaways</a>
+  </div>
+
+  <div class="call info"><b>Placeholders:</b> site and tenant names are generic (<code>Branch-1</code>, <code>Hub-1/Hub-2</code>, <code>Controller</code>); the client LAN address is <code>10.10.10.100</code>, transport addresses are <code>&lt;branch-wan&gt;</code>/<code>&lt;hub-wan&gt;</code>. SPI, VNI and public-resolver targets (9.9.9.9 / 8.8.8.8) are shown as captured — substitute your own environment's values.</div>
+
+  <p>A Versa SD-WAN fabric encrypts the overlay by default. But look at a branch's tunnel table and you find <b>two</b> tunnels to every peer — one clear, one encrypted — riding the same circuits. This walks a lab test that puts one flow on the clear tunnel and one on the encrypted tunnel, side by side, and proves the difference three ways: from the session table, from the packet length, and byte-by-byte in the capture. Then it answers the question that follows — if the data is encrypted, where is the key, and why can't someone with the capture decrypt it?</p>
+
+  <h2 id="model">1. The dual-tunnel model</h2>
+  <p>Every remote site is reachable over two overlay tunnels built on the same circuits: a <b>clear</b> one (VXLAN, no ESP) and an <b>encrypted</b> one (adds IPSec-ESP). Each has its own tunnel-endpoint address.</p>
+  <table>
+    <tr><th>Peer</th><th>Clear TEP</th><th>Encrypted TEP</th></tr>
+    <tr><td>Hub-1</td><td><code>10.53.0.8</code></td><td><code>10.53.0.9</code></td></tr>
+    <tr><td>Hub-2</td><td><code>10.53.0.14</code></td><td><code>10.53.0.15</code></td></tr>
+    <tr><td>Controller</td><td><code>10.53.0.3</code></td><td><code>10.53.0.2</code></td></tr>
+    <tr><td>Branch-A / B / C</td><td><code>10.53.0.4 / .6 / .18</code></td><td><code>10.53.0.5 / .7 / .19</code></td></tr>
+  </table>
+  <p>The encapsulation chains differ by exactly one layer:</p>
+  <pre><code>clear      :  VXLAN  +  MPLS-over-GRE  +  VMLH                +  inner IP     <i>(52 B)</i>
+encrypted  :  VXLAN  +  <b>IPSec-ESP</b>  +  MPLS-over-GRE  +  VMLH  +  inner IP  <b>(101 B)</b></code></pre>
+  <p>By default the branch's routes resolve to the <b>encrypted</b> endpoints, so all user data is encrypted; the clear tunnels stay up but carry only SLA-probe traffic until a policy steers data onto them.</p>
+
+  <h2 id="force">2. Forcing a flow onto the clear tunnel</h2>
+  <p>Encryption per flow is a forwarding-profile knob — <code>encryption always | never | optional</code> — applied by an SD-WAN policy. Here only traffic to <code>9.9.9.9</code> is scoped to clear; everything else stays encrypted.</p>
+  <pre><code><i># address object for the one destination we want in clear</i>
+set orgs org-services SDWAN objects addresses Q9 ipv4-prefix <b>9.9.9.9/32</b>
+<i># forwarding profile that disables ESP</i>
+set orgs org-services SDWAN sd-wan forwarding-profiles CLEAR-TEST encryption <b>never</b>
+<i># steer traffic to 9.9.9.9 through that profile</i>
+set orgs org-services SDWAN sd-wan policies Default-Policy rules CLEAR match destination address address-list Q9
+set orgs org-services SDWAN sd-wan policies Default-Policy rules CLEAR set forwarding-profile CLEAR-TEST
+commit</code></pre>
+  <p>A client behind the branch LAN (<code>10.10.10.100</code>) then pinged both targets — real transit sessions through the SD-WAN, not device-originated traffic (a router-originated ping does not create the same org session).</p>
+
+  <h2 id="p1">3. Proof #1 — the session table</h2>
+  <p>The forwarding decision is recorded per session in the field <code>pbf-wan-ackt-enc</code>: <code>(P)</code> plain or <code>(E)</code> encrypted.</p>
+  <table>
+    <tr><th>Flow (src 10.10.10.100)</th><th>enc flag</th><th>Tunnel iface</th><th>Egress</th></tr>
+    <tr><td>→ 9.9.9.9</td><td><b>(P) plain / clear</b></td><td><code>dtvi-0/73</code></td><td>Hub-1 · INET-1</td></tr>
+    <tr><td>→ 8.8.8.8</td><td><b>(E) encrypted</b></td><td><code>dtvi-0/74</code></td><td>Hub-1 · INET-1</td></tr>
+  </table>
+  <div class="call ok"><b>Same everything, one difference.</b> Identical source, hub, circuit and forwarding class — only <code>(P)</code> vs <code>(E)</code>, and each rides a different dynamic tunnel interface.</div>
+
+  <h2 id="p2">4. Proof #2 — packet length on the wire</h2>
+  <p>Same 300-byte ping payload to both targets, same hub. The encrypted flow's overlay packet is consistently larger by the ESP overhead.</p>
+  <table>
+    <tr><th>Flow</th><th>On-wire length</th><th>In the capture</th></tr>
+    <tr><td>clear · 9.9.9.9</td><td><b>394 B</b></td><td>10 packets</td></tr>
+    <tr><td>encrypted · 8.8.8.8</td><td><b>430 B</b></td><td>13 packets</td></tr>
+  </table>
+  <p>The <b>+36 B</b> is the AES-GCM ESP overhead — 8 B ESP header + 8 B IV + 16 B ICV + padding. Same payload, one is 36 bytes heavier: that is the encryption, visible as pure size. (Use a small, non-fragmenting payload — a 1000-byte ping fragments differently on the two tunnels because their MTUs differ, muddying the comparison.)</p>
+
+  <h2 id="p3">5. Proof #3 — byte-level decode</h2>
+  <p>Both packets share the outer IP/UDP/VXLAN header. They diverge right after the Versa VMLH header — one exposes the inner packet, the other an ESP blob.</p>
+  <pre><code><i># CLEAR — to 9.9.9.9 (394 B)</i>
+VXLAN-GPE :  1c 91 03 fb ...            VNI 0x6b11, next-proto 0xfb (Versa)
+VMLH 16B  :  12 08 00 <i>05</i> ...           flag byte 05 = CLEAR
+inner IP  :  45 00 .. <i>0a 0a 0a 64  09 09 09 09</i>
+             src 10.10.10.100   dst 9.9.9.9   proto ICMP
+ICMP      :  08 00 ..                   type 8 = echo request
+payload   :  <i>61 62 63 64 65 66 ..  "abcdefghij..."</i>
+             inner IP + ping data FULLY READABLE — no encryption</code></pre>
+  <pre><code><i># ENCRYPTED — to 8.8.8.8 (430 B)</i>
+VXLAN-GPE :  1c 91 03 fb ...            identical outer
+VMLH 12B  :  12 08 00 <b>fc</b> ...           flag byte fc = ENCRYPTED
+ESP hdr   :  <b>5a 49 00 0c</b> 00 04 0d 29    SPI 0x5a49000c, seq
+IV        :  e3 98 24 87 d4 9b 2d 13
+ciphertext:  <b>57 bf b0 15 79 eb 26 ed ..</b>
+             8.8.8.8 absent, "abcde" absent — inner is ENCRYPTED</code></pre>
+  <div class="call info"><b>The tell.</b> The VMLH flag byte discriminates: <code>0x05</code> = clear (16-byte header, then inner IP), <code>0xfc</code> = encrypted (12-byte header, then an ESP header + ciphertext). Across the whole capture, every clear packet contained the inner destination and the "abcde" ping pattern; not one encrypted packet did.</div>
+
+  <h2 id="ws">6. Reading it in Wireshark</h2>
+  <p>Wireshark decodes the outer VXLAN-GPE but stops at <b>Next Protocol: Unknown (251)</b> — a Versa-proprietary value — and shows the rest as raw <code>Data</code>. Versa publishes a Lua dissector (<code>versa_vxlan_dissector.lua</code>) that picks up from there. Drop it in <code>%APPDATA%\Wireshark\plugins</code> (Windows) or <code>~/.config/wireshark/plugins</code> (Mac) and reload Lua plugins; on newer Wireshark change its line <code>[3]</code> from <code>Dissector.get("eth")</code> to <code>Dissector.get("eth_withoutfcs")</code>.</p>
+  <div class="call warn"><b>Version drift — patch needed for VOS 23.x.</b> The stock dissector maps next-proto <code>0xFC=ESP</code> / <code>0xFD=GRE</code> / <code>0xFE=VMLH</code>, but 23.x packets carry next-proto <code>0xFB (251)</code>, which it does not handle — so the outer header decodes while the inner still falls to <code>Data</code>. A one-branch patch fixes it: on <code>0xFB</code>, read the VMLH flag — <code>0x05</code> → skip 16 B → hand to the IP dissector; <code>0xfc</code> → skip 12 B → hand to ESP.</div>
+  <p><b>Get the patched dissector:</b> <a href="https://enizaksoy.github.io/articles/versa_vxlan_dissector_23x.lua">versa_vxlan_dissector_23x.lua</a> — the stock Versa dissector plus the <code>0xFB</code> branch. Replace the installed copy with it (two copies double-define the proto and error out).</p>
+  <p>With the patch, <code>tshark</code> unfolds both flows completely:</p>
+  <pre><code><i># CLEAR  (394 B)</i>
+Versa Virtual eXtended LAN, VNI: 0x6b11, Next Proto: 0xfb, SDWAN
+Versa VMLH (SD-WAN metadata), <i>CLEAR (no ESP), 16B</i>   VMLH flag: 0x05
+Internet Protocol Version 4, Src: <i>10.10.10.100</i>, Dst: <i>9.9.9.9</i>
+Internet Control Message Protocol   Type: Echo (ping) request
+
+<i># ENCRYPTED  (430 B)</i>
+Versa Virtual eXtended LAN, VNI: 0x6b11, Next Proto: 0xfb, SDWAN
+Versa VMLH (SD-WAN metadata), <b>ENCRYPTED, 12B -&gt; ESP</b>   VMLH flag: 0xfc
+Encapsulating Security Payload   ESP SPI: <b>0x5a49000c</b>   Seq: 265513
+   <i>(inner IP absent — ciphertext)</i></code></pre>
+
+  <h2 id="keys">7. Where the keys live</h2>
+  <p>If the encrypted flow is unreadable in the capture, where is the key — and could someone with the capture decrypt it? No, and the reason is architectural.</p>
+
+  <h3>Branch-to-branch uses no IKE</h3>
+  <p>A branch has exactly <b>one</b> IKE security association, and it is to the <b>Controller</b> — not to any peer branch. Six encrypted peers, one IKE SA. Branch-to-branch tunnels are never negotiated on the wire; there is no per-tunnel handshake to capture.</p>
+
+  <h3>Keys are Diffie-Hellman, distributed over MP-BGP</h3>
+  <p>The Controller is a custom multi-instance MP-BGP route reflector. Two kinds of information ride that one session:</p>
+  <table>
+    <tr><th>Carried</th><th>Address family / NLRI</th></tr>
+    <tr><td>LAN route reachability — RD, route-target, VRF label</td><td>VPNv4 / L3VPN · AFI/SAFI <b>1/128</b></td></tr>
+    <tr><td>Security-association / key material, PKI, transport &amp; NAT state</td><td>Versa proprietary <b>SD-WAN NLRI</b></td></tr>
+  </table>
+  <p>The keys themselves are <b>Diffie-Hellman</b> values: each side holds a private DH key, computes the shared secret from the peer's public value distributed by the Controller, and the secret is never transmitted. Per-peer unique keys (N-1 per branch), so one compromised device never exposes the whole fabric. Data-plane cipher: ESP AES128-GCM.</p>
+
+  <h3>SA and SPI, in one line</h3>
+  <ul>
+    <li><b>SA — Security Association:</b> a one-way agreement on how to protect traffic — cipher, key, auth, anti-replay window, lifetime. Unidirectional, so each peer has an <b>inbound</b> and an <b>outbound</b> SA. All SAs live in the device's <b>SAD</b> in memory.</li>
+    <li><b>SPI — Security Parameter Index:</b> a 32-bit number that <b>names</b> an SA. It rides in the ESP header so the receiver knows which SA/key to use — an index, not a key. <b>In SPI</b> names the SA for packets arriving here; <b>Out SPI</b> is the peer's inbound SPI, stamped on packets we send.</li>
+  </ul>
+
+  <h3>Enforcement is stateless "receive &amp; check"</h3>
+  <p>There is no session setup. An arriving ESP packet is matched against the pre-installed SA — and dropped if it doesn't match.</p>
+
+  <figure class="dgm">
+    <svg viewBox="0 0 800 300" role="img" aria-label="Inbound ESP verification: an arriving packet is accepted only if its SPI matches a security association in the SAD and its ICV verifies with that SA's key; a missing SA or a failed ICV drops it. Keys stay in the SAD and never travel on the wire.">
+      <defs>
+        <marker id="dah" markerWidth="8" markerHeight="8" refX="6.5" refY="3.2" orient="auto"><path d="M0,0 L6.5,3.2 L0,6.4 z" fill="currentColor"/></marker>
+        <marker id="dahr" markerWidth="8" markerHeight="8" refX="6.5" refY="3.2" orient="auto"><path d="M0,0 L6.5,3.2 L0,6.4 z" class="drop"/></marker>
+      </defs>
+      <text class="ar drop" x="274" y="44" text-anchor="middle">DROP</text>
+      <text class="sub" x="274" y="59" text-anchor="middle" style="fill:var(--copper)">no SA for this SPI</text>
+      <text class="ar drop" x="457" y="44" text-anchor="middle">DROP</text>
+      <text class="sub" x="457" y="59" text-anchor="middle" style="fill:var(--copper)">ICV fails (no / wrong key)</text>
+      <line x1="274" y1="120" x2="274" y2="70" stroke="var(--copper)" stroke-width="1.5" marker-end="url(#dahr)"/>
+      <line x1="457" y1="120" x2="457" y2="70" stroke="var(--copper)" stroke-width="1.5" marker-end="url(#dahr)"/>
+
+      <rect class="bx" x="14" y="108" width="152" height="98" rx="8"/>
+      <text class="lbl" x="90" y="128" text-anchor="middle">Inbound ESP</text>
+      <text class="mo" x="26" y="149">SPI 0x00120069</text>
+      <text class="mo" x="26" y="166">seq · IV</text>
+      <text class="mo" x="26" y="183">ciphertext</text>
+      <text class="mo" x="26" y="200">ICV (tag)</text>
+
+      <rect class="bx" x="210" y="122" width="128" height="66" rx="8"/>
+      <text class="lbl" x="274" y="150" text-anchor="middle">① SPI lookup</text>
+      <text class="sub" x="274" y="168" text-anchor="middle">find SA in SAD</text>
+
+      <rect class="bx" x="382" y="122" width="150" height="66" rx="8"/>
+      <text class="lbl" x="457" y="150" text-anchor="middle">② Verify ICV</text>
+      <text class="sub" x="457" y="168" text-anchor="middle">AES-GCM · SA key</text>
+
+      <rect class="bx ok" x="576" y="122" width="150" height="66" rx="8"/>
+      <text class="lbl oktext" x="651" y="150" text-anchor="middle">✓ Accept</text>
+      <text class="sub" x="651" y="168" text-anchor="middle" style="fill:var(--teal-ink)">decrypt inner</text>
+
+      <line x1="166" y1="155" x2="208" y2="155" stroke="currentColor" stroke-width="1.5" marker-end="url(#dah)"/>
+      <line x1="338" y1="155" x2="380" y2="155" stroke="currentColor" stroke-width="1.5" marker-end="url(#dah)"/>
+      <text class="ar" x="360" y="148" text-anchor="middle">match</text>
+      <line x1="532" y1="155" x2="574" y2="155" stroke="currentColor" stroke-width="1.5" marker-end="url(#dah)"/>
+      <text class="ar" x="554" y="148" text-anchor="middle">valid</text>
+
+      <rect class="bx" x="210" y="230" width="322" height="56" rx="8"/>
+      <text class="lbl" x="222" y="249">SAD · this branch</text>
+      <text class="mo" x="222" y="266">In  0x00120069  ← checked on arrival</text>
+      <text class="mo" x="222" y="281">Out 0x5a52000c  → stamped when sending out</text>
+
+      <line x1="274" y1="188" x2="274" y2="228" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#dah)"/>
+      <line x1="457" y1="188" x2="457" y2="228" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#dah)"/>
+      <text class="ar" x="333" y="212" text-anchor="middle">reads key</text>
+    </svg>
+    <figcaption>Inbound ESP is accepted only when its SPI matches a security association in the branch's SAD AND its ICV verifies with that SA's key. A stolen IP with a copied SPI still fails at ② — the key lives in the SAD and never travels on the wire. In&nbsp;SPI = what peers stamp when sending here; Out&nbsp;SPI = what this branch stamps outbound (the peer's In&nbsp;SPI).</figcaption>
+  </figure>
+
+  <div class="call ok"><b>Identity is the certificate, not the IP.</b> Spoofing a branch's IP fails: with no valid device certificate the impostor never forms the control channel, so it receives no SA — and any forged ESP it sends fails the receiver's ICV check. The trust anchor is the cert presented to the Controller at onboarding.</div>
+
+  <h2 id="take">8. Takeaways</h2>
+  <ul>
+    <li><b>Clear = zero protection.</b> Inner IP and payload are readable by anyone on-path, and there is no ESP integrity either — use it only on trusted transport, never on the internet.</li>
+    <li><b>Encrypted = content protected, metadata still leaks.</b> A capture reveals who talks to whom, when and how much (and the SPI), but not the content.</li>
+    <li><b>You cannot decrypt from a capture.</b> The SPI is an identifier; keys are DH-derived, computed locally, distributed by the Controller, and never traverse the data plane.</li>
+    <li><b>One flag byte decides.</b> In the overlay header, VMLH <code>0x05</code> vs <code>0xfc</code> is the whole difference between a packet anyone can read and one only the two endpoints can.</li>
+  </ul>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, IPs, tenant identifiers, SPI/VNI values and credentials are generic placeholders or illustrative lab values — substitute your own environment's. Packet-length ratios are directional; absolute counts include SLA-probe and keep-alive overhead.</div>
+</div></footer>
+</body>
+</html>
