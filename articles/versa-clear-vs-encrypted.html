@@ -175,6 +175,7 @@ ciphertext:  <b>57 bf b0 15 79 eb 26 ed ..</b>
   <p>Wireshark decodes the outer VXLAN-GPE but stops at <b>Next Protocol: Unknown (251)</b> — a Versa-proprietary value — and shows the rest as raw <code>Data</code>. Versa publishes a Lua dissector (<code>versa_vxlan_dissector.lua</code>) that picks up from there. Drop it in <code>%APPDATA%\Wireshark\plugins</code> (Windows) or <code>~/.config/wireshark/plugins</code> (Mac) and reload Lua plugins; on newer Wireshark change its line <code>[3]</code> from <code>Dissector.get("eth")</code> to <code>Dissector.get("eth_withoutfcs")</code>.</p>
   <div class="call warn"><b>Version drift — patch needed for VOS 23.x.</b> The stock dissector maps next-proto <code>0xFC=ESP</code> / <code>0xFD=GRE</code> / <code>0xFE=VMLH</code>, but 23.x packets carry next-proto <code>0xFB (251)</code>, which it does not handle — so the outer header decodes while the inner still falls to <code>Data</code>. A one-branch patch fixes it: on <code>0xFB</code>, read the VMLH flag — <code>0x05</code> → skip 16 B → hand to the IP dissector; <code>0xfc</code> → skip 12 B → hand to ESP.</div>
   <p><b>Get the patched dissector:</b> <a href="https://enizaksoy.github.io/articles/versa_vxlan_dissector_23x.lua">versa_vxlan_dissector_23x.lua</a> — the stock Versa dissector plus the <code>0xFB</code> branch. Replace the installed copy with it (two copies double-define the proto and error out).</p>
+  <p><b>Raw capture:</b> <a href="https://enizaksoy.github.io/articles/versa-clear-vs-encrypted.pcap">versa-clear-vs-encrypted.pcap</a> — the branch WAN capture used throughout, so you can reproduce every decode here. It carries the original private (RFC1918) lab addresses rather than the placeholders used in the prose; open it with the dissector above.</p>
   <p>With the patch, <code>tshark</code> unfolds both flows completely:</p>
   <pre><code><i># CLEAR  (394 B)</i>
 Versa Virtual eXtended LAN, VNI: 0x6b11, Next Proto: 0xfb, SDWAN
@@ -250,16 +251,22 @@ Encapsulating Security Payload   ESP SPI: <b>0x5a49000c</b>   Seq: 265513
       <line x1="532" y1="155" x2="574" y2="155" stroke="currentColor" stroke-width="1.5" marker-end="url(#dah)"/>
       <text class="ar" x="554" y="148" text-anchor="middle">valid</text>
 
+      <rect class="bx" x="14" y="230" width="140" height="56" rx="8"/>
+      <text class="lbl" x="84" y="253" text-anchor="middle">Controller</text>
+      <text class="sub" x="84" y="270" text-anchor="middle">MP-BGP route reflector</text>
+      <line x1="154" y1="258" x2="208" y2="258" stroke="currentColor" stroke-width="1.6" marker-end="url(#dah)"/>
+      <text class="ar oktext" x="181" y="250" text-anchor="middle">MP-BGP</text>
       <rect class="bx" x="210" y="230" width="322" height="56" rx="8"/>
       <text class="lbl" x="222" y="249">SAD · this branch</text>
-      <text class="mo" x="222" y="266">In  0x00120069  ← checked on arrival</text>
-      <text class="mo" x="222" y="281">Out 0x5a52000c  → stamped when sending out</text>
+      <text class="ar oktext" x="524" y="249" text-anchor="end">◄ SA installed by Controller</text>
+      <text class="mo" x="222" y="266">In  0x00120069  → generated here, advertised</text>
+      <text class="mo" x="222" y="281">Out 0x5a52000c  → learned from Controller</text>
 
       <line x1="274" y1="188" x2="274" y2="228" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#dah)"/>
       <line x1="457" y1="188" x2="457" y2="228" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#dah)"/>
       <text class="ar" x="333" y="212" text-anchor="middle">reads key</text>
     </svg>
-    <figcaption>Inbound ESP is accepted only when its SPI matches a security association in the branch's SAD AND its ICV verifies with that SA's key. A stolen IP with a copied SPI still fails at ② — the key lives in the SAD and never travels on the wire. In&nbsp;SPI = what peers stamp when sending here; Out&nbsp;SPI = what this branch stamps outbound (the peer's In&nbsp;SPI).</figcaption>
+    <figcaption>Per packet, inbound ESP is accepted only when its <b>SPI</b> matches a security association in the <b>SAD</b> and its <b>ICV</b> verifies with that SA's key &mdash; a stolen IP with a copied SPI still fails at &#9313;. The SAD is not built here: the <b>Controller distributes the SA information over MP-BGP</b>, out of band. The branch generates and advertises its own <b>In&nbsp;SPI</b>, and <b>learns the peer's (the Out&nbsp;SPI)</b> plus the peer's Diffie-Hellman public from the Controller. The shared key is then <b>computed locally</b> and never travels on the wire &mdash; so &ldquo;from the Controller&rdquo; means the SPIs and DH material, not the key itself.</figcaption>
   </figure>
 
   <div class="call ok"><b>Identity is the certificate, not the IP.</b> Spoofing a branch's IP fails: with no valid device certificate the impostor never forms the control channel, so it receives no SA — and any forged ESP it sends fails the receiver's ICV check. The trust anchor is the cert presented to the Controller at onboarding.</div>
