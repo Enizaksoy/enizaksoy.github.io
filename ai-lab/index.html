@@ -30,7 +30,7 @@
             overflow: hidden;
         }
 
-        /* ── Sidebar ── */
+        /* â”€â”€ Sidebar â”€â”€ */
         .sidebar {
             width: var(--sidebar-width);
             min-width: var(--sidebar-width);
@@ -104,7 +104,7 @@
             font-weight: bold;
         }
 
-        /* ── Content Panel ── */
+        /* â”€â”€ Content Panel â”€â”€ */
         .content-area {
             margin-left: var(--sidebar-width);
             flex: 1;
@@ -124,7 +124,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Hamburger for mobile ── */
+        /* â”€â”€ Hamburger for mobile â”€â”€ */
         .hamburger {
             display: none;
             position: fixed;
@@ -140,7 +140,7 @@
             cursor: pointer;
         }
 
-        /* ── Original CSS classes preserved ── */
+        /* â”€â”€ Original CSS classes preserved â”€â”€ */
         h1 {
             font-size: 2.2em;
             color: var(--accent-blue);
@@ -254,7 +254,7 @@
             color: var(--text-primary);
         }
 
-        /* ── Visual Topology Styles ── */
+        /* â”€â”€ Visual Topology Styles â”€â”€ */
         .topo-wrap {
             background: var(--bg-code);
             border: 2px solid var(--accent-orange);
@@ -467,7 +467,7 @@
             border-top: 1px solid var(--border);
         }
 
-        /* ── Responsive ── */
+        /* â”€â”€ Responsive â”€â”€ */
         @media (max-width: 900px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -510,7 +510,7 @@
 <!-- Hamburger for mobile -->
 <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
 
-<!-- ── LEFT SIDEBAR ── -->
+<!-- â”€â”€ LEFT SIDEBAR â”€â”€ -->
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h1>GPU AI Cluster Lab</h1>
@@ -560,7 +560,7 @@
     </div>
 </nav>
 
-<!-- ── RIGHT CONTENT AREA ── -->
+<!-- â”€â”€ RIGHT CONTENT AREA â”€â”€ -->
 <main class="content-area" id="content-area">
 
     <!-- ============================================================ -->
@@ -1112,7 +1112,7 @@
 <span class="comment">! UDP 4741 = RoCE v1, UDP 4791 = RoCE v2</span></pre>
 
         <h4>Class Maps &mdash; RDMA Traffic Identification</h4>
-        <pre><span class="comment">! Match DSCP 26 (CS3/AF31 — standard RoCE marking)</span>
+        <pre><span class="comment">! Match DSCP 26 (CS3/AF31 â€” standard RoCE marking)</span>
 <span class="cmd">class-map type qos match-all RDMA</span>
   match dscp <span class="highlight">26</span>
 
@@ -1423,12 +1423,12 @@
 <span class="cmd">echo</span> '<span class="highlight">100 rail0</span>' >> /etc/iproute2/rt_tables
 <span class="cmd">echo</span> '<span class="highlight">101 rail1</span>' >> /etc/iproute2/rt_tables
 
-<span class="comment"># Step 2: Rail 0 routing (ens6d1 → Leaf1 SVI 10.0.0.254)</span>
+<span class="comment"># Step 2: Rail 0 routing (ens6d1 â†’ Leaf1 SVI 10.0.0.254)</span>
 <span class="cmd">ip route add</span> <span class="ip">10.0.0.0/24</span> dev ens6d1 scope link <span class="cmd">table</span> <span class="highlight">100</span>
 <span class="cmd">ip route add</span> default via <span class="ip">10.0.0.254</span> dev ens6d1 <span class="cmd">table</span> <span class="highlight">100</span>
 <span class="cmd">ip rule add</span> from <span class="ip">&lt;ens6d1_ip&gt;</span> <span class="cmd">table</span> <span class="highlight">100</span>
 
-<span class="comment"># Step 3: Rail 1 routing (ens6 → Leaf2 SVI 10.0.1.254)</span>
+<span class="comment"># Step 3: Rail 1 routing (ens6 â†’ Leaf2 SVI 10.0.1.254)</span>
 <span class="cmd">ip route add</span> <span class="ip">10.0.1.0/24</span> dev ens6 scope link <span class="cmd">table</span> <span class="highlight">101</span>
 <span class="cmd">ip route add</span> default via <span class="ip">10.0.1.254</span> dev ens6 <span class="cmd">table</span> <span class="highlight">101</span>
 <span class="cmd">ip rule add</span> from <span class="ip">&lt;ens6_ip&gt;</span> <span class="cmd">table</span> <span class="highlight">101</span></pre>
@@ -1899,7 +1899,7 @@
 
 </main>
 
-<!-- ── JavaScript ── -->
+<!-- â”€â”€ JavaScript â”€â”€ -->
 <script>
     // Section IDs in order
     const sections = [
@@ -2038,5 +2038,6 @@
     });
 </script>
 
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

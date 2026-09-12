@@ -418,16 +418,16 @@
                     <span class="t-ip">P Region (Core)</span>                              <span class="t-ip">PE Region (Edge)</span>
      <span class="t-ip">Left (PE)</span>                <span class="t-ip">Center (P)</span>               <span class="t-ip">Center (P)</span>              <span class="t-ip">Right (PE)</span>
 
-     <span class="t-pe">PE1</span> <span class="t-ip">(10.255.0.5)</span>  ──ae0──  <span class="t-p">P1</span> <span class="t-ip">(10.255.0.1)</span>  ──ae3──  <span class="t-p">P3</span> <span class="t-ip">(10.255.0.3)</span>  ──ae1──  <span class="t-pe">PE3</span> <span class="t-ip">(10.255.0.7)</span>
-       │                         │   │                       │   │                         │
-       │ae2                  ae0│   │ae4                ae3│   │ae0                   ae2│
-       │                         │   │                       │   │                         │
-     <span class="t-pe">PE2</span> <span class="t-ip">(10.255.0.6)</span>  ──ae1──  <span class="t-p">P2</span> <span class="t-ip">(10.255.0.2)</span>  ──ae4──  <span class="t-p">P4</span> <span class="t-ip">(10.255.0.4)</span>  ──ae1──  <span class="t-pe">PE4</span> <span class="t-ip">(10.255.0.8)</span>
-       │                         │                           │                             │
-       └────────ae2──────────────┘                           └──────────ae2─────────────────┘
+     <span class="t-pe">PE1</span> <span class="t-ip">(10.255.0.5)</span>  â”€â”€ae0â”€â”€  <span class="t-p">P1</span> <span class="t-ip">(10.255.0.1)</span>  â”€â”€ae3â”€â”€  <span class="t-p">P3</span> <span class="t-ip">(10.255.0.3)</span>  â”€â”€ae1â”€â”€  <span class="t-pe">PE3</span> <span class="t-ip">(10.255.0.7)</span>
+       â”‚                         â”‚   â”‚                       â”‚   â”‚                         â”‚
+       â”‚ae2                  ae0â”‚   â”‚ae4                ae3â”‚   â”‚ae0                   ae2â”‚
+       â”‚                         â”‚   â”‚                       â”‚   â”‚                         â”‚
+     <span class="t-pe">PE2</span> <span class="t-ip">(10.255.0.6)</span>  â”€â”€ae1â”€â”€  <span class="t-p">P2</span> <span class="t-ip">(10.255.0.2)</span>  â”€â”€ae4â”€â”€  <span class="t-p">P4</span> <span class="t-ip">(10.255.0.4)</span>  â”€â”€ae1â”€â”€  <span class="t-pe">PE4</span> <span class="t-ip">(10.255.0.8)</span>
+       â”‚                         â”‚                           â”‚                             â”‚
+       â””â”€â”€â”€â”€â”€â”€â”€â”€ae2â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                           â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ae2â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
               <span class="t-link">PE1&harr;PE2</span>                                          <span class="t-link">PE3&harr;PE4</span>
 
-  <span class="t-link">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+  <span class="t-link">â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”</span>
   <span class="t-link">All ae bundles: 2x GE with LACP active | IS-IS L2 + LDP + MPLS | iBGP full-mesh VPNv4+EVPN (AS 65000)</span>
   <span class="t-link">VRFs on PE1-PE4 | BFD on IS-IS (300ms) and BGP (1000ms) | Root password: Elma12743</span></div>
 
@@ -723,19 +723,19 @@
 
     <div class="card">
         <pre style="margin:0">
-  ┌──────────────────────────────────────────────────────┐
-  │  Ethernet Header                                      │
-  ├──────────────────────────────────────────────────────┤
-  │  <span class="cmd">Transport Label (LDP)</span>  │ EXP │ S=0 │ TTL │          │
-  │  "How to reach egress PE loopback"                   │
-  ├──────────────────────────────────────────────────────┤
-  │  <span class="highlight">VPN Label (BGP)</span>        │ EXP │ S=1 │ TTL │          │
-  │  "Belongs to VRF X on egress PE"                     │
-  ├──────────────────────────────────────────────────────┤
-  │  IP Header: src=CE-A  dst=CE-B                       │
-  ├──────────────────────────────────────────────────────┤
-  │  Payload                                              │
-  └──────────────────────────────────────────────────────┘
+  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+  â”‚  Ethernet Header                                      â”‚
+  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+  â”‚  <span class="cmd">Transport Label (LDP)</span>  â”‚ EXP â”‚ S=0 â”‚ TTL â”‚          â”‚
+  â”‚  "How to reach egress PE loopback"                   â”‚
+  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+  â”‚  <span class="highlight">VPN Label (BGP)</span>        â”‚ EXP â”‚ S=1 â”‚ TTL â”‚          â”‚
+  â”‚  "Belongs to VRF X on egress PE"                     â”‚
+  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+  â”‚  IP Header: src=CE-A  dst=CE-B                       â”‚
+  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+  â”‚  Payload                                              â”‚
+  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
   S=0 means "more labels below"
   S=1 means "bottom of stack" (last label)</pre>
@@ -6316,5 +6316,6 @@ function showVerifTab(id) {
 }
 </script>
 
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

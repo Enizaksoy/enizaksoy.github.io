@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Multi-Site BGP EVPN VXLAN Data Center Fabric on Cisco CML — 5-stage Clos, 2 PODs, Super-Spine interconnect">
+    <meta name="description" content="Multi-Site BGP EVPN VXLAN Data Center Fabric on Cisco CML â€” 5-stage Clos, 2 PODs, Super-Spine interconnect">
     <title>Cisco Multi-Site EVPN Implementation | Eniz Aksoy</title>
     <style>
         :root { --primary: #6366f1; --secondary: #4f46e5; --accent: #06b6d4; --text: #1f2937; --text-light: #6b7280; --bg: #ffffff; --bg-alt: #f3f4f6; --bg-code: #1e293b; --border: #e5e7eb; }
@@ -40,7 +40,7 @@
 
 <header class="hero">
     <h1>Cisco Multi-Site EVPN Implementation</h1>
-    <p class="subtitle">5-Stage Clos BGP EVPN VXLAN Fabric — 2 PODs via Super-Spine</p>
+    <p class="subtitle">5-Stage Clos BGP EVPN VXLAN Fabric â€” 2 PODs via Super-Spine</p>
     <div class="badges">
         <span class="badge">EVPN</span>
         <span class="badge">VXLAN</span>
@@ -55,26 +55,26 @@
 
     <section>
         <h2>Overview</h2>
-        <p>A complete BGP EVPN VXLAN multi-site data center fabric built on Cisco CML, using AI-assisted configuration. The lab implements a production-style 5-stage Clos topology with two PODs interconnected through a Super-Spine layer — 20 network devices in total (14 NX-OS 9000v, 6 IOSvL2 access switches), each running its own BGP AS for optimal multipath.</p>
+        <p>A complete BGP EVPN VXLAN multi-site data center fabric built on Cisco CML, using AI-assisted configuration. The lab implements a production-style 5-stage Clos topology with two PODs interconnected through a Super-Spine layer â€” 20 network devices in total (14 NX-OS 9000v, 6 IOSvL2 access switches), each running its own BGP AS for optimal multipath.</p>
     </section>
 
     <section>
         <h2>Network Topology</h2>
-        <div class="diagram">                    ┌─────────────────────────────────────┐
-                    │         SUPER-SPINE LAYER           │
-                    │   Super-Spine-1    Super-Spine-2    │
-                    │    (AS 65000)       (AS 65000)      │
-                    └───────────┬─────────────┬───────────┘
-                                │             │
-           ┌────────────────────┴─────────────┴────────────────────┐
-           │                                                        │
-    ┌──────┴──────┐                                          ┌──────┴──────┐
-    │    POD 1    │                                          │    POD 2    │
-    ├─────────────┤                                          ├─────────────┤
-    │ Spine 1-4   │                                          │ Spine 5-6   │
-    │ Leaf 1-4    │                                          │ Leaf 5-6    │
-    │ iosvl2 0-3  │                                          │ iosvl2 4-5  │
-    └─────────────┘                                          └─────────────┘</div>
+        <div class="diagram">                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                    â”‚         SUPER-SPINE LAYER           â”‚
+                    â”‚   Super-Spine-1    Super-Spine-2    â”‚
+                    â”‚    (AS 65000)       (AS 65000)      â”‚
+                    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                â”‚             â”‚
+           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+           â”‚                                                        â”‚
+    â”Œâ”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”                                          â”Œâ”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”
+    â”‚    POD 1    â”‚                                          â”‚    POD 2    â”‚
+    â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤                                          â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+    â”‚ Spine 1-4   â”‚                                          â”‚ Spine 5-6   â”‚
+    â”‚ Leaf 1-4    â”‚                                          â”‚ Leaf 5-6    â”‚
+    â”‚ iosvl2 0-3  â”‚                                          â”‚ iosvl2 4-5  â”‚
+    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                                          â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜</div>
     </section>
 
     <section>
@@ -86,7 +86,7 @@
             <tr><td>Super-Spine-2</td><td>Super Spine</td><td>65000</td><td>10.0.0.2</td></tr>
         </table>
 
-        <h3>POD 1 — Spine &amp; Leaf</h3>
+        <h3>POD 1 â€” Spine &amp; Leaf</h3>
         <table>
             <tr><th>Device</th><th>Role</th><th>BGP AS</th><th>Loopback0 (VTEP)</th></tr>
             <tr><td>Spine-1</td><td>Spine</td><td>65001</td><td>10.2.1.0</td></tr>
@@ -99,7 +99,7 @@
             <tr><td>Leaf-4</td><td>Leaf/VTEP</td><td>65104</td><td>10.0.2.4</td></tr>
         </table>
 
-        <h3>POD 2 — Spine &amp; Leaf</h3>
+        <h3>POD 2 â€” Spine &amp; Leaf</h3>
         <table>
             <tr><th>Device</th><th>Role</th><th>BGP AS</th><th>Loopback0 (VTEP)</th></tr>
             <tr><td>Spine-5</td><td>Spine</td><td>65005</td><td>10.2.5.0</td></tr>
@@ -129,17 +129,17 @@
         <div class="info-box">
             <ul>
                 <li><strong>eBGP EVPN overlay</strong> with a unique ASN per device for optimal multipath</li>
-                <li><strong>Anycast gateway</strong> — same IP (192.168.x.1) and MAC on every leaf</li>
+                <li><strong>Anycast gateway</strong> â€” same IP (192.168.x.1) and MAC on every leaf</li>
                 <li><strong>VRF <code>mylab</code></strong> with L3VNI 50000 for inter-VLAN routing</li>
-                <li><strong>Ingress replication</strong> (BGP-based) for BUM traffic — no multicast required</li>
-                <li><strong>Multi-site design</strong> — POD isolation with Super-Spine interconnect</li>
+                <li><strong>Ingress replication</strong> (BGP-based) for BUM traffic â€” no multicast required</li>
+                <li><strong>Multi-site design</strong> â€” POD isolation with Super-Spine interconnect</li>
             </ul>
         </div>
     </section>
 
     <section>
         <h2>Verified Working</h2>
-        <div class="diagram">### Cross-POD NVE Peering — WORKING ###
+        <div class="diagram">### Cross-POD NVE Peering â€” WORKING ###
 
 Leaf-1# show nve peers   (now sees POD2 Leafs)
 Interface Peer-IP          State LearnType Router-Mac
@@ -167,8 +167,8 @@ Neighbor        V    AS    State/PfxRcd
             <tr><td>Super-Spine to POD2</td><td class="status-ok">Fixed</td><td>All 6 spines (POD1 + POD2) connected to Super-Spines</td></tr>
             <tr><td>Cross-POD NVE peers</td><td class="status-ok">Working</td><td>Leaf-1 sees Leaf-5/6, Leaf-5 sees Leaf-1/2/3/4</td></tr>
             <tr><td>Underlay IPv4 BGP</td><td class="status-ok">Working</td><td>VTEP loopbacks now reachable across PODs</td></tr>
-            <tr><td>Leaf-4 BGP</td><td class="status-warn">Idle</td><td>Leaf-4 to Spine-1 showing Idle — needs investigation</td></tr>
-            <tr><td>IOSvL2 ARP duplicate</td><td class="status-warn">Warning</td><td>iosvl2-0 sending anycast GW back — check STP/trunk</td></tr>
+            <tr><td>Leaf-4 BGP</td><td class="status-warn">Idle</td><td>Leaf-4 to Spine-1 showing Idle â€” needs investigation</td></tr>
+            <tr><td>IOSvL2 ARP duplicate</td><td class="status-warn">Warning</td><td>iosvl2-0 sending anycast GW back â€” check STP/trunk</td></tr>
         </table>
     </section>
 
@@ -187,5 +187,6 @@ Neighbor        V    AS    State/PfxRcd
     <p><a href="../index.html">Back to Portfolio</a></p>
 </footer>
 
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
