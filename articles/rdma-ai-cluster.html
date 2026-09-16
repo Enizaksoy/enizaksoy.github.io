@@ -94,36 +94,36 @@
         <table>
             <tr><th>Metric</th><th>TCP</th><th>RDMA</th><th>Improvement</th></tr>
             <tr><td>Bandwidth</td><td>4.67 Gbps</td><td>9.23 Gbps</td><td><strong>2x</strong></td></tr>
-            <tr><td>Latency</td><td>161 Î¼s</td><td>14.37 Î¼s</td><td><strong>11x</strong></td></tr>
+            <tr><td>Latency</td><td>161 μs</td><td>14.37 μs</td><td><strong>11x</strong></td></tr>
             <tr><td>Packet Drops</td><td>6.5M</td><td>256K</td><td><strong>96% reduction</strong></td></tr>
-            <tr><td>Jitter</td><td>High</td><td>0.82 Î¼s</td><td><strong>Sub-microsecond</strong></td></tr>
+            <tr><td>Jitter</td><td>High</td><td>0.82 μs</td><td><strong>Sub-microsecond</strong></td></tr>
         </table>
     </section>
 
     <section>
         <h2>Architecture</h2>
-        <div class="diagram">â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                    Grafana Dashboard                         â”‚
-â”‚            Real-time RDMA Network Monitoring                 â”‚
-â”‚    ECN/CNP Stats | ESXi Pause Frames | Switch PFC Metrics   â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                       â”‚
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                Prometheus (Port 9090)                        â”‚
-â”‚    Collecting from: RDMA Exporters | ESXi | Switch          â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                       â”‚
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                8-Node AI Training Cluster                    â”‚
-â”‚                                                              â”‚
-â”‚    Ubuntu Servers (x8) with Mellanox ConnectX-4 Lx NICs     â”‚
-â”‚                          â†“                                   â”‚
-â”‚    Cisco Nexus Switch (100G, PFC + ECN enabled)             â”‚
-â”‚                          â†“                                   â”‚
-â”‚    RoCEv2 (RDMA over Converged Ethernet v2)                 â”‚
-â”‚                          â†“                                   â”‚
-â”‚    Lossless Network for AI Training                         â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜</div>
+        <div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│                    Grafana Dashboard                         │
+│            Real-time RDMA Network Monitoring                 │
+│    ECN/CNP Stats | ESXi Pause Frames | Switch PFC Metrics   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                Prometheus (Port 9090)                        │
+│    Collecting from: RDMA Exporters | ESXi | Switch          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                8-Node AI Training Cluster                    │
+│                                                              │
+│    Ubuntu Servers (x8) with Mellanox ConnectX-4 Lx NICs     │
+│                          ↓                                   │
+│    Cisco Nexus Switch (100G, PFC + ECN enabled)             │
+│                          ↓                                   │
+│    RoCEv2 (RDMA over Converged Ethernet v2)                 │
+│                          ↓                                   │
+│    Lossless Network for AI Training                         │
+└─────────────────────────────────────────────────────────────┘</div>
     </section>
 
     <section>

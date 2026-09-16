@@ -368,27 +368,27 @@
     <div class="topology-ascii">
                           <span class="t-ip">SITE-A (KKY)</span>                                    <span class="t-ip">SITE-B (ORT)</span>
 
-     <span class="t-pe">PE1-KKY</span> <span class="t-ip">(10.255.0.1)</span>  â”€â”€â”€â”€â”€ ge0/0/1 â”€â”€â”€â”€â”€  <span class="t-pe">PE1-ORT</span> <span class="t-ip">(10.255.0.3)</span>  â”€â”€â”€ ge0/0/3 â”€â”€â”€  <span class="t-pex">PEX1-ORT</span> <span class="t-ip">(10.255.0.5)</span> â”€â”€â”€ <span class="t-ce">CE1</span>
-       â”‚  <span class="t-ip">10.0.13.1/30</span>                  <span class="t-ip">10.0.13.2/30</span>  â”‚  <span class="t-ip">10.0.35.1/30</span>        <span class="t-ip">10.0.35.2/30</span>       <span class="t-ip">192.168.1.1/24</span>  <span class="t-ip">192.168.1.2/24</span>
-       â”‚                                              â”‚                                   VRF: CUSTOMER-A
-       â”‚ ge0/0/0           ge0/0/0                    â”‚ ge0/0/0           ge0/0/0
-       â”‚ <span class="t-ip">10.0.12.1/30</span>      <span class="t-ip">10.0.12.2/30</span>               â”‚ <span class="t-ip">10.0.34.1/30</span>      <span class="t-ip">10.0.34.2/30</span>
-       â”‚                                              â”‚
-       â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤                       â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-       â”‚                      â”‚                       â”‚                      â”‚
-       â”‚ ge0/0/2   ge0/0/2   â”‚ ge0/0/1   ge0/0/2    â”‚ ge0/0/1   ge0/0/1   â”‚ ge0/0/3
-       â”‚ <span class="t-ip">10.0.14.1</span>  <span class="t-ip">10.0.14.2</span> â”‚ <span class="t-ip">10.0.23.1</span>  <span class="t-ip">10.0.23.2</span> â”‚ <span class="t-ip">10.0.24.2</span>  <span class="t-ip">10.0.24.1</span> â”‚ <span class="t-ip">10.0.46.1/30</span>
-       â”‚              â”‚       â”‚              â”‚        â”‚              â”‚       â”‚
-       â”‚              â””â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜        â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜       â”‚
-       â”‚                      â”‚                                              â”‚
-       â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                              â”‚
-     <span class="t-pe">PE2-KKY</span> <span class="t-ip">(10.255.0.2)</span>  â”€â”€â”€â”€â”€ ge0/0/1 â”€â”€â”€â”€â”€  (PE1-ORT ge0/0/2)
-                                                                        <span class="t-pex">PEX2-ORT</span> <span class="t-ip">(10.255.0.6)</span> â”€â”€â”€ <span class="t-ce">CE2</span>
-     <span class="t-pe">PE2-ORT</span> <span class="t-ip">(10.255.0.4)</span>  â”€â”€â”€ ge0/0/3 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€  <span class="t-ip">10.0.46.2/30</span>       <span class="t-ip">192.168.2.1/24</span>  <span class="t-ip">192.168.2.2/24</span>
+     <span class="t-pe">PE1-KKY</span> <span class="t-ip">(10.255.0.1)</span>  ───── ge0/0/1 ─────  <span class="t-pe">PE1-ORT</span> <span class="t-ip">(10.255.0.3)</span>  ─── ge0/0/3 ───  <span class="t-pex">PEX1-ORT</span> <span class="t-ip">(10.255.0.5)</span> ─── <span class="t-ce">CE1</span>
+       │  <span class="t-ip">10.0.13.1/30</span>                  <span class="t-ip">10.0.13.2/30</span>  │  <span class="t-ip">10.0.35.1/30</span>        <span class="t-ip">10.0.35.2/30</span>       <span class="t-ip">192.168.1.1/24</span>  <span class="t-ip">192.168.1.2/24</span>
+       │                                              │                                   VRF: CUSTOMER-A
+       │ ge0/0/0           ge0/0/0                    │ ge0/0/0           ge0/0/0
+       │ <span class="t-ip">10.0.12.1/30</span>      <span class="t-ip">10.0.12.2/30</span>               │ <span class="t-ip">10.0.34.1/30</span>      <span class="t-ip">10.0.34.2/30</span>
+       │                                              │
+       ├──────────────────────┤                       ├──────────────────────┤
+       │                      │                       │                      │
+       │ ge0/0/2   ge0/0/2   │ ge0/0/1   ge0/0/2    │ ge0/0/1   ge0/0/1   │ ge0/0/3
+       │ <span class="t-ip">10.0.14.1</span>  <span class="t-ip">10.0.14.2</span> │ <span class="t-ip">10.0.23.1</span>  <span class="t-ip">10.0.23.2</span> │ <span class="t-ip">10.0.24.2</span>  <span class="t-ip">10.0.24.1</span> │ <span class="t-ip">10.0.46.1/30</span>
+       │              │       │              │        │              │       │
+       │              └───────┼──────────────┘        └──────────────┘       │
+       │                      │                                              │
+       └──────────────────────┼──────────────────────────────────────────────┘
+                              │
+     <span class="t-pe">PE2-KKY</span> <span class="t-ip">(10.255.0.2)</span>  ───── ge0/0/1 ─────  (PE1-ORT ge0/0/2)
+                                                                        <span class="t-pex">PEX2-ORT</span> <span class="t-ip">(10.255.0.6)</span> ─── <span class="t-ce">CE2</span>
+     <span class="t-pe">PE2-ORT</span> <span class="t-ip">(10.255.0.4)</span>  ─── ge0/0/3 ───────────  <span class="t-ip">10.0.46.2/30</span>       <span class="t-ip">192.168.2.1/24</span>  <span class="t-ip">192.168.2.2/24</span>
                                                                         VRF: CUSTOMER-A
 
-  <span class="t-link">â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”</span>
+  <span class="t-link">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
   <span class="t-link">All core links: OSPF Area 0 + LDP + MPLS | iBGP full-mesh VPNv4 (AS 65000) | VRF on PEX nodes</span></div>
 
     <h3>Device Roles</h3>
@@ -639,19 +639,19 @@ routing-options {
 
     <div class="card">
         <pre style="margin:0">
-  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-  â”‚  Ethernet Header                                      â”‚
-  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-  â”‚  <span class="cmd">Transport Label (LDP)</span>  â”‚ EXP â”‚ S=0 â”‚ TTL â”‚          â”‚
-  â”‚  "How to reach PEX2-ORT loopback 10.255.0.6"        â”‚
-  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-  â”‚  <span class="highlight">VPN Label (BGP)</span>        â”‚ EXP â”‚ S=1 â”‚ TTL â”‚          â”‚
-  â”‚  "Belongs to VRF CUSTOMER-A on PEX2-ORT"            â”‚
-  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-  â”‚  IP Header: src=192.168.1.2  dst=192.168.2.2        â”‚
-  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-  â”‚  Payload                                              â”‚
-  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+  ┌──────────────────────────────────────────────────────┐
+  │  Ethernet Header                                      │
+  ├──────────────────────────────────────────────────────┤
+  │  <span class="cmd">Transport Label (LDP)</span>  │ EXP │ S=0 │ TTL │          │
+  │  "How to reach PEX2-ORT loopback 10.255.0.6"        │
+  ├──────────────────────────────────────────────────────┤
+  │  <span class="highlight">VPN Label (BGP)</span>        │ EXP │ S=1 │ TTL │          │
+  │  "Belongs to VRF CUSTOMER-A on PEX2-ORT"            │
+  ├──────────────────────────────────────────────────────┤
+  │  IP Header: src=192.168.1.2  dst=192.168.2.2        │
+  ├──────────────────────────────────────────────────────┤
+  │  Payload                                              │
+  └──────────────────────────────────────────────────────┘
 
   S=0 means "more labels below"
   S=1 means "bottom of stack" (last label)</pre>
@@ -775,7 +775,7 @@ routing-options {
 vrf-target target:<span class="highlight">65000:100</span>
 
 <span class="comment">/* PEX2-ORT imports routes with RT 65000:100 */</span>
-<span class="comment">/* â†’ It learns 192.168.1.0/24 into its VRF */</span></pre>
+<span class="comment">/* → It learns 192.168.1.0/24 into its VRF */</span></pre>
             <p><strong>Same RT = same VPN.</strong> Both PEX1 and PEX2 use RT 65000:100, so they exchange routes.</p>
         </div>
     </div>
@@ -822,12 +822,12 @@ vrf-target target:<span class="highlight">65000:100</span>
         <pre style="margin:0"><span class="cmd">PEX1-ORT VRF CUSTOMER-A routing table (CUSTOMER-A.inet.0):</span>
 
 192.168.1.0/24       <span class="comment">/* Local - connected via ge-0/0/1.0 */</span>
-   â†’ Direct, ge-0/0/1.0
+   → Direct, ge-0/0/1.0
 
 192.168.2.0/24       <span class="comment">/* Remote - learned via BGP VPNv4 from PEX2-ORT */</span>
-   â†’ via <span class="ip">10.255.0.6</span> (PEX2-ORT loopback)
-   â†’ Label: VPN label from PEX2-ORT
-   â†’ Transport: LDP label to reach 10.255.0.6</pre>
+   → via <span class="ip">10.255.0.6</span> (PEX2-ORT loopback)
+   → Label: VPN label from PEX2-ORT
+   → Transport: LDP label to reach 10.255.0.6</pre>
     </div>
 
     <h3>Verification Commands</h3>
@@ -835,7 +835,7 @@ vrf-target target:<span class="highlight">65000:100</span>
 <span class="cmd">show route table CUSTOMER-A.inet.0</span>        <span class="comment">/* Routes inside the VRF */</span>
 <span class="cmd">ping routing-instance CUSTOMER-A 192.168.2.1</span>  <span class="comment">/* Ping within VRF */</span>
 
-<span class="comment">/* End-to-end test from CE1 â†’ CE2: */</span>
+<span class="comment">/* End-to-end test from CE1 → CE2: */</span>
 <span class="cmd">ping 192.168.2.2 source 192.168.1.2</span></pre>
 </div>
 

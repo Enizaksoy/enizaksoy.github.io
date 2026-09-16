@@ -452,7 +452,7 @@
     <!-- Executive Summary -->
     <section>
         <h2>Executive Summary</h2>
-        <p>In the era of large language models (LLMs) and distributed AI training, understanding network communication patterns is crucial for building high-performance GPU clusters. This article provides an in-depth analysis of MPI collective operationsâ€”the backbone of distributed training frameworks like PyTorch Distributed, Horovod, and NVIDIA NCCL.</p>
+        <p>In the era of large language models (LLMs) and distributed AI training, understanding network communication patterns is crucial for building high-performance GPU clusters. This article provides an in-depth analysis of MPI collective operations—the backbone of distributed training frameworks like PyTorch Distributed, Horovod, and NVIDIA NCCL.</p>
 
         <p>Through extensive benchmarking on an 8-node RDMA cluster, I demonstrate how network architecture decisions directly impact training throughput, and provide practical guidance for network engineers designing AI infrastructure.</p>
 
@@ -462,7 +462,7 @@
                 <span class="label">4MB Allreduce Latency</span>
             </div>
             <div class="stat-card">
-                <span class="value">64.9Î¼s</span>
+                <span class="value">64.9μs</span>
                 <span class="label">1KB Allreduce Latency</span>
             </div>
             <div class="stat-card">
@@ -492,24 +492,24 @@
         </ul>
 
         <div class="info-box important">
-            <h4>âš ï¸ Critical Insight</h4>
+            <h4>⚠️ Critical Insight</h4>
             <p>In distributed training, GPUs spend significant time waiting for network operations to complete. NVIDIA reports that <strong>up to 50% of training time</strong> can be spent on communication in poorly optimized clusters. This is why companies like Google, Meta, and NVIDIA invest heavily in custom network fabrics.</p>
         </div>
 
         <h3>The Allreduce Bottleneck</h3>
-        <p>The most critical collective operation is <code>Allreduce</code>â€”it's called at the end of every training iteration to synchronize gradients across all workers. For a model with 175 billion parameters (like GPT-3):</p>
+        <p>The most critical collective operation is <code>Allreduce</code>—it's called at the end of every training iteration to synchronize gradients across all workers. For a model with 175 billion parameters (like GPT-3):</p>
 
         <div class="diagram">Training Iteration Timeline:
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                                                                          â”‚
-â”‚  Forward Pass    Backward Pass    â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ ALLREDUCE â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ    Update â”‚
-â”‚  [Compute]       [Compute]        [NETWORK - CRITICAL PATH]     [Compute]â”‚
-â”‚                                                                          â”‚
-â”‚  ~200ms          ~300ms           ~500-2000ms (varies!)         ~50ms   â”‚
-â”‚                                                                          â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  Forward Pass    Backward Pass    ████████ ALLREDUCE ████████    Update │
+│  [Compute]       [Compute]        [NETWORK - CRITICAL PATH]     [Compute]│
+│                                                                          │
+│  ~200ms          ~300ms           ~500-2000ms (varies!)         ~50ms   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 
-With 175B parameters Ã— 4 bytes (FP32) = 700GB gradient data per iteration
+With 175B parameters × 4 bytes (FP32) = 700GB gradient data per iteration
 Even with FP16: 350GB must be synchronized across ALL GPUs</div>
         <p class="diagram-caption">Figure 1: Training iteration breakdown showing Allreduce as potential bottleneck</p>
     </section>
@@ -526,34 +526,34 @@ Even with FP16: 350GB must be synchronized across ALL GPUs</div>
         <div class="diagram">ALLREDUCE Operation (Ring Algorithm):
 
 Initial State:           After Allreduce:
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”                â”Œâ”€â”€â”€â”€â”€â”€â”€â”
-â”‚GPU 0  â”‚ [A]            â”‚GPU 0  â”‚ [A+B+C+D]
-â””â”€â”€â”€â”¬â”€â”€â”€â”˜                â””â”€â”€â”€â”€â”€â”€â”€â”˜
-    â”‚
-â”Œâ”€â”€â”€â–¼â”€â”€â”€â”                â”Œâ”€â”€â”€â”€â”€â”€â”€â”
-â”‚GPU 1  â”‚ [B]    â•â•â•â–º    â”‚GPU 1  â”‚ [A+B+C+D]
-â””â”€â”€â”€â”¬â”€â”€â”€â”˜                â””â”€â”€â”€â”€â”€â”€â”€â”˜
-    â”‚
-â”Œâ”€â”€â”€â–¼â”€â”€â”€â”                â”Œâ”€â”€â”€â”€â”€â”€â”€â”
-â”‚GPU 2  â”‚ [C]            â”‚GPU 2  â”‚ [A+B+C+D]
-â””â”€â”€â”€â”¬â”€â”€â”€â”˜                â””â”€â”€â”€â”€â”€â”€â”€â”˜
-    â”‚
-â”Œâ”€â”€â”€â–¼â”€â”€â”€â”                â”Œâ”€â”€â”€â”€â”€â”€â”€â”
-â”‚GPU 3  â”‚ [D]            â”‚GPU 3  â”‚ [A+B+C+D]
-â””â”€â”€â”€â”€â”€â”€â”€â”˜                â””â”€â”€â”€â”€â”€â”€â”€â”˜
+┌───────┐                ┌───────┐
+│GPU 0  │ [A]            │GPU 0  │ [A+B+C+D]
+└───┬───┘                └───────┘
+    │
+┌───▼───┐                ┌───────┐
+│GPU 1  │ [B]    ═══►    │GPU 1  │ [A+B+C+D]
+└───┬───┘                └───────┘
+    │
+┌───▼───┐                ┌───────┐
+│GPU 2  │ [C]            │GPU 2  │ [A+B+C+D]
+└───┬───┘                └───────┘
+    │
+┌───▼───┐                ┌───────┐
+│GPU 3  │ [D]            │GPU 3  │ [A+B+C+D]
+└───────┘                └───────┘
 
-Each GPU contributes its gradients â†’ All GPUs receive the sum</div>
+Each GPU contributes its gradients → All GPUs receive the sum</div>
         <p class="diagram-caption">Figure 2: Allreduce aggregates and distributes data to all participants</p>
 
         <div class="info-box technical">
-            <h4>ðŸ”§ Technical Deep Dive: Ring Allreduce</h4>
+            <h4>🔧 Technical Deep Dive: Ring Allreduce</h4>
             <p>The Ring Allreduce algorithm is bandwidth-optimal for large messages. For N nodes with message size M:</p>
             <ul>
-                <li><strong>Data transferred per node:</strong> 2M Ã— (N-1)/N â‰ˆ 2M for large N</li>
+                <li><strong>Data transferred per node:</strong> 2M × (N-1)/N ≈ 2M for large N</li>
                 <li><strong>Steps required:</strong> 2(N-1) communication steps</li>
                 <li><strong>Bandwidth utilization:</strong> Approaches 100% of bidirectional link capacity</li>
             </ul>
-            <p>This is why high-bandwidth, low-latency networks are criticalâ€”Allreduce performance scales directly with network performance.</p>
+            <p>This is why high-bandwidth, low-latency networks are critical—Allreduce performance scales directly with network performance.</p>
         </div>
 
         <h3>All Collective Operations Explained</h3>
@@ -572,76 +572,76 @@ Each GPU contributes its gradients â†’ All GPUs receive the sum</div>
                     <td>Reduce + Broadcast: Combine values from all nodes, result to all</td>
                     <td>Gradient synchronization in data parallelism</td>
                     <td>Every iteration</td>
-                    <td>ðŸ”´ Critical</td>
+                    <td>🔴 Critical</td>
                 </tr>
                 <tr>
                     <td><strong>Broadcast</strong></td>
                     <td>One-to-all: Send data from one node to all others</td>
                     <td>Model weight initialization, hyperparameter distribution</td>
                     <td>Start of training, checkpoints</td>
-                    <td>ðŸŸ¡ Moderate</td>
+                    <td>🟡 Moderate</td>
                 </tr>
                 <tr>
                     <td><strong>Allgather</strong></td>
                     <td>Gather + Broadcast: Collect data from all nodes, result to all</td>
                     <td>Batch normalization statistics, ZeRO optimizer stage 3</td>
                     <td>Per layer (BatchNorm)</td>
-                    <td>ðŸŸ¡ Moderate</td>
+                    <td>🟡 Moderate</td>
                 </tr>
                 <tr>
                     <td><strong>Reduce-Scatter</strong></td>
                     <td>Reduce + Scatter: Combine and distribute chunks</td>
                     <td>ZeRO optimizer stage 2, gradient sharding</td>
                     <td>Every iteration (with ZeRO)</td>
-                    <td>ðŸ”´ Critical</td>
+                    <td>🔴 Critical</td>
                 </tr>
                 <tr>
                     <td><strong>All-to-All</strong></td>
                     <td>Personalized exchange: Each node sends unique data to each other</td>
                     <td>Mixture of Experts (MoE) routing, tensor parallelism</td>
                     <td>Per MoE layer</td>
-                    <td>ðŸ”´ Critical for MoE</td>
+                    <td>🔴 Critical for MoE</td>
                 </tr>
                 <tr>
                     <td><strong>Reduce</strong></td>
                     <td>Many-to-one: Combine values from all nodes to one root</td>
                     <td>Loss aggregation for logging</td>
                     <td>Every N iterations</td>
-                    <td>ðŸŸ¢ Low</td>
+                    <td>🟢 Low</td>
                 </tr>
             </table>
         </div>
 
         <h3>Visual Guide to Collective Operations</h3>
-        <div class="diagram">â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                     MPI COLLECTIVE OPERATIONS PATTERNS                           â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚                                                                                  â”‚
-â”‚  BROADCAST (One-to-All)              REDUCE (All-to-One)                        â”‚
-â”‚  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•                          â”‚
-â”‚                                                                                  â”‚
-â”‚      Root â”€â”€â”¬â”€â”€â–º Node1                  Node0 â”€â”€â”                               â”‚
-â”‚             â”œâ”€â”€â–º Node2                  Node1 â”€â”€â”¼â”€â”€â–º SUM â”€â”€â–º Root               â”‚
-â”‚             â”œâ”€â”€â–º Node3                  Node2 â”€â”€â”¤                               â”‚
-â”‚             â””â”€â”€â–º Node4                  Node3 â”€â”€â”˜                               â”‚
-â”‚                                                                                  â”‚
-â”‚  ALLREDUCE (All-to-All Reduce)       ALLGATHER (Gather + Broadcast)             â”‚
-â”‚  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•              â”‚
-â”‚                                                                                  â”‚
-â”‚      Node0 â”€â”€â”                          Node0 [A] â”€â”€â”                           â”‚
-â”‚      Node1 â”€â”€â”¼â”€â”€â–º SUM â”€â”€â–º All           Node1 [B] â”€â”€â”¼â”€â”€â–º [A,B,C,D] to All      â”‚
-â”‚      Node2 â”€â”€â”¤       Nodes              Node2 [C] â”€â”€â”¤                           â”‚
-â”‚      Node3 â”€â”€â”˜                          Node3 [D] â”€â”€â”˜                           â”‚
-â”‚                                                                                  â”‚
-â”‚  SCATTER (One-to-All Chunks)         ALL-TO-ALL (Personalized Exchange)         â”‚
-â”‚  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•          â”‚
-â”‚                                                                                  â”‚
-â”‚      Root â”€â”€â”¬â”€â”€â–º [A] Node0              Each node sends unique                  â”‚
-â”‚      [ABCD] â”œâ”€â”€â–º [B] Node1              data to every other node               â”‚
-â”‚             â”œâ”€â”€â–º [C] Node2                                                      â”‚
-â”‚             â””â”€â”€â–º [D] Node3              Critical for MoE models!                â”‚
-â”‚                                                                                  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜</div>
+        <div class="diagram">┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     MPI COLLECTIVE OPERATIONS PATTERNS                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  BROADCAST (One-to-All)              REDUCE (All-to-One)                        │
+│  ════════════════════                ══════════════════                          │
+│                                                                                  │
+│      Root ──┬──► Node1                  Node0 ──┐                               │
+│             ├──► Node2                  Node1 ──┼──► SUM ──► Root               │
+│             ├──► Node3                  Node2 ──┤                               │
+│             └──► Node4                  Node3 ──┘                               │
+│                                                                                  │
+│  ALLREDUCE (All-to-All Reduce)       ALLGATHER (Gather + Broadcast)             │
+│  ═════════════════════════════       ══════════════════════════════              │
+│                                                                                  │
+│      Node0 ──┐                          Node0 [A] ──┐                           │
+│      Node1 ──┼──► SUM ──► All           Node1 [B] ──┼──► [A,B,C,D] to All      │
+│      Node2 ──┤       Nodes              Node2 [C] ──┤                           │
+│      Node3 ──┘                          Node3 [D] ──┘                           │
+│                                                                                  │
+│  SCATTER (One-to-All Chunks)         ALL-TO-ALL (Personalized Exchange)         │
+│  ══════════════════════════          ══════════════════════════════════          │
+│                                                                                  │
+│      Root ──┬──► [A] Node0              Each node sends unique                  │
+│      [ABCD] ├──► [B] Node1              data to every other node               │
+│             ├──► [C] Node2                                                      │
+│             └──► [D] Node3              Critical for MoE models!                │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘</div>
         <p class="diagram-caption">Figure 3: Visual patterns of all major MPI collective operations</p>
     </section>
 
@@ -650,33 +650,33 @@ Each GPU contributes its gradients â†’ All GPUs receive the sum</div>
         <h2>Test Environment & Methodology</h2>
 
         <h3>Cluster Architecture</h3>
-        <div class="diagram">â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                         8-NODE RDMA AI CLUSTER                                   â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚                                                                                  â”‚
-â”‚                          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                                â”‚
-â”‚                          â”‚   Cisco Nexus 9K    â”‚                                â”‚
-â”‚                          â”‚   100G Switch       â”‚                                â”‚
-â”‚                          â”‚   PFC + ECN Enabled â”‚                                â”‚
-â”‚                          â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                                â”‚
-â”‚                                     â”‚                                           â”‚
-â”‚           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                 â”‚
-â”‚           â”‚         â”‚         â”‚     â”‚     â”‚         â”‚         â”‚                 â”‚
-â”‚       â”Œâ”€â”€â”€â–¼â”€â”€â”€â” â”Œâ”€â”€â”€â–¼â”€â”€â”€â” â”Œâ”€â”€â”€â–¼â”€â”€â”€â” â”‚ â”Œâ”€â”€â”€â–¼â”€â”€â”€â” â”Œâ”€â”€â”€â–¼â”€â”€â”€â” â”Œâ”€â”€â”€â–¼â”€â”€â”€â”           â”‚
-â”‚       â”‚Node 1 â”‚ â”‚Node 2 â”‚ â”‚Node 3 â”‚ â”‚ â”‚Node 5 â”‚ â”‚Node 6 â”‚ â”‚Node 7 â”‚           â”‚
-â”‚       â”‚.11.152â”‚ â”‚.11.153â”‚ â”‚.11.154â”‚ â”‚ â”‚.11.107â”‚ â”‚.12.51 â”‚ â”‚.20.150â”‚           â”‚
-â”‚       â””â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚ â””â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”˜           â”‚
-â”‚                               â”Œâ”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”                 â”Œâ”€â”€â”€â”€â”€â”€â”€â”           â”‚
-â”‚                               â”‚  Node 4   â”‚                 â”‚Node 8 â”‚           â”‚
-â”‚                               â”‚  .11.155  â”‚                 â”‚.30.94 â”‚           â”‚
-â”‚                               â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                 â””â”€â”€â”€â”€â”€â”€â”€â”˜           â”‚
-â”‚                                                                                  â”‚
-â”‚  Network: 25Gbps RoCEv2 per node                                                â”‚
-â”‚  NIC: Mellanox ConnectX-4 Lx (VMware PVRDMA)                                    â”‚
-â”‚  Transport: UCX with UD verbs                                                    â”‚
-â”‚  Lossless: PFC enabled on Priority 3, ECN thresholds configured                 â”‚
-â”‚                                                                                  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜</div>
+        <div class="diagram">┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         8-NODE RDMA AI CLUSTER                                   │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│                          ┌─────────────────────┐                                │
+│                          │   Cisco Nexus 9K    │                                │
+│                          │   100G Switch       │                                │
+│                          │   PFC + ECN Enabled │                                │
+│                          └──────────┬──────────┘                                │
+│                                     │                                           │
+│           ┌─────────────────────────┼─────────────────────────┐                 │
+│           │         │         │     │     │         │         │                 │
+│       ┌───▼───┐ ┌───▼───┐ ┌───▼───┐ │ ┌───▼───┐ ┌───▼───┐ ┌───▼───┐           │
+│       │Node 1 │ │Node 2 │ │Node 3 │ │ │Node 5 │ │Node 6 │ │Node 7 │           │
+│       │.11.152│ │.11.153│ │.11.154│ │ │.11.107│ │.12.51 │ │.20.150│           │
+│       └───────┘ └───────┘ └───────┘ │ └───────┘ └───────┘ └───────┘           │
+│                               ┌─────▼─────┐                 ┌───────┐           │
+│                               │  Node 4   │                 │Node 8 │           │
+│                               │  .11.155  │                 │.30.94 │           │
+│                               └───────────┘                 └───────┘           │
+│                                                                                  │
+│  Network: 25Gbps RoCEv2 per node                                                │
+│  NIC: Mellanox ConnectX-4 Lx (VMware PVRDMA)                                    │
+│  Transport: UCX with UD verbs                                                    │
+│  Lossless: PFC enabled on Priority 3, ECN thresholds configured                 │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘</div>
         <p class="diagram-caption">Figure 4: Test cluster topology with 8 RDMA-enabled nodes</p>
 
         <h3>Hardware Specifications</h3>
@@ -730,7 +730,7 @@ mpirun --hostfile hostfile_rdma -np 8 \
     $BENCHMARK</code></pre>
 
         <div class="info-box concept">
-            <h4>ðŸ’¡ Why UCX with UD Verbs?</h4>
+            <h4>💡 Why UCX with UD Verbs?</h4>
             <p><strong>UCX (Unified Communication X)</strong> is a high-performance communication library that provides:</p>
             <ul>
                 <li><strong>RDMA support:</strong> Zero-copy data transfers, kernel bypass</li>
@@ -759,14 +759,14 @@ mpirun --hostfile hostfile_rdma -np 8 \
                 </tr>
                 <tr>
                     <td>1 KB</td>
-                    <td><strong>64.9 Î¼s</strong></td>
+                    <td><strong>64.9 μs</strong></td>
                     <td>0.12 Gbps</td>
                     <td>Recursive Doubling</td>
                     <td>Small tensors, scalar metrics</td>
                 </tr>
                 <tr>
                     <td>64 KB</td>
-                    <td><strong>484 Î¼s</strong></td>
+                    <td><strong>484 μs</strong></td>
                     <td>1.06 Gbps</td>
                     <td>Ring / Recursive Halving</td>
                     <td>Small layer gradients</td>
@@ -796,8 +796,8 @@ mpirun --hostfile hostfile_rdma -np 8 \
         </div>
 
         <div class="info-box important">
-            <h4>âš ï¸ Key Observation: Latency-Bandwidth Tradeoff</h4>
-            <p>Notice how small messages (1KB) have very low latency but poor bandwidth utilization, while large messages (16MB) maximize bandwidth but have high absolute latency. This is why modern frameworks use <strong>gradient bucketing</strong>â€”combining small gradients into larger messages to improve efficiency.</p>
+            <h4>⚠️ Key Observation: Latency-Bandwidth Tradeoff</h4>
+            <p>Notice how small messages (1KB) have very low latency but poor bandwidth utilization, while large messages (16MB) maximize bandwidth but have high absolute latency. This is why modern frameworks use <strong>gradient bucketing</strong>—combining small gradients into larger messages to improve efficiency.</p>
         </div>
 
         <h3>Complete Collective Operations Benchmark</h3>
@@ -815,35 +815,35 @@ mpirun --hostfile hostfile_rdma -np 8 \
                     <td>10.6 ms</td>
                     <td>38.9 ms</td>
                     <td>&lt; 50ms</td>
-                    <td style="color: var(--success);">âœ“ PASS</td>
+                    <td style="color: var(--success);">✓ PASS</td>
                 </tr>
                 <tr>
                     <td>Broadcast</td>
                     <td>5.87 ms</td>
                     <td>25.4 ms</td>
                     <td>&lt; 30ms</td>
-                    <td style="color: var(--success);">âœ“ PASS</td>
+                    <td style="color: var(--success);">✓ PASS</td>
                 </tr>
                 <tr>
                     <td>Reduce</td>
                     <td>5.85 ms</td>
                     <td>24.1 ms</td>
                     <td>&lt; 30ms</td>
-                    <td style="color: var(--success);">âœ“ PASS</td>
+                    <td style="color: var(--success);">✓ PASS</td>
                 </tr>
                 <tr>
                     <td>Allgather</td>
                     <td>6.30 ms</td>
                     <td>27.8 ms</td>
                     <td>&lt; 35ms</td>
-                    <td style="color: var(--success);">âœ“ PASS</td>
+                    <td style="color: var(--success);">✓ PASS</td>
                 </tr>
                 <tr>
                     <td>All-to-All</td>
                     <td>73.0 ms</td>
                     <td>285 ms</td>
                     <td>&lt; 100ms (1MB)</td>
-                    <td style="color: var(--success);">âœ“ PASS</td>
+                    <td style="color: var(--success);">✓ PASS</td>
                 </tr>
             </table>
         </div>
@@ -852,7 +852,7 @@ mpirun --hostfile hostfile_rdma -np 8 \
         <p>Understanding actual network load is critical for capacity planning:</p>
 
         <div class="diagram">NETWORK TRAFFIC DURING ALLREDUCE (Ring Algorithm)
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+═════════════════════════════════════════════════
 
 8 Nodes, 4MB message per node = 32MB total gradient data
 
@@ -861,17 +861,17 @@ Ring Allreduce executes in 2 phases:
   Phase 2: Allgather (7 steps for 8 nodes)
 
 Per-node traffic:
-  â””â”€â”€ Each node sends: 4MB Ã— (N-1)/N Ã— 2 â‰ˆ 7MB
-  â””â”€â”€ Each node receives: 4MB Ã— (N-1)/N Ã— 2 â‰ˆ 7MB
-  â””â”€â”€ Total per-node bidirectional: ~14MB
+  └── Each node sends: 4MB × (N-1)/N × 2 ≈ 7MB
+  └── Each node receives: 4MB × (N-1)/N × 2 ≈ 7MB
+  └── Total per-node bidirectional: ~14MB
 
 Cluster-wide traffic:
-  â””â”€â”€ Total data moved: 8 nodes Ã— 14MB = 112MB per Allreduce
-  â””â”€â”€ At 38.9ms latency: ~23 Gbps aggregate bandwidth utilized
+  └── Total data moved: 8 nodes × 14MB = 112MB per Allreduce
+  └── At 38.9ms latency: ~23 Gbps aggregate bandwidth utilized
 
 For continuous training at 100 iterations/second:
-  â””â”€â”€ Network load: 112MB Ã— 100 = 11.2 GB/second sustained
-  â””â”€â”€ This is why 100Gbps+ networks are standard for AI clusters!</div>
+  └── Network load: 112MB × 100 = 11.2 GB/second sustained
+  └── This is why 100Gbps+ networks are standard for AI clusters!</div>
         <p class="diagram-caption">Figure 5: Network traffic analysis for Allreduce operations</p>
     </section>
 
@@ -883,16 +883,16 @@ For continuous training at 100 iterations/second:
         <p>Let's calculate how network performance affects actual training speed for a GPT-3 scale model:</p>
 
         <div class="info-box technical">
-            <h4>ðŸ§® Example: GPT-3 175B Training Analysis</h4>
+            <h4>🧮 Example: GPT-3 175B Training Analysis</h4>
             <p><strong>Model:</strong> 175 billion parameters</p>
-            <p><strong>Gradient size:</strong> 175B Ã— 2 bytes (FP16) = 350GB per iteration</p>
+            <p><strong>Gradient size:</strong> 175B × 2 bytes (FP16) = 350GB per iteration</p>
             <p><strong>Cluster:</strong> 1024 GPUs across 128 nodes</p>
-            <p><strong>Network:</strong> 200Gbps per node (8Ã— 25Gbps NICs with NVLink for intra-node)</p>
+            <p><strong>Network:</strong> 200Gbps per node (8× 25Gbps NICs with NVLink for intra-node)</p>
 
             <p><strong>Allreduce time calculation:</strong></p>
             <ul>
                 <li>Per-node gradient: 350GB / 1024 = 341MB</li>
-                <li>Ring Allreduce data per node: 341MB Ã— 2 = 682MB</li>
+                <li>Ring Allreduce data per node: 341MB × 2 = 682MB</li>
                 <li>At 200Gbps (25GB/s): 682MB / 25GB/s = 27ms (theoretical minimum)</li>
                 <li>With protocol overhead (~40%): ~38ms actual</li>
             </ul>
@@ -901,7 +901,7 @@ For continuous training at 100 iterations/second:
             <ul>
                 <li>If compute time is 200ms per iteration</li>
                 <li>Communication time: 38ms (16% overhead)</li>
-                <li>Total iteration: 238ms â†’ 4.2 iterations/second</li>
+                <li>Total iteration: 238ms → 4.2 iterations/second</li>
                 <li><strong>16% of training time spent on network communication!</strong></li>
             </ul>
         </div>
@@ -946,7 +946,7 @@ For continuous training at 100 iterations/second:
         <p>Based on our benchmarking experience, here are key recommendations for AI cluster networks:</p>
 
         <div class="key-takeaway">
-            <h4>ðŸŽ¯ Network Design Principles for AI Training</h4>
+            <h4>🎯 Network Design Principles for AI Training</h4>
             <ul>
                 <li><strong>Provision for 2x expected bandwidth:</strong> Collective operations create bursty, synchronized traffic patterns</li>
                 <li><strong>Minimize hop count:</strong> Each switch hop adds latency; fat-tree topologies should be shallow</li>
@@ -984,44 +984,44 @@ For continuous training at 100 iterations/second:
         </div>
 
         <h3>Why ECN Marks Are Good News</h3>
-        <p>Many engineers see ECN marks as a problemâ€”they're actually the solution working correctly:</p>
+        <p>Many engineers see ECN marks as a problem—they're actually the solution working correctly:</p>
 
         <div class="diagram">DCQCN Congestion Control During MPI Stress Test
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+════════════════════════════════════════════════
 
 Timeline of a congestion event:
 
 T=0ms:    All 8 nodes start Allreduce simultaneously
-          â”‚
-          â–¼
+          │
+          ▼
 T=0.1ms:  Switch queue fills rapidly (synchronized traffic)
-          Queue depth: â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 80% capacity
-          â”‚
-          â–¼
-T=0.2ms:  ECN threshold exceeded â†’ Switch marks packets with CE bit
+          Queue depth: ████████████████████ 80% capacity
+          │
+          ▼
+T=0.2ms:  ECN threshold exceeded → Switch marks packets with CE bit
           Action: ECN marking begins (NOT dropping!)
-          â”‚
-          â–¼
-T=0.5ms:  Receiver NICs detect CE marks â†’ Generate CNP packets
+          │
+          ▼
+T=0.5ms:  Receiver NICs detect CE marks → Generate CNP packets
           CNP sent back to senders with DSCP 48 (high priority)
-          â”‚
-          â–¼
-T=1.0ms:  Sender NICs receive CNP â†’ DCQCN rate limiter activates
+          │
+          ▼
+T=1.0ms:  Sender NICs receive CNP → DCQCN rate limiter activates
           Transmission rate reduced by 50%
-          â”‚
-          â–¼
-T=5.0ms:  Queue drains â†’ ECN marking stops
+          │
+          ▼
+T=5.0ms:  Queue drains → ECN marking stops
           Rate gradually increases back to line rate
-          â”‚
-          â–¼
+          │
+          ▼
           RESULT: Zero packet loss, brief throughput reduction
           Training continues uninterrupted!</div>
         <p class="diagram-caption">Figure 6: DCQCN congestion control timeline during MPI stress test</p>
 
         <p>This is the <strong>fundamental difference</strong> between TCP-based and RDMA-based AI training:</p>
         <ul>
-            <li><strong>TCP:</strong> Drops packets â†’ Retransmissions â†’ 1000x latency spike â†’ Training stalls</li>
-            <li><strong>RDMA + DCQCN:</strong> Marks packets â†’ Rate reduction â†’ 2x latency briefly â†’ Training continues</li>
+            <li><strong>TCP:</strong> Drops packets → Retransmissions → 1000x latency spike → Training stalls</li>
+            <li><strong>RDMA + DCQCN:</strong> Marks packets → Rate reduction → 2x latency briefly → Training continues</li>
         </ul>
     </section>
 
@@ -1096,7 +1096,7 @@ tcpdump -i ens192 -w mpi_test.pcap udp port 4791</code></pre>
         </ul>
 
         <div class="info-box success">
-            <h4>âœ… Project Success Criteria Met</h4>
+            <h4>✅ Project Success Criteria Met</h4>
             <ul>
                 <li>All collective operations within production targets</li>
                 <li>Zero packet loss during stress tests</li>
