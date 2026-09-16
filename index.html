@@ -352,8 +352,9 @@
     <div class="archive-title">Deep Dives</div>
 
     <details class="archive-month" open>
-      <summary class="archive-month-head">2026 September<span>1</span></summary>
+      <summary class="archive-month-head">2026 September<span>2</span></summary>
       <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/evpn-rd-ecmp.html">One RD, Two Leaves: RD Uniqueness and EVPN ECMP</a>
         <a href="https://enizaksoy.github.io/articles/versa-clear-vs-encrypted.html">Clear vs Encrypted Tunnels on Versa SD-WAN</a>
       </div>
     </details>
@@ -548,10 +549,17 @@
     <div class="wrap">
       <div class="section-head">
         <h2 class="section-title">Deep Dives</h2>
-        <span class="section-note">16 write-ups</span>
+        <span class="section-note">17 write-ups</span>
       </div>
       <p class="section-desc">Narrower than a full lab — a single problem, traced through configs and packet captures until it's understood.</p>
       <div class="card-grid">
+
+        <article class="card">
+          <h3>One RD, Two Leaves: RD Uniqueness and EVPN ECMP</h3>
+          <div class="card-date">2026-09-16</div>
+          <p>Does EVPN ECMP actually need a unique Route Distinguisher per VTEP? What RFC 7432 §7.9 really mandates, why a shared RD deletes the second path one hop upstream rather than losing it to best-path, and the NX-OS control that changes the answer &mdash; four measured topologies across two EVPN implementations, with the raw output.</p>
+          <div class="card-links"><a href="https://enizaksoy.github.io/articles/evpn-rd-ecmp.html">Read &rarr;</a><a class="source" href="https://github.com/Enizaksoy/EVPN-RD-Uniqueness-ECMP-Lab">Source</a></div>
+        </article>
 
         <article class="card">
           <h3>Clear vs Encrypted Tunnels on Versa SD-WAN</h3>

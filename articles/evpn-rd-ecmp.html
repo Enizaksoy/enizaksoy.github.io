@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One RD, Two Leaves — EVPN RD Uniqueness and ECMP</title>
+<meta name="description" content="Does EVPN ECMP require a unique Route Distinguisher per VTEP? What RFC 7432 §7.9 actually mandates, what Cisco documents, and four measured topologies on NX-OS and Versa VOS with the raw show output.">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">EVPN-VXLAN · Route Distinguishers</div>
+  <h1>One RD, Two Leaves</h1>
+  <p class="lede">RFC 7432 §7.9 requires the RD to be unique <em>within</em> a PE and recommends a loopback-derived Type-1 value. Whether it must also differ <em>between</em> PEs is not in the RFC — it is in vendor guidance, and in what the RIB actually does. Measured on two EVPN implementations, in four topologies, with the raw output.</p>
+  <div class="meta">2026-09-16 · EVPN Type-5 · L3VNI · BGP multipath · NX-OS 10.5(3)</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#claim">1. The claim</a><a href="#rfc">2. What the RFC says</a>
+    <a href="#rdrt">3. RD is not RT</a><a href="#bed">4. Test bed</a>
+    <a href="#unique">5. Baseline — unique RD</a><a href="#transit">6. Shared RD behind a transit node</a>
+    <a href="#direct">7. Shared RD with direct peering</a><a href="#knob">8. The knob ★</a>
+    <a href="#layers">9. Two multipath layers</a><a href="#other">10. A different RIB model</a>
+    <a href="#docs">11. Vendor guidance</a><a href="#caveats">12. Measurement caveats</a>
+    <a href="#take">13. Takeaways</a>
+  </div>
+
+  <h2 id="claim">1. The claim</h2>
+  <p>An EVPN design argument that recurs often enough to be worth settling with a lab rather than with opinion:</p>
+  <div class="call info"><b>The claim.</b> "With a route reflector — yes, you need a unique RD. With direct peering you don't. At least on Cisco; they even publish examples using the same RD."</div>
+  <p>It sounds reasonable, and it is partly true. It is also cheap to test: put the same prefix behind two leaves, receive it on a third, and change exactly one variable.</p>
+  <p>The short version of what follows: <b>a shared RD can produce ECMP, but only in a topology nobody builds, and only after enabling a control that appears in no standard fabric template.</b> The moment anything re-advertises the route — a route reflector, a transit spine — the second path stops existing at all, and no amount of multipath configuration brings it back.</p>
+
+  <h2 id="rfc">2. What the RFC actually says</h2>
+  <p>"The RFC requires unique RDs" is repeated a lot. It is worth reading the actual text, because it does not say what people think it says. RFC 7432 §7.9, <i>Route Distinguisher Assignment per MAC-VRF</i>:</p>
+  <div class="call info">"The Route Distinguisher (RD) MUST be set to the RD of the MAC-VRF that is advertising the NLRI. An RD MUST be assigned for a given MAC-VRF on a PE. <b>This RD MUST be unique across all MAC-VRFs on a PE.</b> It is RECOMMENDED to use the Type 1 RD [RFC4364]. The value field comprises an IP address of the PE (typically, the loopback address) followed by a number unique to the PE."</div>
+  <p>Read it carefully:</p>
+  <ul>
+    <li>The normative <b>MUST</b> is about uniqueness <em>within a single PE</em> — don't reuse one RD across two MAC-VRFs on the same box.</li>
+    <li>Uniqueness <em>between</em> PEs is never stated as a requirement. It emerges as a side effect of the <b>RECOMMENDED</b> Type-1 format, whose administrator field is the PE's own loopback. Cisco's <code>rd auto</code> and its equivalents implement exactly that recommendation, which is why unique-per-PE RDs are what everyone actually runs.</li>
+    <li>§7.9 is about the <b>MAC-VRF</b> — Layer 2. The IP Prefix route (Type-5) that carries a tenant subnet across an L3VNI is not in RFC 7432 at all; it is defined in <b>RFC 9136</b>. So for the symmetric-IRB case tested here, §7.9 is context, not authority.</li>
+  </ul>
+  <div class="call warn"><b>So the RFC does not settle it.</b> Anyone arguing "the RFC mandates a unique RD per PE" is overstating, and anyone arguing "the RFC permits a shared RD, therefore it is fine" is answering a standards question when the real question is a forwarding question. The gap is exactly what a lab is for.</div>
+
+  <h2 id="rdrt">3. RD is not RT, and the two get conflated constantly</h2>
+  <p>Both are written <code>ASN:nn</code>. They do entirely different jobs, and the discussion turns to noise when they are mixed up.</p>
+  <table>
+    <tr><th></th><th>Route Distinguisher</th><th>Route Target</th></tr>
+    <tr><td><b>What it is</b></td><td>Part of the NLRI — inside the route's identity</td><td>An extended community — a label attached to the route</td></tr>
+    <tr><td><b>Job</b></td><td>Make two PEs' copies of one prefix distinct BGP objects</td><td>Decide which VRF imports the route</td></tr>
+    <tr><td><b>Should be</b></td><td><b>Unique per PE</b></td><td><b>Shared across the fabric</b></td></tr>
+    <tr><td><b>Where it appears</b></td><td>The <code>Route Distinguisher:</code> section header</td><td>The <code>Extcommunity: RT:…</code> line under each path</td></tr>
+  </table>
+  <p>Making the RT unique per PE does not tighten anything — it stops the import and the tenant route never reaches the VRF. So "unique RD and RT" is never the right phrase. It is <b>unique RD, shared RT</b>, and every capture below keeps the RT fixed at <code>65000:5000</code> while only the RD moves.</p>
+
+  <h2 id="bed">4. Test bed</h2>
+  <p>Two leaves each own an SVI in the same tenant VRF, so both originate the prefix. A third leaf has no local interface in that subnet and is the receiver.</p>
+  <table>
+    <tr><th>Node</th><th>VTEP / Loopback0</th><th>AS</th><th>Role</th></tr>
+    <tr><td>Spine-1 / Spine-2</td><td>100.1.1.1 / 100.1.1.2</td><td>65000</td><td>eBGP transit (not an RR) — <code>retain route-target all</code>, next-hop unchanged outbound</td></tr>
+    <tr><td>Leaf-1</td><td>1.1.1.1</td><td>65001</td><td>origin — <code>interface Vlan80  ip address 172.16.80.1/24</code></td></tr>
+    <tr><td>Leaf-2</td><td>2.2.2.2</td><td>65002</td><td>origin — <code>interface Vlan80  ip address 172.16.80.2/24</code></td></tr>
+    <tr><td>Leaf-3</td><td>3.3.3.3</td><td>65003</td><td>receiver — no Vlan80</td></tr>
+  </table>
+  <p>VRF <code>Customer-A</code>, L3VNI 50000, RT <code>65000:5000</code>, test prefix <b>172.16.80.0/24</b>. NX-OS 10.5(3). Both origins really do own the subnet:</p>
+  <pre><code>Leaf-1# show ip route 172.16.80.0/24 vrf Customer-A
+172.16.80.0/24, ubest/mbest: 1/0, attached
+    *via 172.16.80.1, Vlan80, [0/0], 01:24:52, direct
+
+Leaf-2# show ip route 172.16.80.0/24 vrf Customer-A
+172.16.80.0/24, ubest/mbest: 1/0, attached
+    *via 172.16.80.2, Vlan80, [0/0], 01:24:49, direct</code></pre>
+  <p>Multipath configuration on the receiver, present throughout unless stated otherwise:</p>
+  <pre><code>router bgp 65003
+  router-id 3.3.3.3
+  bestpath as-path multipath-relax
+  bestpath compare-routerid
+  address-family ipv4 unicast
+    maximum-paths 10
+  vrf Customer-A
+    bestpath as-path multipath-relax
+    bestpath compare-neighborid
+    address-family ipv4 unicast
+      maximum-paths 10</code></pre>
+  <p>Note where <code>maximum-paths</code> sits: under the VRF's IPv4 unicast address family. That is the standard template — and for most of this article it is also the trap.</p>
+
+  <h2 id="unique">5. Baseline — unique RD (<code>rd auto</code>)</h2>
+  <p>With the default auto-derived RD the receiver files the prefix under two different section headers:</p>
+  <pre><code>Leaf-3# show bgp l2vpn evpn 172.16.80.0
+BGP routing table information for VRF default, address family L2VPN EVPN
+Route Distinguisher: 1.1.1.1:4
+BGP routing table entry for [5]:[0]:[0]:[24]:[172.16.80.0]/224, version 468
+Paths: (2 available, best #2)
+
+  Path type: external, path is valid, not best reason: Router Id, no labeled nexthop
+  AS-Path: 65000 65001 , path sourced external to AS
+    1.1.1.1 (metric 0) from 10.1.23.2 (100.1.1.2)
+      Received label 50000
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:52ac.fa5e.1b08
+
+  Path type: external, path is valid, is best path, no labeled nexthop
+             Imported to 2 destination(s)
+             Imported paths list: Customer-A L3-50000
+  AS-Path: 65000 65001 , path sourced external to AS
+    1.1.1.1 (metric 0) from 10.1.13.2 (100.1.1.1)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:52ac.fa5e.1b08
+
+Route Distinguisher: 2.2.2.2:4
+BGP routing table entry for [5]:[0]:[0]:[24]:[172.16.80.0]/224, version 480
+Paths: (2 available, best #2)
+
+  Path type: external, path is valid, not best reason: newer EBGP path
+  AS-Path: 65000 65002 , path sourced external to AS
+    2.2.2.2 (metric 0) from 10.1.13.2 (100.1.1.1)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:529a.5b2c.1b08
+
+  Path type: external, path is valid, is best path, no labeled nexthop
+             Imported to 2 destination(s)
+             Imported paths list: Customer-A L3-50000
+  AS-Path: 65000 65002 , path sourced external to AS
+    2.2.2.2 (metric 0) from 10.1.23.2 (100.1.1.2)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:529a.5b2c.1b08</code></pre>
+  <p>Four received copies — each origin heard through each spine — but the structure that matters is the two <b>RD headers</b>. Two RDs mean two NLRIs, each with its own best path, each independently imported. In the VRF that becomes two candidates:</p>
+  <pre><code>Leaf-3# show bgp vrf Customer-A ipv4 unicast
+   Network            Next Hop            Metric     LocPrf     Weight Path
+*&gt;e172.16.80.0/24     2.2.2.2                                        0 65000 65002 ?
+*|e                   1.1.1.1                                        0 65000 65001 ?</code></pre>
+  <p>The <code>|</code> flag is defined in the legend of that same command as <code>multipath</code>. Both land in the routing table:</p>
+  <pre><code>Leaf-3# show ip route 172.16.80.0/24 vrf Customer-A
+172.16.80.0/24, ubest/mbest: 2/0
+    *via 1.1.1.1%default, [20/0], 00:00:44, bgp-65003, external, tag 65001, segid: 50000 tunnelid: 0x1010101 encap: VXLAN
+    *via 2.2.2.2%default, [20/0], 00:00:48, bgp-65003, external, tag 65002, segid: 50000 tunnelid: 0x2020202 encap: VXLAN</code></pre>
+  <p><code>ubest/mbest: 2/0</code> is the number to watch for the rest of this article. <code>tag</code> is the origin AS and <code>tunnelid</code> is the VTEP loopback in hex — <code>0x1010101</code> = 1.1.1.1, <code>0x2020202</code> = 2.2.2.2 — so it is visible at a glance that the two paths really are two different VTEPs.</p>
+
+  <h2 id="transit">6. Shared RD behind a transit node — it cannot work, and not for the reason people assume</h2>
+  <p>Now set <code>rd 65000:5000</code> in <code>vrf context Customer-A</code> on both origins, change nothing else, and the receiver drops to one path:</p>
+  <pre><code>Leaf-3# show ip route 172.16.80.0/24 vrf Customer-A
+172.16.80.0/24, ubest/mbest: 1/0
+    *via 1.1.1.1%default, [20/0], 00:00:53, bgp-65003, external, tag 65001, segid: 50000 tunnelid: 0x1010101 encap: VXLAN</code></pre>
+  <p>The intuitive explanation is that best-path discarded the other leaf. Look at what actually arrived instead:</p>
+  <pre><code>Leaf-3# show bgp l2vpn evpn 172.16.80.0
+Route Distinguisher: 65000:5000
+BGP routing table entry for [5]:[0]:[0]:[24]:[172.16.80.0]/224, version 365
+Paths: (2 available, best #2)
+
+  Path type: external, path is valid, not best reason: Router Id, no labeled nexthop
+  AS-Path: 65000 65002 , path sourced external to AS
+    2.2.2.2 (metric 0) from 10.1.23.2 (100.1.1.2)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:529a.5b2c.1b08
+
+  Path type: external, path is valid, is best path, no labeled nexthop
+             Imported to 2 destination(s)
+  AS-Path: 65000 65002 , path sourced external to AS
+    2.2.2.2 (metric 0) from 10.1.13.2 (100.1.1.1)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:529a.5b2c.1b08</code></pre>
+  <div class="call warn"><b>Both paths have next-hop <code>2.2.2.2</code> and the same Router MAC.</b> They are not two leaves — they are the <em>same</em> leaf's route arriving through two different spines (<code>from 10.1.13.2</code> and <code>from 10.1.23.2</code>). The other origin never reached the receiver at all.</div>
+  <p>With a shared RD the two origins produce one NLRI. Each spine runs best-path on that single NLRI and re-advertises exactly one copy. There is no second VTEP anywhere in the receiver's table, so multipath has nothing to select. This is not a tuning problem — the alternative was deleted one hop upstream.</p>
+  <p>A route reflector behaves identically. The mechanism is not "RR"; it is <b>any node that re-advertises</b>. In a spine-leaf fabric that describes every path a route can take.</p>
+  <p>The damage is also not limited to one prefix. Comparing the receiver's VRF BGP table across the two runs, the other tenant subnets went from four candidates to three — one PE's entire contribution vanishes fabric-wide:</p>
+  <pre><code>unique RD                              shared RD
+*&gt;r172.16.10.0/24   0.0.0.0   (local)  *&gt;r172.16.10.0/24   0.0.0.0   (local)
+*  e               4.4.4.4             *  e               1.1.1.1
+*  e               2.2.2.2             *  e               4.4.4.4
+*  e               1.1.1.1</code></pre>
+
+  <h2 id="direct">7. Shared RD with direct peering — the claim's actual scenario</h2>
+  <p>Testing the claim properly means taking the transit node out of the decision. Direct multihop eBGP sessions were built from the receiver to each origin over loopbacks, leaving the spine sessions in place:</p>
+  <pre><code>router bgp 65003
+  neighbor 1.1.1.1 remote-as 65001
+    update-source loopback0
+    ebgp-multihop 5
+    address-family l2vpn evpn
+      send-community
+      send-community extended
+  neighbor 2.2.2.2 remote-as 65002
+    update-source loopback0
+    ebgp-multihop 5
+    address-family l2vpn evpn
+      send-community
+      send-community extended</code></pre>
+  <div class="call warn"><b>A full mesh is the wrong shape for this test.</b> The first attempt also peered the two origins with each other. Sharing an RD, each one then collapsed its own route and its neighbour's into a single NLRI, chose one, and re-advertised that with its own next-hop and Router MAC. The receiver ended up with AS-paths <code>65001 65002</code> and <code>65002 65001</code> — length 2, neither being an origin's own route — plus two spine copies that had gone <code>invalid(rnh not resolved)</code> with link-address next-hops. Removing the origin-to-origin session is what isolates the variable.</div>
+  <p>With receiver-to-origin sessions only, each origin advertises its own route. Verified at the source — the local route wins on weight and is the one sent to the receiver (<code>3.3.3.3</code>):</p>
+  <pre><code>Leaf-1# show bgp l2vpn evpn 172.16.80.0
+Route Distinguisher: 65000:5000    (L3VNI 50000)
+Paths: (1 available, best #1)
+  Advertised path-id 1
+  Path type: local, path is valid, is best path, no labeled nexthop
+  AS-Path: NONE, path locally originated
+    1.1.1.1 (metric 0) from 0.0.0.0 (1.1.1.1)
+      Origin incomplete, MED 0, localpref 100, weight 32768
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:52ac.fa5e.1b08
+  Path-id 1 advertised to peers:
+    3.3.3.3            10.1.11.2          10.1.21.2</code></pre>
+  <p>And the receiver gets two genuinely distinct copies — different next-hops, different Router MACs, AS-path length 1 on both:</p>
+  <pre><code>Leaf-3# show bgp l2vpn evpn 172.16.80.0
+Route Distinguisher: 65000:5000
+BGP routing table entry for [5]:[0]:[0]:[24]:[172.16.80.0]/224, version 1202
+Paths: (2 available, best #1)
+
+  Path type: external, path is valid, is best path, no labeled nexthop
+             Imported to 2 destination(s)
+             Imported paths list: Customer-A L3-50000
+  AS-Path: 65001 , path sourced external to AS
+    1.1.1.1 (metric 0) from 1.1.1.1 (1.1.1.1)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:52ac.fa5e.1b08
+
+  Path type: external, path is valid, not best reason: Router Id, no labeled nexthop
+  AS-Path: 65002 , path sourced external to AS
+    2.2.2.2 (metric 0) from 2.2.2.2 (2.2.2.2)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:529a.5b2c.1b08</code></pre>
+  <p>Two valid paths, two VTEPs, equal AS-path length, <code>multipath-relax</code> enabled. And still:</p>
+  <pre><code>Leaf-3# show bgp vrf Customer-A ipv4 unicast 172.16.80.0/24
+BGP routing table entry for 172.16.80.0/24, version 142
+Paths: (1 available, best #1)
+Multipath: eBGP
+  Path type: external, path is valid, is best path, no labeled nexthop, in rib
+             Imported from 65000:5000:[5]:[0]:[0]:[24]:[172.16.80.0]/224
+  AS-Path: 65001
+
+Leaf-3# show ip route 172.16.80.0/24 vrf Customer-A
+172.16.80.0/24, ubest/mbest: 1/0
+    *via 1.1.1.1%default, [20/0], 00:00:27, bgp-65003, external, tag 65001, segid: 50000 tunnelid: 0x1010101 encap: VXLAN</code></pre>
+  <p>Note the discontinuity: the EVPN table holds <b>two</b> paths, the VRF table holds <b>one</b>. Something between those two tables dropped a candidate, and it is not <code>maximum-paths</code> — that control never saw a second candidate at all. The clue is one line up:</p>
+  <pre><code>             Imported to 2 destination(s)     &lt;-- present only under the best path</code></pre>
+  <div class="call info"><b>Reading the tie-breaker.</b> <code>not best reason: Router Id</code> means the comparison ran all the way to the router-ID and 1.1.1.1 &lt; 2.2.2.2 decided it. Nothing is wrong with the losing path — it lost an arbitrary tie-break. In the VRF table the same loss is reported as <code>Neighbor Address</code>, because <code>bestpath compare-neighborid</code> is configured there.</div>
+
+  <h2 id="knob">8. The knob</h2>
+  <p>The EVPN address family has its own <code>maximum-paths</code>, separate from the VRF one, and it had never been configured:</p>
+  <pre><code>Leaf-3(config-router-af)# maximum-paths ?
+  &lt;1-512&gt;       Number of parallel paths
+  ibgp          Configure multipath for IBGP paths
+  local         Configure multipath for local paths
+  mixed         Configure multipath for local and remote paths
+  unequal-cost  Configure WUECMP based on weight derived from nexthop-metric by default</code></pre>
+  <pre><code>router bgp 65003
+  address-family l2vpn evpn
+    maximum-paths 10</code></pre>
+  <p>Same shared RD, same direct peering, one line added:</p>
+  <pre><code>Leaf-3# show bgp l2vpn evpn 172.16.80.0
+Route Distinguisher: 65000:5000
+BGP routing table entry for [5]:[0]:[0]:[24]:[172.16.80.0]/224, version 1206
+Paths: (2 available, best #1)
+Multipath: eBGP
+
+  Path type: external, path is valid, is best path, no labeled nexthop
+             Imported to 2 destination(s)
+             Imported paths list: Customer-A L3-50000
+  AS-Path: 65001 , path sourced external to AS
+    1.1.1.1 (metric 0) from 1.1.1.1 (1.1.1.1)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:52ac.fa5e.1b08
+
+  Path type: external, path is valid, not best reason: Router Id, multipath, no labeled nexthop
+             Imported to 2 destination(s)
+             Imported paths list: Customer-A L3-50000
+  AS-Path: 65002 , path sourced external to AS
+    2.2.2.2 (metric 0) from 2.2.2.2 (2.2.2.2)
+      Extcommunity: RT:65000:5000 ENCAP:8 Router MAC:529a.5b2c.1b08</code></pre>
+  <pre><code>Leaf-3# show bgp vrf Customer-A ipv4 unicast 172.16.80.0/24
+BGP routing table entry for 172.16.80.0/24, version 145
+Paths: (2 available, best #1)
+Multipath: eBGP
+  Path type: external, path is valid, is best path, no labeled nexthop, in rib
+             Imported from 65000:5000:[5]:[0]:[0]:[24]:[172.16.80.0]/224
+  AS-Path: 65001
+  Path type: external, path is valid, not best reason: Neighbor Address, multipath, no labeled nexthop, in rib
+             Imported from 65000:5000:[5]:[0]:[0]:[24]:[172.16.80.0]/224
+  AS-Path: 65002
+
+Leaf-3# show ip route 172.16.80.0/24 vrf Customer-A
+172.16.80.0/24, ubest/mbest: 2/0
+    *via 1.1.1.1%default, [20/0], 00:06:54, bgp-65003, external, tag 65001, segid: 50000 tunnelid: 0x1010101 encap: VXLAN
+    *via 2.2.2.2%default, [20/0], 00:01:29, bgp-65003, external, tag 65002, segid: 50000 tunnelid: 0x2020202 encap: VXLAN</code></pre>
+  <div class="call ok"><b>Two textual changes explain the whole mechanism.</b> The losing path gained the word <code>multipath</code>, and <code>Imported to 2 destination(s)</code> now appears under <em>both</em> paths. VRF import follows the best path <b>plus multipath members</b> — so until a path becomes a multipath member it is never imported, and the VRF-level <code>maximum-paths</code> never gets a chance to consider it.</div>
+  <p>So the claim is vindicated in its narrow form: shared RD with direct peering does give ECMP. It needs a control absent from the default template, and that control is unnecessary in any design using a unique RD.</p>
+
+  <h2 id="layers">9. Two multipath layers, and which one you actually need</h2>
+  <table>
+    <tr><th>Control</th><th>Question it answers</th><th>Needed when</th></tr>
+    <tr><td><code>address-family l2vpn evpn</code><br><code>&nbsp;&nbsp;maximum-paths N</code></td><td>How many paths of the <em>same EVPN NLRI</em> become multipath members — and therefore get imported into the VRF?</td><td>Only when PEs share an RD</td></tr>
+    <tr><td><code>vrf X / address-family ipv4 unicast</code><br><code>&nbsp;&nbsp;maximum-paths N</code></td><td>How many of the VRF's candidates get installed into the routing table?</td><td>Always</td></tr>
+  </table>
+  <p>With unique RDs the first control is redundant: each PE's route is already its own NLRI with its own best path, so two candidates reach the VRF without any EVPN-level multipath at all. That is why the standard template omits it — and why nobody discovers it exists until they break the RD.</p>
+
+  <h2 id="other">10. A different RIB model, and why the answer does not port</h2>
+  <p>The same test was run on a second EVPN implementation — Versa VOS, symmetric IRB, L3 VNI 110, spine route reflectors, test prefix 10.1.80.0/24 originated by two leaves. The routing-table outcome matches, but the mechanism does not, which matters if you are tempted to carry the Cisco answer across.</p>
+  <p>With unique RDs the receiver shows something an NX-OS engineer does not expect:</p>
+  <pre><code>leaf-c&gt; show route routing-instance TENANT-LAN-VR 10.1.80.0/24
+
+Routes for Routing instance : TENANT-LAN-VR  AFI: ipv4  SAFI: unicast
+[+] - Active Route
+
+Routing entry for 10.1.80.0 (mask 255.255.255.0) [+]
+Known via 'BGP', Preference(admin distance 200)
+   Last update from 172.17.255.3
+Routing Descriptor Blocks:
+* 172.17.255.3 , via Indirect()
+
+Routing entry for 10.1.80.0 (mask 255.255.255.0) [+]
+Known via 'BGP', Preference(admin distance 200)
+   Last update from 172.17.255.4
+Routing Descriptor Blocks:
+* 172.17.255.4 , via Indirect()</code></pre>
+  <p>Not one entry with two paths — <b>two separate routing entries</b>, with no multipath configuration anywhere on the box. The forwarding table agrees, one tunnel interface per VTEP:</p>
+  <pre><code>Destination      Gateway        Netif       L3-VNI  VTEP-DMAC
+10.1.80.0/24     172.17.255.3   dtvi-0/89   110     0a:00:af:66:fb:00
+10.1.80.0/24     172.17.255.4   dtvi-0/92   110     0a:00:6b:59:f6:00</code></pre>
+  <p>Collapse the RD and both the second entry and the second tunnel disappear. This capture is the clean case — direct eBGP sessions only, reflector sessions shut on the receiver, equal AS-path length, <code>as-path-multipath-relax</code> enabled:</p>
+  <pre><code>leaf-c&gt; show route table l2vpn.evpn receive-protocol bgp ipv4-prefix 10.1.80.0/24
+
+Routing entry for 10.1.80.0/24
+   Route Type         : 5 (IP Prefix)
+   Peer Address       : 172.17.255.4
+   Route Distinguisher: 13L:124
+   Next-hop           : 172.17.255.4
+   VNI                : 110
+   Local Preference   : 100
+   AS Path            : 65103
+   Extended community : target:13L:13 03:0c:00:00:00:00:00:08 06:03:0a:00:6b:59:f6:00
+   Best               : false
+   Reason             : identifier
+
+Routing entry for 10.1.80.0/24
+   Route Type         : 5 (IP Prefix)
+   Peer Address       : 172.17.255.3
+   Route Distinguisher: 13L:124
+   Next-hop           : 172.17.255.3
+   VNI                : 110
+   Local Preference   : 100
+   AS Path            : 65102
+   Extended community : target:13L:13 03:0c:00:00:00:00:00:08 06:03:0a:00:af:66:fb:00
+   Best               : true</code></pre>
+  <pre><code>leaf-c&gt; show route routing-instance TENANT-LAN-VR 10.1.80.0/24
+
+Routing entry for 10.1.80.0 (mask 255.255.255.0) [+]
+Known via 'BGP', Preference(admin distance 20)
+   Last update from 172.17.255.3
+Routing Descriptor Blocks:
+* 172.17.255.3 , via Indirect()</code></pre>
+  <p>One entry. <code>Reason: identifier</code> is the router-ID tie-break — the direct analogue of <code>not best reason: Router Id</code> on NX-OS. Exactly the topology that produced two paths on NX-OS once the EVPN-level knob was added produces one here.</p>
+  <div class="call info"><b>This is a model difference, not a missing feature.</b> Cisco exposes multipath as a separate control at the EVPN NLRI layer, which is what allows a shared-RD topology to be rescued. VOS reaches ECMP a different way — by keeping per-RD entries as distinct RIB objects — so in the supported design it needs no control at all, and the only place such a control would help is a configuration both vendors advise against. Its path-selection tuning is deliberately narrow:
+  <pre><code>path-selection ?
+  always-compare-med       Always compare MED values, regardless of neighbor AS
+  as-path-ignore           Exclude AS-path from BGP best path computation
+  as-path-multipath-relax  Allow differing AS paths to be considered for multipath if their lengths are equal
+  cisco-non-deterministic  Use Cisco IOS nondeterministic path selection algorithm</code></pre>
+  <code>as-path-multipath-relax</code> governs which paths are <em>eligible</em>, not how many are installed.</div>
+  <p>The practical consequence: an argument that holds on one platform because of a specific control cannot be assumed to hold on another that reaches the same outcome by a different route. Where the RIB keys on the RD, the RD is not a stylistic choice — it <em>is</em> the mechanism.</p>
+
+  <h2 id="docs">11. Vendor guidance</h2>
+  <p>The claim included "they even publish examples with the same RD". The configuration guide is not neutral. Cisco Nexus 9000 Series NX-OS VXLAN Configuration Guide, Release 10.5(x), <i>Configure VXLAN BGP EVPN</i> → <i>Supported features and configuration limits</i> → <i>Configuration recommendations</i>:</p>
+  <div class="call warn">"In a VXLAN EVPN setup, border nodes must be configured with unique route distinguishers, preferably using the <code>auto rd</code> command. <b>Not using unique route distinguishers across all border nodes is not supported.</b> The use of unique route distinguishers is strongly recommended for all VTEPs of a fabric."</div>
+  <p>Two different strengths in one bullet, worth keeping straight: <b>not supported</b> for border nodes, <b>strongly recommended</b> for VTEPs generally. Combined with §2, the hierarchy is: the RFC requires per-PE-internal uniqueness and recommends a format that produces per-PE uniqueness; the vendor turns that recommendation into a support boundary; the lab shows why.</p>
+
+  <h2 id="caveats">12. Measurement caveats</h2>
+  <p>Three things that nearly produced wrong conclusions, recorded because they are easy traps to fall into again.</p>
+  <ul>
+    <li><b>The forwarding-table command is misleading on a virtual platform.</b> <code>show forwarding … route … detail</code> reported <code>No of paths: 1</code> even for a plain underlay loopback the routing table showed as <code>ubest/mbest: 2/0</code>:
+    <pre><code>Leaf-3# show ip route 1.1.1.1/32
+1.1.1.1/32, ubest/mbest: 2/0
+    *via 10.1.13.2, [20/0], 01:33:13, bgp-65003, external, tag 65000
+    *via 10.1.23.2, [20/0], 01:33:14, bgp-65003, external, tag 65000
+
+Leaf-3# show forwarding route 1.1.1.1/32 detail
+Prefix 1.1.1.1/32, No of paths: 1, Update time: ...
+   10.1.13.2                                 Ethernet1/1</code></pre>
+    A control test on a prefix unrelated to VXLAN confirms this is a software-forwarding display characteristic, not evidence about hardware ECMP. Every conclusion here rests on the routing table.</li>
+    <li><b>Stale state after a session teardown.</b> Removing the origin-to-origin session made the prefix vanish from the receiver entirely — zero paths — while both origins still reported <code>Path-id 1 advertised to peers: 3.3.3.3</code>. A route refresh brought it back with two paths. Taken as the result, that capture would have produced a confident and completely wrong finding.</li>
+    <li><b>An isolation method can break what you are measuring.</b> On the second platform, shutting the reflector sessions to isolate direct peering also removed what the receiver needed to resolve the VXLAN tunnel, so the forwarding table went empty while the RIB still showed the path as <code>via Indirect()</code>. The BGP-level result stands; the forwarding evidence had to come from the run where the reflectors were still up.</li>
+  </ul>
+
+  <h2 id="take">13. Takeaways</h2>
+  <ol>
+    <li><b>Unique RD, shared RT.</b> A sentence proposing to make both unique is proposing to break route import.</li>
+    <li><b>The RFC is not the authority people cite it as.</b> §7.9 mandates uniqueness within a PE and recommends a loopback-derived Type-1 RD. Per-PE uniqueness is a consequence of following that recommendation, not a separate MUST — and Type-5 routes live in RFC 9136 anyway.</li>
+    <li><b>A shared RD does not "reduce ECMP" — upstream it deletes the alternative.</b> Behind any re-advertising node the receiver's two paths turn out to be one VTEP reached two ways. Check the next-hop, not the path count.</li>
+    <li><b>Shared-RD ECMP is achievable on NX-OS</b> with direct PE-to-PE peering plus <code>maximum-paths</code> under the EVPN address family. Direct peering means a full mesh of EVPN sessions — the thing route reflectors exist to avoid.</li>
+    <li><b>Do not port the answer between implementations.</b> The same topology gives two paths on one platform and one on another, because the RIB models differ.</li>
+    <li><b>There is a second argument that has nothing to do with ECMP.</b> With a shared RD the EVPN table no longer shows which PE originated a route; you fall back to the Router MAC community, the next-hop or the AS-path. <code>rd auto</code> is the default and costs nothing.</li>
+  </ol>
+  <div class="call ok"><b>The one-line summary.</b> A unique RD is not what turns ECMP on — it is what keeps the candidates alive long enough for multipath to have something to choose from.</div>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, IPs, domains and credentials are generic placeholders — substitute your own environment's values. Command output is reproduced from lab captures with device and VRF names normalised; protocol values are unmodified.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
