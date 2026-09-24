@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First Packet Wins — DSCP Changes Inside a Versa SD-WAN Session</title>
+<meta name="description" content="Versa SD-WAN policy is matched once per session. Lab notes on VOS 23.1.2: what happens when the DSCP changes mid-flow, the re-evaluate options, the additional-flow-key-attribute dscp knob, copy-from-inner, and a full 2x2 measurement matrix.">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  figure{margin:1.4em 0}
+  figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:6px;background:var(--paper-raised)}
+  figcaption{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:8px}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+</style>
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa SD-WAN · Traffic steering · Session keys</div>
+  <h1>First Packet Wins</h1>
+  <p class="lede">DSCP changes inside an established Versa SD-WAN session: lab notes, the re-evaluate options, the session-key knob, copy-from-inner, and a full 2&times;2 measurement matrix on VOS 23.1.2.</p>
+  <div class="meta">2026-09-24 · VOS 23.1.2 · SD-WAN policy · forwarding profiles · additional-flow-key-attribute · copy-from-inner</div>
+</div></div>
+
+<article><div class="wrap">
+<p>Lab notes and raw measurements, 24 Sep 2026, VOS 23.1.2. Raw per-step results, screenshots and the traffic generators are in the <a href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab">companion repository</a>.</p>
+<figure><img src="versa-dscp-session-key-fig1-knob-off.png" alt="knob off: same session, rule fixed"><figcaption>knob off: same session, rule fixed</figcaption></figure>
+<figure><img src="versa-dscp-session-key-fig2-knob-on.png" alt="knob on: new session per DSCP"><figcaption>knob on: new session per DSCP</figcaption></figure>
+<p>Lab test, 24 Sep 2026. Environment: CML lab ENG_SASE_SDWAN_SDLAN (192.168.20.65), VOS 23.1.2-J GA (build 20260614).
+Hub ENG-HUB-NU (mgmt 192.168.11.107) &lt;-&gt; branch ENG-Plano-Branch-1 (mgmt 192.168.110.17), two INET circuits each.
+Hosts: desktop-1 10.100.10.100 (hub LAN vni-0/2.0 10.100.10.1/24, mgmt 192.168.110.18) -&gt; desktop-0 10.100.30.100 (branch LAN, mgmt 192.168.20.171). Both Alpine Linux with python3.</p>
+<h2>The question (long-lived encrypted session whose DSCP varies per packet)</h2>
+<ol>
+<li>Can VOS re-evaluate SD-WAN policy when DSCP changes mid-session?  -&gt; No re-evaluation trigger exists.</li>
+<li>Alternative?  -&gt; <code>set system session additional-flow-key-attribute dscp</code> (22.1.4+): DSCP becomes part of the session key, so every DSCP value is its own session and gets its own SD-WAN policy evaluation.</li>
+</ol>
+<h2>Test config (both devices, applied from the CLI via <code>vsh allow-cli</code>; Director shows them out of sync afterwards)</h2>
+<pre><code>set orgs org-services ENG_SASE_SDWAN sd-wan forwarding-profiles FP-INET1 circuit-priorities priority 1 circuit-names local [ INET-1 ]
+set orgs org-services ENG_SASE_SDWAN sd-wan forwarding-profiles FP-INET1 circuit-priorities priority 2 circuit-names local [ INET-2 ]
+set orgs org-services ENG_SASE_SDWAN sd-wan forwarding-profiles FP-INET2 circuit-priorities priority 1 circuit-names local [ INET-2 ]
+set orgs org-services ENG_SASE_SDWAN sd-wan forwarding-profiles FP-INET2 circuit-priorities priority 2 circuit-names local [ INET-1 ]
+set orgs org-services ENG_SASE_SDWAN sd-wan policies Default-Policy rules DSCP46 match dscp [ 46 ]   set forwarding-profile FP-INET1
+set orgs org-services ENG_SASE_SDWAN sd-wan policies Default-Policy rules DSCP0  match dscp [ 0 ]    set forwarding-profile FP-INET2
+set orgs org-services ENG_SASE_SDWAN sd-wan policies Default-Policy rules DSCP10 match dscp [ 10 ]   set forwarding-profile FP-INET1
+set orgs org-services ENG_SASE_SDWAN sd-wan policies Default-Policy rules DSCP34 match dscp [ 34 ]   set forwarding-profile FP-INET2
+set system session additional-flow-key-attribute dscp          # the knob (removed with delete + commit)
+</code></pre>
+<p>Hub LAN: <code>delete interfaces vni-0/2 unit 0 family inet dhcp</code> + <code>set ... address 10.100.10.1/24</code> (was DHCP client, no IP).</p>
+<h2>Traffic</h2>
+<ul>
+<li>dscp_send.py: one UDP socket bound to src port, setsockopt(IP_TOS) before each packet (rotating or file-controlled /tmp/dscp).</li>
+<li>udp_echo.py on receiver: replies to every packet with the same DSCP -&gt; reverse counters and TX circuit populate.</li>
+<li>iperf 2.2.0 alternative: <code>iperf -c 10.100.30.100 -u -p 5002 -B 10.100.10.100:40001 -b 200k -t 60 -S 0xb8</code> (kill + restart with new -S, same source port, within 30 s UDP idle timeout). Default 1470 B datagrams fragment; use -l 1200.</li>
+</ul>
+<h2>Results</h2>
+<p>Knob OFF (rules active): one session per 5-tuple. Hub sess 0/2/18: forward-sdwan-rule-name DSCP46, tx-wan-ckt INET-1:INET-1, 4105 fwd pkts, while wire DSCP was already 10. Branch sess 41: rule DSCP46, INET-2:INET-1 constant while TOS 0x28-&gt;0x88. DSCP column in <code>sessions brief</code> shows <code>-</code>.
+Knob ON: DSCP column populated; each DSCP = own session and own rule/path.
+    Hub    sess 32 DSCP46 rule DSCP46 INET-1:INET-1 ; sess 33 DSCP0 rule DSCP0 INET-2:INET-1
+    Hub    sess 36 DSCP0  rule DSCP0  rx=tx INET-2:INET-1 fwd 2604 rev 2604 (echo test)
+    Branch sess 78 DSCP0  rule DSCP0  rx=tx INET-1:INET-2 fwd 2612 rev 2612
+TX WAN CKT is empty on the receiving side until the first reverse packet (iperf UDP server sends nothing back until the end).</p>
+<h2>Useful CLI</h2>
+<pre><code>show configuration system session | display set
+show orgs org ENG_SASE_SDWAN sessions brief | match 40002
+show orgs org ENG_SASE_SDWAN sessions extensive | select source-ip 10.100.10.100 | select destination-ip | select rx-wan-ckt | select tx-wan-ckt | select forward-sdwan-rule-name | tab
+request clear sessions org org-name ENG_SASE_SDWAN
+tcpdump (Alpine/BusyBox): sudo tcpdump -ni eth1 -l -v udp src port 40002 2&gt;/dev/null | grep -o 'tos 0x[0-9a-f]*' | uniq
+TOS-&gt;DSCP: 0xb8=46, 0x0=0, 0x28=10, 0x88=34
+</code></pre>
+<h2>Caveats</h2>
+<ul>
+<li>Device-wide knob (all tenants, all flows). Session count grows per DSCP value per flow.</li>
+<li>[Inference] TCP flows that remark mid-stream: the new-DSCP "session" starts without SYN -&gt; dropped if check-tcp-syn true (lab devices have it false; not tested).</li>
+<li>Enable on both CPEs (each direction classified at its own ingress). Existing sessions keep the old key until idle timeout; use <code>request clear sessions org org-name &lt;org&gt;</code>.</li>
+<li>Public docs: only the API reference + 22.1 release note. No dedicated article.</li>
+</ul>
+<h2>Extra test: do the "re-evaluate" options re-match the rule on DSCP change? (18:33-18:35 UTC) -&gt; NO</h2>
+<p>Knob OFF. On both devices, FP-INET1 and FP-INET2: <code>evaluate-continuously enable</code>, <code>nexthop-reevaluate enabled</code>, <code>recompute-timer 5</code>.
+Flow started at DSCP 0 -&gt; hub sess 38 rule DSCP0 INET-2:INET-1. Same socket switched to DSCP 46 at 18:34:21 (wire tos 0xb8).
+50 s later: hub sess 38 still rule DSCP0, INET-2:INET-1, fwd=rev=1993 and counting; branch sess 83 same. Rule and path frozen.
+<code>session-reevaluate</code> (system &gt; session, default true) fires on config/route change only. recompute-timer = periodic SLA-based FP recompute (default 300 s).</p>
+<h2>Extra test 2: rw-rules copy-from-inner (outer tunnel DSCP) — 20:23-20:30 UTC</h2>
+<p>Director GUI location: Appliance &gt; Networking &gt; Class of Service &gt; RW Rules &gt; Options &gt; "Copy From Inner".
+CLI: <code>set orgs org-services ENG_SASE_SDWAN class-of-service rw-rules copy-from-inner true</code> (default false; also copy-from-outer).
+Lab had it UNSET. Measured on hub vni-0/0 with VOS CLI tcpdump + BPF on the outer TOS byte:
+    tcpdump vni-0/0 filter "ip[1]=0xb8 and greater 250 and port 4790" timeout 2     (data pkts are 334 B; SLA probes 202 B)
+- copy-from-inner unset, inner DSCP 46 : data packets outer TOS = 0 (only 202 B SLA probes carried 0xb8).
+- copy-from-inner true (both devices), inner 46: outer 0xb8 both directions (39/40 pkts per 2 s).
+- inner switched to 10 in the SAME session (knob off, sess 40 still rule DSCP46 / INET-1:INET-1): outer 0x28 both directions, 0xb8 gone.
+=&gt; Outer DSCP rewrite is per packet and independent of the session's policy decision; path/rule selection is per session.</p>
+<h2>Full 2x2 matrix (knob off/on x copy-from-inner off/on)</h2>
+<p>Each combination: same UDP socket, inner DSCP 46 -&gt; 0 -&gt; 10 -&gt; 34 (60 s each), measured 10 s after every change. Per step: LAN DSCP at sender and receiver, hub and branch session tables (rule, circuits, counters) and the outer tunnel TOS on both WAN interfaces of both devices, sent and received.
+- <a href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab/blob/master/results/matrix-sessions-and-lan.md">results/matrix-sessions-and-lan.md</a> - session tables and LAN DSCP
+- <a href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab/blob/master/results/matrix-wan-outer-tos.md">results/matrix-wan-outer-tos.md</a> - outer TOS per device/interface/direction</p>
+<p>Summary: path/rule selection is per session and only the knob changes it; the outer DSCP is rewritten per packet and only copy-from-inner changes it (off = outer DSCP 0 in both directions regardless of the inner value). The two settings are independent.</p>
+<p>Measurement notes for the VOS CLI <code>tcpdump</code>: the filter rejects <code>&amp;</code> and <code>&gt;</code>; a capture issued immediately after another one silently returns without capturing, so check for the <code>Stopping capture</code> trailer and retry; use <code>timeout 2</code> or longer.</p>
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, IPs, domains and credentials are generic placeholders — substitute your own environment's values. Command output is reproduced from lab captures with device and VRF names normalised; protocol values are unmodified.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
