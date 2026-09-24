@@ -352,8 +352,9 @@
     <div class="archive-title">Deep Dives</div>
 
     <details class="archive-month" open>
-      <summary class="archive-month-head">2026 September<span>2</span></summary>
+      <summary class="archive-month-head">2026 September<span>3</span></summary>
       <div class="archive-articles">
+        <a href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab">First Packet Wins: DSCP Changes Inside a Versa SD-WAN Session</a>
         <a href="https://enizaksoy.github.io/articles/evpn-rd-ecmp.html">One RD, Two Leaves: RD Uniqueness and EVPN ECMP</a>
         <a href="https://enizaksoy.github.io/articles/versa-clear-vs-encrypted.html">Clear vs Encrypted Tunnels on Versa SD-WAN</a>
       </div>
@@ -549,10 +550,17 @@
     <div class="wrap">
       <div class="section-head">
         <h2 class="section-title">Deep Dives</h2>
-        <span class="section-note">17 write-ups</span>
+        <span class="section-note">18 write-ups</span>
       </div>
       <p class="section-desc">Narrower than a full lab — a single problem, traced through configs and packet captures until it's understood.</p>
       <div class="card-grid">
+
+        <article class="card">
+          <h3>First Packet Wins: DSCP Changes Inside a Versa SD-WAN Session</h3>
+          <div class="card-date">2026-09-24</div>
+          <p>Versa matches SD-WAN policy once per session, so a flow whose DSCP changes mid-stream keeps the rule and path chosen for its first packet. A 2&times;2 lab matrix on VOS 23.1.2 (session-key DSCP knob &times; copy-from-inner) with session tables, LAN and WAN outer-DSCP captures, and the traffic generator used.</p>
+          <div class="card-links"><a href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab">Read &rarr;</a><a class="source" href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab">Source</a></div>
+        </article>
 
         <article class="card">
           <h3>One RD, Two Leaves: RD Uniqueness and EVPN ECMP</h3>
