@@ -120,11 +120,12 @@ set system session additional-flow-key-attribute dscp          # the knob (remov
 </ul>
 <h2>Results</h2>
 <p>Knob OFF (rules active): one session per 5-tuple. Hub sess 0/2/18: forward-sdwan-rule-name DSCP46, tx-wan-ckt INET-1:INET-1, 4105 fwd pkts, while wire DSCP was already 10. Branch sess 41: rule DSCP46, INET-2:INET-1 constant while TOS 0x28-&gt;0x88. DSCP column in <code>sessions brief</code> shows <code>-</code>.
-Knob ON: DSCP column populated; each DSCP = own session and own rule/path.
-    Hub    sess 32 DSCP46 rule DSCP46 INET-1:INET-1 ; sess 33 DSCP0 rule DSCP0 INET-2:INET-1
-    Hub    sess 36 DSCP0  rule DSCP0  rx=tx INET-2:INET-1 fwd 2604 rev 2604 (echo test)
-    Branch sess 78 DSCP0  rule DSCP0  rx=tx INET-1:INET-2 fwd 2612 rev 2612
-TX WAN CKT is empty on the receiving side until the first reverse packet (iperf UDP server sends nothing back until the end).</p>
+Knob ON: DSCP column populated; each DSCP = own session and own rule/path.</p>
+<pre><code>Hub    sess 32 DSCP46 rule DSCP46 INET-1:INET-1 ; sess 33 DSCP0 rule DSCP0 INET-2:INET-1
+Hub    sess 36 DSCP0  rule DSCP0  rx=tx INET-2:INET-1 fwd 2604 rev 2604 (echo test)
+Branch sess 78 DSCP0  rule DSCP0  rx=tx INET-1:INET-2 fwd 2612 rev 2612
+</code></pre>
+<p>TX WAN CKT is empty on the receiving side until the first reverse packet (iperf UDP server sends nothing back until the end).</p>
 <h2>Useful CLI</h2>
 <pre><code>show configuration system session | display set
 show orgs org ENG_SASE_SDWAN sessions brief | match 40002
@@ -148,12 +149,15 @@ Flow started at DSCP 0 -&gt; hub sess 38 rule DSCP0 INET-2:INET-1. Same socket s
 <h2>Extra test 2: rw-rules copy-from-inner (outer tunnel DSCP) — 20:23-20:30 UTC</h2>
 <p>Director GUI location: Appliance &gt; Networking &gt; Class of Service &gt; RW Rules &gt; Options &gt; "Copy From Inner".
 CLI: <code>set orgs org-services ENG_SASE_SDWAN class-of-service rw-rules copy-from-inner true</code> (default false; also copy-from-outer).
-Lab had it UNSET. Measured on hub vni-0/0 with VOS CLI tcpdump + BPF on the outer TOS byte:
-    tcpdump vni-0/0 filter "ip[1]=0xb8 and greater 250 and port 4790" timeout 2     (data pkts are 334 B; SLA probes 202 B)
-- copy-from-inner unset, inner DSCP 46 : data packets outer TOS = 0 (only 202 B SLA probes carried 0xb8).
-- copy-from-inner true (both devices), inner 46: outer 0xb8 both directions (39/40 pkts per 2 s).
-- inner switched to 10 in the SAME session (knob off, sess 40 still rule DSCP46 / INET-1:INET-1): outer 0x28 both directions, 0xb8 gone.
-=&gt; Outer DSCP rewrite is per packet and independent of the session's policy decision; path/rule selection is per session.</p>
+Lab had it UNSET. Measured on hub vni-0/0 with VOS CLI tcpdump + BPF on the outer TOS byte:</p>
+<pre><code>tcpdump vni-0/0 filter "ip[1]=0xb8 and greater 250 and port 4790" timeout 2     (data pkts are 334 B; SLA probes 202 B)
+</code></pre>
+<ul>
+<li>copy-from-inner unset, inner DSCP 46 : data packets outer TOS = 0 (only 202 B SLA probes carried 0xb8).</li>
+<li>copy-from-inner true (both devices), inner 46: outer 0xb8 both directions (39/40 pkts per 2 s).</li>
+<li>inner switched to 10 in the SAME session (knob off, sess 40 still rule DSCP46 / INET-1:INET-1): outer 0x28 both directions, 0xb8 gone.
+=&gt; Outer DSCP rewrite is per packet and independent of the session's policy decision; path/rule selection is per session.</li>
+</ul>
 <h2>Full 2x2 matrix (knob off/on x copy-from-inner off/on)</h2>
 <p>Each combination: same UDP socket, inner DSCP 46 -&gt; 0 -&gt; 10 -&gt; 34 (60 s each), measured 10 s after every change. Per step: LAN DSCP at sender and receiver, hub and branch session tables (rule, circuits, counters) and the outer tunnel TOS on both WAN interfaces of both devices, sent and received.
 - <a href="https://github.com/Enizaksoy/Versa-DSCP-Session-Key-Lab/blob/master/results/matrix-sessions-and-lan.md">results/matrix-sessions-and-lan.md</a> - session tables and LAN DSCP
