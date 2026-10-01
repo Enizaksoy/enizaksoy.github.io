@@ -307,6 +307,13 @@
     <div class="archive-panel-inner">
     <div class="archive-title">Field Labs</div>
 
+    <details class="archive-month" open>
+      <summary class="archive-month-head">2026 October<span>1</span></summary>
+      <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/sonic-sn2410-pfc-ecn.html">SONiC SN2410 RoCE Lab: PFC, ECN and DCQCN on One Timeline</a>
+      </div>
+    </details>
+
     <details class="archive-month">
       <summary class="archive-month-head">2026 July<span>4</span></summary>
       <div class="archive-articles">
@@ -352,13 +359,6 @@
     <div class="archive-title">Deep Dives</div>
 
     <details class="archive-month" open>
-      <summary class="archive-month-head">2026 October<span>1</span></summary>
-      <div class="archive-articles">
-        <a href="https://enizaksoy.github.io/articles/sonic-sn2410-pfc-ecn.html">What Happens Inside a Switch When Two GPUs Send to One</a>
-      </div>
-    </details>
-
-    <details class="archive-month">
       <summary class="archive-month-head">2026 September<span>3</span></summary>
       <div class="archive-articles">
         <a href="https://enizaksoy.github.io/articles/versa-dscp-session-key.html">First Packet Wins: DSCP Changes Inside a Versa SD-WAN Session</a>
@@ -412,10 +412,21 @@
     <div class="wrap">
       <div class="section-head">
         <h2 class="section-title">Field Labs</h2>
-        <span class="section-note">12 live builds</span>
+        <span class="section-note">13 live builds</span>
       </div>
       <p class="section-desc">Full lab documentation, built on CML and real hardware, published as GitHub Pages straight from the repo.</p>
       <div class="card-grid">
+
+        <article class="card" id="m-2026-10">
+          <h3>SONiC SN2410 RoCE Lab: PFC, ECN and DCQCN on One Timeline</h3>
+          <div class="card-date">2026-10-01</div>
+          <p>A used NVIDIA SN2410 (Spectrum-1) on community SONiC, two GPU servers with ConnectX-5, and a Prometheus/Grafana stack built from custom exporters &mdash; including the per-port ECN marks that Spectrum-1 only exposes through the Mellanox SDK. A 2:1 RoCEv2 incast traced step by step: queue build-up, PFC XOFF, ECN marking, CNPs, the DCQCN rate cut, zero drops. The same incast under three ECN settings shows PFC working for ~10 s, ~20 s or the full 60 s. Repo has the exporters, importable dashboard, boot-time NIC QoS unit and the results carousel.</p>
+          <div class="tags"><span>SONiC</span><span>RoCEv2</span><span>PFC / ECN</span><span>Grafana</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/articles/sonic-sn2410-pfc-ecn.html">View lab &rarr;</a>
+            <a class="source" href="https://github.com/Enizaksoy/SONiC-SN2410-RoCE-Monitoring">Source</a>
+          </div>
+        </article>
 
         <article class="card" id="m-2026-07">
           <h3>Versa GRE/PBF Hairpin + Direct EVPN Peering</h3>
@@ -557,17 +568,11 @@
     <div class="wrap">
       <div class="section-head">
         <h2 class="section-title">Deep Dives</h2>
-        <span class="section-note">19 write-ups</span>
+        <span class="section-note">18 write-ups</span>
       </div>
       <p class="section-desc">Narrower than a full lab — a single problem, traced through configs and packet captures until it's understood.</p>
       <div class="card-grid">
 
-        <article class="card">
-          <h3>What Happens Inside a Switch When Two GPUs Send to One</h3>
-          <div class="card-date">2026-10-01</div>
-          <p>A 2:1 RoCEv2 incast on an NVIDIA SN2410 running SONiC, with queue build-up, PFC pause, ECN marking, CNPs and the DCQCN rate cut measured on one Grafana timeline. Spectrum-1 exposes no ECN counters through SAI, so they come from one Mellanox SDK call inside syncd. Same incast with three ECN settings: PFC runs ~10 s, ~20 s, or the full 60 s &mdash; throughput and loss identical &mdash; plus the exporter and Grafana pitfalls that first produced 52 Gb/s on a 40G link.</p>
-          <div class="card-links"><a href="https://enizaksoy.github.io/articles/sonic-sn2410-pfc-ecn.html">Read &rarr;</a><a class="source" href="https://github.com/Enizaksoy/SONiC-SN2410-RoCE-Monitoring">Source</a></div>
-        </article>
 
         <article class="card">
           <h3>First Packet Wins: DSCP Changes Inside a Versa SD-WAN Session</h3>
