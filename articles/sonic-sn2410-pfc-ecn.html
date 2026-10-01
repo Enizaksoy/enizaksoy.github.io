@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Happens Inside a Switch When Two GPUs Send to One — SONiC SN2410 PFC/ECN</title>
+<meta name="description" content="A 2:1 RoCEv2 incast on an NVIDIA SN2410 running SONiC 202511: queue build-up, PFC, ECN marking, CNPs and DCQCN measured on one Grafana timeline, the same incast with three ECN settings, and the exporter/Grafana pitfalls found on the way.">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+  figure{margin:1.4em 0;text-align:center}
+  figure img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px;display:block;margin:0 auto}
+  figcaption{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:8px;text-align:left;line-height:1.5}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">AI fabric · RoCEv2 · SONiC</div>
+  <h1>What happens inside a switch when two GPUs send to one</h1>
+  <p class="lede">A 2:1 incast on a lossless RoCEv2 fabric, with every stage of congestion control &mdash; queue build-up, PFC, ECN, CNP, DCQCN &mdash; measured on the same timeline. Then the same incast with three ECN settings, to see what the threshold actually buys.</p>
+  <div class="meta">2026-10-01 · NVIDIA SN2410 (Spectrum-1) · SONiC 202511 · ConnectX-5 · PFC · ECN · DCQCN · Prometheus + Grafana</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#why">1. Why SONiC this time</a><a href="#topology">2. Topology and setup</a>
+    <a href="#steps">3. The chain, step by step</a><a href="#compare">4. Three ECN settings</a>
+    <a href="#lessons">5. Measurement lessons</a><a href="#repo">6. Code and dashboard</a>
+  </div>
+
+  <h2 id="why">1. Why SONiC this time</h2>
+  <p>Lossless Ethernet for RoCE stands on two mechanisms that act at different places and at different speeds. <b>PFC</b> works hop by hop: the switch watches the ingress buffer of each port and, when a priority group crosses its threshold, sends XOFF back out of that port in hardware, within microseconds. <b>ECN + DCQCN</b> works end to end: the switch marks a fraction of the packets leaving a congested egress queue, the receiving NIC answers with Congestion Notification Packets, and the sending NIC cuts its rate &mdash; a full round trip plus a gradual ramp. Tuning them means seeing both at once, together with the buffer occupancy that triggers each.</p>
+  <p>My previous lab fabric was a Nexus 9332PQ on NX-OS 9.3. I could not get the switch-side view &mdash; per-queue ECN marks and buffer occupancy over time &mdash; out of the CLI on that platform in a form I could poll and graph; what I had were pause-frame totals from <code>show interface priority-flow-control</code> and the NIC counters, which is what the earlier <a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">lossless-ethernet-monitoring</a> dashboard was built on. So the fabric moved to a used NVIDIA SN2410 (Spectrum-1) running community SONiC 202511, where every counter lives in Redis and is one <code>sonic-db-cli</code> call away.</p>
+  <p>Every counter except one. On Spectrum-1 the SAI layer reports the WRED/ECN statistics as unsupported, so <code>COUNTERS_DB</code> never contains ECN marks. The Mellanox SDK inside the <code>syncd</code> container still has them (<code>sx_api_cos_redecn_counters_get</code>), and a 30-line script executed with <code>docker exec -i syncd python3 -</code> turned the guesswork into a per-port counter. That one number is what makes the rest of this page possible.</p>
+
+  <h2 id="topology">2. Topology and setup</h2>
+<pre><code>  GPU server 2 (sender)                                           GPU server 1 (receiver)
+  ConnectX-5 cx5p0 (10.0.3.1) --40G--> Ethernet200 \
+                                                     SN2410 --> Ethernet192 --40G--> cx5p1 (10.0.0.1)
+  ConnectX-5 cx5p1 (10.0.2.1) --40G--> Ethernet204 /
+                                        80 Gb/s offered, 40 Gb/s drained
+
+  PFC XOFF : switch -> senders  (hop by hop, priority 3 only)
+  ECN/CNP  : switch marks at the egress queue -> receiver NIC sends CNPs -> senders slow down (DCQCN)</code></pre>
+  <ul>
+    <li><b>Traffic:</b> perftest <code>ib_write_bw</code>, RDMA WRITE, 64 KB messages, 4 queue pairs per flow, RoCEv2, DSCP 3, 4 KB RDMA MTU, 60 s, both flows started together.</li>
+    <li><b>Switch QoS:</b> DSCP 3 &rarr; TC 3 &rarr; lossless egress queue UC3 / ingress priority group PG3; PFC on priority 3; WRED/ECN profile <code>AZURE_LOSSLESS</code> on UC3, marking probability 5 % at the top of the band. Dynamic buffer model: <code>ingress_lossless_pool</code> 3,109,376 B, alpha = 1, so with two active PGs the XOFF threshold sits at roughly pool / 3 &asymp; 1.04 MB. Headroom profile <code>pg_lossless_40000_5m</code>: xon 19,456 / xoff 21,504 / size 40,960 B.</li>
+    <li><b>ECN profile for the run shown in section 3:</b> marking starts at 1.5 MB and reaches its maximum probability at 2 MB. The start point was moved up from the 1 MB default on purpose, so that PFC is clearly visible on the same timeline; the default is compared in section 4.</li>
+    <li><b>NICs:</b> ConnectX-5 Ex, inbox mlx5 driver, DCQCN enabled, DSCP 3 mapped to priority 3, PFC on priority 3, global pause off.</li>
+    <li><b>Telemetry:</b> SONiC <code>COUNTERS_DB</code> + <code>USER_WATERMARKS</code> + the Mellanox SDK (ECN marks) over SSH, NIC counters via <code>ethtool -S</code> and <code>/sys/class/infiniband/*/hw_counters</code>, two small Prometheus exporters, Grafana. Switch counter polling at 1 s, scrape every 10 s.</li>
+  </ul>
+  <div class="call info"><b>Reading the panels.</b> Thresholds are bytes of buffer occupancy, not packet rates. Counters are totals; the dashboard shows per-second rates, and the "depth" panels show the peak occupancy since the previous scrape (the watermark is cleared after every read).</div>
+
+  <h2 id="steps">3. The chain, step by step</h2>
+  <p>One run: ECN min 1.5 MB / max 2 MB, 2:1 incast, 60 s. Each figure is two dashboard panels from the same time window.</p>
+
+  <h3>Step 1 &mdash; The bottleneck</h3>
+  <figure><img src="sonic-sn2410-step1-bottleneck.png" alt="Switch ingress per sender port and UC3 egress throughput of the receiver port"><figcaption>Switch ingress: each sender port lands at ~20 Gb/s within seconds. Switch egress: the receiver port's lossless queue UC3 runs flat at 39.8 Gb/s for the whole minute.</figcaption></figure>
+  <p>Two senders push 40G each into one receiver port. The egress port can only drain 40G, so the surplus has to wait somewhere. 80 Gb/s offered, 40 Gb/s delivered, and the split is fair. The rest of the story is how the switch and the NICs got there without dropping a packet.</p>
+
+  <h3>Step 2 &mdash; The queue fills</h3>
+  <figure><img src="sonic-sn2410-step2-queue.png" alt="Egress UC3 queue depth against the ECN thresholds and ingress PG3 occupancy against the dynamic XOFF threshold"><figcaption>Egress UC3 depth (peak per scrape) jumps to 2.08 MB, the top of the ECN band, then settles around 1.85 MB once the senders slow down. Ingress PG3 of both sender ports: 1.2&ndash;1.4 MB at first, above the dynamic XOFF threshold of ~1.04 MB, then ~0.98 MB, just under it.</figcaption></figure>
+  <p>Waiting bytes are counted twice: in the egress queue of the receiver port (where ECN looks) and in the ingress buffer of each sender port (where PFC looks). Crossing those two thresholds is what triggers everything on the following steps.</p>
+
+  <h3>Step 3 &mdash; PFC bites first (ECN has already started)</h3>
+  <figure><img src="sonic-sn2410-step3-pfc.png" alt="PFC3 pause frames per second sent by the switch and the XON/XOFF state timeline"><figcaption>Switch TX pause frames: ~30,000 per second on both sender ports for about 20 s (503k + 491k frames), then zero for the rest of the run. XON/XOFF state: red = pause in effect. The receiver row (RX) is red too, but that is the receiver NIC pausing the switch at a trickle of ~100 frames/s (step 5).</figcaption></figure>
+  <p>ECN marking starts well before the PFC threshold is reached, but its effect needs a full round trip plus DCQCN's gradual rate cut. PFC acts in hardware within microseconds: while the ingress buffers sit above their threshold, the switch sends XOFF (priority 3 only) back out of the sender ports. PFC is the hop-by-hop safety net; it holds the line until end-to-end control catches up, then goes quiet.</p>
+
+  <h3>Step 4 &mdash; ECN marks packets</h3>
+  <figure><img src="sonic-sn2410-step4-ecn.png" alt="ECN-marked packets per second from the Spectrum SDK counter and the marking ratio"><figcaption>ECN-marked packets per second on the receiver port: 17.9k in the first window (queue at the 2 MB ceiling), then a steady 7&ndash;8k/s. Marking ratio: 5.3 % at the peak, then only 0.5&ndash;0.7 % of all UC3 packets.</figcaption></figure>
+  <p>At the same time the egress queue is above the ECN threshold, so the switch sets the ECN bits on a fraction of the packets it forwards. ECN does not stop anything; it tags the packets of the flows that are actually causing the congestion, and a small share is enough to steer DCQCN.</p>
+
+  <h3>Step 5 &mdash; The receiver answers with CNPs</h3>
+  <figure><img src="sonic-sn2410-step5-cnp.png" alt="Receiver NIC ECN-marked packets and CNPs sent, and pause frames received by the switch from the hosts"><figcaption>Receiver NIC: ECN-marked packets seen and CNPs sent track the switch's marks almost one for one (peak 13.9k/s, then ~7.5k/s). Switch RX pause (host &rarr; switch): the receiver NIC sends a trickle of ~100 pause frames/s, 0.02 % of the time paused.</figcaption></figure>
+  <p>The receiving NIC sees the marked packets and sends Congestion Notification Packets back to each sender; the senders cut their rate. This is the end-to-end loop: from here on the senders pace themselves and the ingress buffers fall below the PFC threshold. The receiver NIC's own pause trickle is reported as observed; it was absent in the previous day's runs and its cause was not established.</p>
+
+  <h3>Step 6 &mdash; Result: zero drops</h3>
+  <figure><img src="sonic-sn2410-step6-drops.png" alt="UC3 drops per second on every port and PG3 headroom used after XOFF"><figcaption>UC3 drops/s on every port: 0 for the whole run. PG3 headroom used after XOFF: 6.3 KB of the 21.5 KB reserved (the xoff value of <code>pg_lossless_40000_5m</code>), and only during the PFC phase.</figcaption></figure>
+  <p>Lossless means the headroom reserved for in-flight bytes was never exhausted. 19.58 + 19.63 Gb/s delivered, 0 packets lost, PFC active for 20 s, ECN steering for 60 s.</p>
+
+  <h2 id="compare">4. Same incast, three ECN settings</h2>
+  <p>Identical traffic, 60 s each, same day. The ECN threshold decides how long PFC has to work:</p>
+  <table>
+    <tr><th>ECN setting (<code>AZURE_LOSSLESS</code>)</th><th>PFC XOFF on sender ports</th><th>Egress UC3 queue</th><th>ECN marks</th><th>Throughput / drops</th></tr>
+    <tr><td>min 1 MB / max 2 MB (default)</td><td>~10 s burst (10,126 + 4,466 frames), then silent</td><td>2.0 MB peak &rarr; 1.5&ndash;1.6 MB</td><td>7&ndash;8k pkt/s (0.6 %)</td><td>19.6 + 19.6 Gb/s / 0</td></tr>
+    <tr><td>min 1.5 MB / max 2 MB (section 3)</td><td>~20 s, ~30k frames/s on both ports (503k + 491k), then silent</td><td>2.08 MB &rarr; ~1.85 MB</td><td>17.9k &rarr; 7&ndash;8k pkt/s (5.3 % &rarr; 0.5&ndash;0.7 %)</td><td>19.6 + 19.6 Gb/s / 0</td></tr>
+    <tr><td>ECN disabled (PFC only)</td><td>60 s non-stop, ~40k frames/s per port (2.34M + 2.35M)</td><td>pinned at 2.09 MB</td><td>0</td><td>19.6 + 19.6 Gb/s / 0</td></tr>
+  </table>
+  <p>With ECN off, the only brake is PFC, so the switch pauses the senders continuously and the queue never leaves its ceiling. The later ECN starts, the longer PFC has to fill in. Throughput, fairness and loss look identical in all three runs; the difference is how the fabric got there.</p>
+  <div class="call ok"><b>Why it matters.</b> PFC pauses a whole port and priority, so in a real fabric it would also stall innocent flows sharing that port (head-of-line blocking) and, with the wrong topology, build the buffer dependency loops that end in deadlock. ECN only slows the flows that cause the congestion. The tuning goal is "ECN first, PFC rarely" &mdash; and the table above is that principle measured with its one parameter.</div>
+  <p>Two side notes from the same runs. The ingress PG3 occupancy of both sender ports sat at or just above the dynamic XOFF threshold (~1.04 MB) exactly while PFC was active, and below it afterwards, which is the dynamic-threshold formula (alpha &times; free pool, pool shared by three active PGs) showing up in the data. And after a <code>config ecn</code> change the new thresholds appeared in <code>ASIC_DB</code> only after tens of seconds; the first check still showed the old values. Verify there before starting a run.</p>
+
+  <h2 id="lessons">5. Measurement lessons</h2>
+  <p>Most of the lab time went into making the numbers trustworthy, not into the test itself.</p>
+  <ul>
+    <li><b>A cached exporter drifts against the scrape clock.</b> The first exporter polled the switch in a background thread and served a cache; Prometheus saw 0 / 2&times; rates and the throughput panel jumped between 0, 49 and 58 Gb/s on a 40G link. Fix: collect on demand at scrape time over one persistent SSH session.</li>
+    <li><b>SONiC updates queue counters every 10 s by default.</b> With a 10 s scrape that aliases badly. <code>counterpoll queue interval 1000</code> made the line flat at 39.8 Gb/s; syncd CPU went from ~1.5 % to ~1.7 %. <code>counterpoll watermark interval 1000</code> likewise for the buffer peaks.</li>
+    <li><b>Watermarks are peaks since the last clear.</b> The exporter reads the USER watermarks (UC3 shared, PG3 shared, PG3 headroom) and publishes a <code>WATERMARK_CLEAR_REQUEST</code> after every read, so each sample means "peak since the previous scrape". Side effect: <code>show queue watermark</code> on the switch now shows the last ~10 s; use the persistent watermark for all-time peaks.</li>
+    <li><b>Grafana's query step hid the interesting part.</b> A 10 s XOFF burst or a headroom peak is a single sample; with the panel's default step on a wide time range the point was skipped and the panel showed 0. Every graph panel now uses a 5 s query step, verified against the raw query (15 s step: TX 0; 5 s step: 1,013 frames/s).</li>
+    <li><b>State-timeline value mappings only apply with color mode "fixed".</b> With the thresholds color mode the XON/XOFF panel printed "1+" and "&lt; 1" instead of XON / XOFF.</li>
+    <li><b>Wrong metric name, empty panel for days.</b> The UC3 panels queried <code>sonic_queue3_*</code> while the exporter emitted <code>sonic_port_queue3_*</code>. Read the raw <code>/metrics</code> output before blaming the switch.</li>
+    <li><b>RDMA device names follow the PCI address.</b> Moving the NIC to another slot renamed <code>rocep130s0f0</code> to <code>rocep3s0f0</code> and the receiver-NIC panel went blank. The NIC exporter now finds the device through <code>/sys/class/infiniband/*/device/net/</code>.</li>
+    <li><b>Watermarks explain the why; pause and mark counters only show the what.</b> Put both on the same timeline.</li>
+  </ul>
+
+  <h2 id="repo">6. Code and dashboard</h2>
+  <figure><img src="sonic-sn2410-dashboard-full.png" alt="Full Grafana dashboard, 14 panels, for the ECN min 1.5 MB run"><figcaption>The whole chain on one screen: throughput, UC3 queue, PFC TX/RX, XON/XOFF state, ECN marks and ratio, receiver-NIC ECN/CNP, drops, and the three buffer-occupancy panels against their thresholds.</figcaption></figure>
+  <p>Everything needed to reproduce the dashboard is in <a href="https://github.com/Enizaksoy/SONiC-SN2410-RoCE-Monitoring">github.com/Enizaksoy/SONiC-SN2410-RoCE-Monitoring</a>: the switch exporter (SSH + <code>sonic-db-cli</code> + the SDK helper), the NIC exporter, the importable Grafana JSON, the systemd units (including the one that re-applies NIC QoS at boot, because <code>dcb</code> settings on the inbox driver do not survive a reboot), the Prometheus scrape jobs, and the results carousel as PDF. The SDK script is a read-only call into the Mellanox SDK Python bindings shipped inside the <code>syncd</code> container; it is not a SONiC CLI or SAI interface and may break with another SDK version.</p>
+  <p>Stack: SONiC 202511 on a used SN2410, two GPU servers with 4&times; Tesla V100 and ConnectX-5 Ex each, 40G DACs, Prometheus, Grafana.</p>
+
+</div></article>
+
+<footer><div class="wrap">
+  Eniz Aksoy · 2026-10-01 · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, management addresses and credentials are generic placeholders — substitute your own environment's values; the 10.0.x.x addresses are the lab's RDMA data plane. Every number on this page is a measured value from the runs of 2026-10-01 as recorded by the exporters described above; nothing is reproduced from a datasheet.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
