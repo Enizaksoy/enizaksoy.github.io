@@ -110,6 +110,7 @@
   PFC XOFF : switch -> senders  (hop by hop, priority 3 only)
   ECN/CNP  : switch marks at the egress queue -> receiver NIC sends CNPs -> senders slow down (DCQCN)</code></pre>
   <ul>
+    <li><b>Servers:</b> two 2U nodes with 2&times; Tesla V100 and one ConnectX-5 Ex each (PCIe Gen3). The traffic in these runs is RDMA WRITE from <b>host memory</b>: it produces the same incast pattern that GPU collectives do, and in this lab GPUDirect tops out at ~27 Gb/s per GPU&ndash;NIC pair, which would not fill a 40G link.</li>
     <li><b>Traffic:</b> perftest <code>ib_write_bw</code>, RDMA WRITE, 64 KB messages, 4 queue pairs per flow, RoCEv2, DSCP 3, 4 KB RDMA MTU, 60 s, both flows started together.</li>
     <li><b>Switch QoS:</b> DSCP 3 &rarr; TC 3 &rarr; lossless egress queue UC3 / ingress priority group PG3; PFC on priority 3; WRED/ECN profile <code>AZURE_LOSSLESS</code> on UC3, marking probability 5 % at the top of the band. Dynamic buffer model: <code>ingress_lossless_pool</code> 3,109,376 B, alpha = 1, so with two active PGs the XOFF threshold sits at pool / 3 &asymp; 0.99 MiB (1,036,458 B). Headroom profile <code>pg_lossless_40000_5m</code>: xon 19,456 / xoff 21,504 / size 40,960 B.</li>
     <li><b>ECN profile for the run shown in section 3:</b> marking starts at 1.5 MiB and reaches its maximum probability at 2 MiB. The start point was moved up from the 1 MiB default on purpose, so that PFC is clearly visible on the same timeline; the default is compared in section 4.</li>
