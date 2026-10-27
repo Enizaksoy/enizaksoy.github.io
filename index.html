@@ -308,8 +308,9 @@
     <div class="archive-title">Field Labs</div>
 
     <details class="archive-month" open>
-      <summary class="archive-month-head">2026 October<span>1</span></summary>
+      <summary class="archive-month-head">2026 October<span>2</span></summary>
       <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/vos-optionc-bgp-lu.html">Versa VOS as an Inter-AS Option C PE: BGP-LU + VPNv4 with Cisco IOS XE</a>
         <a href="https://enizaksoy.github.io/articles/sonic-sn2410-pfc-ecn.html">SONiC SN2410 RoCE Lab: PFC, ECN and DCQCN on One Timeline</a>
       </div>
     </details>
@@ -412,10 +413,21 @@
     <div class="wrap">
       <div class="section-head">
         <h2 class="section-title">Field Labs</h2>
-        <span class="section-note">13 live builds</span>
+        <span class="section-note">14 live builds</span>
       </div>
       <p class="section-desc">Full lab documentation, built on CML and real hardware, published as GitHub Pages straight from the repo.</p>
       <div class="card-grid">
+
+        <article class="card" id="m-2026-10b">
+          <h3>Versa VOS as an Inter-AS Option C PE: BGP-LU + VPNv4 with Cisco IOS XE</h3>
+          <div class="card-date">2026-10-27</div>
+          <p>A standalone VOS 23.1.2 appliance as the PE of its own AS, with no IGP and no LDP: eBGP labeled unicast to a Cisco ASBR over plain Ethernet, multihop eBGP VPNv4 to a Cisco PE two ASes away, and one VRF forwarding end to end. The verified set config with every knob explained, the Cisco side, host-to-host pings and traceroutes, and two link captures that show the [transport | VPN] label stacks on the wire &mdash; including a route-target hairpin through PE1 caught on the ASBR link. Caveats section lists what did not work and why.</p>
+          <div class="tags"><span>Versa VOS</span><span>Cisco IOS XE</span><span>BGP-LU</span><span>MPLS L3VPN</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/articles/vos-optionc-bgp-lu.html">View lab &rarr;</a>
+            <a class="source" href="https://github.com/Enizaksoy/Versa-VOS-InterAS-OptionC-BGP-LU-Lab">Source</a>
+          </div>
+        </article>
 
         <article class="card" id="m-2026-10">
           <h3>SONiC SN2410 RoCE Lab: PFC, ECN and DCQCN on One Timeline</h3>

@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOS Inter-AS Option C: BGP-LU + VPNv4 with Cisco IOS XE — Versa</title>
+<meta name="description" content="Versa VOS 23.1.2 as an Inter-AS Option C PE against Cisco IOS XE: eBGP labeled unicast to the ASBR, multihop eBGP VPNv4 to the remote PE, verified set config, host-to-host tests and packet captures showing the MPLS label stacks on the wire.">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+  pre.cli{font-size:12.5px;line-height:1.45;overflow-x:auto}
+  pre.diagram{font-size:12px;line-height:1.3;overflow-x:auto}
+  pre .pr{color:var(--slate)}
+  pre .cmd{color:#ff7b72;font-weight:700}
+  pre .lbl{background:#ffe66d;color:#1b1b1b;font-weight:700;border-radius:3px;padding:0 2px}
+  pre .png{color:#7ee787}
+  pre .png.sum{font-weight:700}
+  pre .fail{color:#ff7b72;font-weight:700}
+  pre .cfg{color:#d2a8ff;font-weight:700}
+  pre .ann{color:var(--slate);font-style:italic}
+  :root[data-theme="light"] pre .cmd{color:#b3261e}
+  :root[data-theme="light"] pre .png{color:#1e7b1e}
+  :root[data-theme="light"] pre .cfg{color:#6f2dbd}
+  .key{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin:.6em 0 1.2em}
+  .key span{margin-right:10px}
+  table{font-size:14px}
+  table code{font-size:.84em}
+
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#field-labs">Field Labs</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa VOS · MPLS L3VPN · Inter-AS Option C</div>
+  <h1>Versa VOS as an Inter-AS Option C PE</h1>
+  <p class="lede">VOS 23.1.2 works as an Inter-AS Option C PE: eBGP labeled unicast to a Cisco ASBR, multihop eBGP VPNv4 to a remote Cisco PE, and an L3VPN VRF with end-to-end forwarding, verified in the lab on 26–27 Oct 2026.</p>
+  <div class="meta">2026-10-27 · VOS 23.1.2 · IOS XE 17.16 · BGP-LU · VPNv4 · packet capture</div>
+</div></div>
+
+<article><div class="wrap">
+
+  <div class="toc"><b>On this page</b><br>
+    <a href="#purpose">Purpose</a>
+    <a href="#reference-topology">Reference Topology</a>
+    <a href="#prerequisites">Prerequisites</a>
+    <a href="#configuration">Configuration</a>
+    <a href="#verification">Verification</a>
+    <a href="#known-limitations-caveats">Known limitations / caveats</a>
+  </div>
+  <div class="key"><b>CLI colour key</b> &nbsp; <span class="cmd" style="color:#ff7b72;font-weight:700">command typed</span><span class="lbl" style="background:#ffe66d;color:#1b1b1b;font-weight:700;border-radius:3px;padding:0 3px">label / next-hop / RT</span> <span style="color:#7ee787">ping and traceroute results</span><span style="color:#d2a8ff;font-weight:700">key configuration knob</span></div>
+  <div class="call info"><b>Source files:</b> the VOS set config, verbatim CLI outputs, both packet captures and a colour-coded Word/PDF copy are in the repo <a href="https://github.com/Enizaksoy/Versa-VOS-InterAS-OptionC-BGP-LU-Lab">Versa-VOS-InterAS-OptionC-BGP-LU-Lab</a>. Management addresses are replaced with placeholders; all other addresses are the lab's private ranges.</div>
+  <h2 id="purpose">Purpose</h2>
+  <p>This article shows how to run a standalone VOS appliance as an Inter-AS Option C PE against Cisco IOS XE. VOS exchanges BGP labeled unicast (BGP-LU) with a Cisco ASBR over a plain Ethernet link and runs a multihop eBGP VPNv4 session to a remote Cisco PE in another AS. One customer VRF (RED) is used to prove end-to-end L3VPN forwarding and to document the label stacks on the wire. The configuration was verified on VOS 23.1.2 (builds 23.1.2-J and 23.1.2-B, commit d43d52f), configured from the CLI without Director, against Cisco Catalyst 8000V IOS XE 17.16.01a, on 26–27 Oct 2026. EVPN is out of scope.</p>
+  <h2 id="reference-topology">Reference Topology</h2>
+  <p>Three ASes: AS 65001 and AS 65002 are Cisco IOS XE with IS-IS + LDP inside each AS and iBGP-LU with next-hop-self; VOS is the only node in AS 65003.</p>
+  <pre class="diagram"><code>            AS 65001                            AS 65002
+  +---------------------------+       +---------------------------+
+  |  PE1 ----------- ASBR1    |       |  ASBR2 ----------- PE2    |
+  |  1.1.1.1        2.2.2.2   |=======|  3.3.3.3         4.4.4.4  |
+  |  IS-IS + LDP              |eBGP-LU|  IS-IS + LDP              |
+  |  iBGP-LU, next-hop-self   |       |  iBGP-LU, next-hop-self   |
+  +-----+---------------------+       +-----+-----------------+---+
+        | Gi3                               | Gi1             | Gi3
+        |                                   | 10.2.35.1/30    |
+     Host A                                 |               Host B
+     172.16.30.10/24                        | eBGP-LU       172.16.40.10/24
+     gw 172.16.30.1 (VRF VLAN30)            | family mpls   gw 172.16.40.1 (VRF VLAN40)
+                                            | 0x8847, no GRE
+                                            |
+                                            | vni-0/1 10.2.35.2/30 (family mpls)
+                              +-------------+-------------+
+                              |  VOS 23.1.2 (PE)  AS 65003|
+                              |  lo0 5.5.5.5              |
+                              |  no IGP, no LDP           |
+                              +-------------+-------------+
+                                            | vni-0/3 192.168.107.1/24
+                                            |
+                                         Host C
+                                         192.168.107.10/24
+                                         gw 192.168.107.1 (VRF RED)
+
+Service session:  PE1 lo0 1.1.1.1 &lt;---- multihop eBGP VPNv4 (lo0 to lo0) ----&gt; VOS lo0 5.5.5.5
+Label path:       PE1 learns 5.5.5.5/32 via iBGP-LU from ASBR1, ASBR1 via eBGP-LU from ASBR2, ASBR2 via eBGP-LU from VOS
+VRF RED loopbacks: PE1 Lo101 192.168.101.1/32, PE2 Lo101 192.168.101.2/32</code></pre>
+  <p><b>Host connections</b></p>
+  <table>
+    <tr><th>Host</th><th>Attached to</th><th>IP address</th><th>Gateway</th><th>VRF (RD)</th><th>Route target</th></tr>
+    <tr><td>Host A</td><td>PE1 Gi3 (untagged)</td><td>172.16.30.10/24</td><td>172.16.30.1 (PE1 Gi3)</td><td>VLAN30 (1.1.1.1:30)</td><td>export 65000:30, import 65000:30 65000:40 65000:110</td></tr>
+    <tr><td>Host B</td><td>PE2 Gi3 (untagged)</td><td>172.16.40.10/24</td><td>172.16.40.1 (PE2 Gi3)</td><td>VLAN40 (4.4.4.4:40)</td><td>export 65000:40, import 65000:30 65000:40 65000:110</td></tr>
+    <tr><td>Host C</td><td>VOS vni-0/3.0</td><td>192.168.107.10/24</td><td>192.168.107.1 (VOS)</td><td>RED (5.5.5.5:1)</td><td>65000:1 (plus 30/40/110 with the optional RT leaking in 4d)</td></tr>
+    <tr><td>PE1 RED loopback</td><td>Loopback101</td><td>192.168.101.1/32</td><td>—</td><td>RED (1.1.1.1:1)</td><td>65000:1</td></tr>
+    <tr><td>PE2 RED loopback</td><td>Loopback101</td><td>192.168.101.2/32</td><td>—</td><td>RED (4.4.4.4:1)</td><td>65000:1</td></tr>
+  </table>
+  <p>Hosts A and B reach Host C only after the optional RT leaking in section 4d; the base configuration connects Host C with the PE RED loopbacks.</p>
+  <table>
+    <tr><th>Node</th><th>AS</th><th>Loopback</th><th>Role</th><th>Link to next hop</th></tr>
+    <tr><td>PE1</td><td>65001</td><td>1.1.1.1</td><td>PE, VRF RED (RD 1.1.1.1:1, RT 65000:1), VPNv4 peer of VOS</td><td>IS-IS + LDP + iBGP-LU to ASBR1</td></tr>
+    <tr><td>ASBR1</td><td>65001</td><td>2.2.2.2</td><td>ASBR</td><td>10.0.23.0/30 eBGP-LU to ASBR2, no LDP</td></tr>
+    <tr><td>ASBR2</td><td>65002</td><td>3.3.3.3</td><td>ASBR, BGP-LU peer of VOS</td><td>Gi1 10.2.35.1/30 to VOS vni-0/1 10.2.35.2/30</td></tr>
+    <tr><td>PE2</td><td>65002</td><td>4.4.4.4</td><td>PE, VRF RED 192.168.101.2/32 (reached via PE1)</td><td>IS-IS + LDP + iBGP-LU to ASBR2</td></tr>
+    <tr><td>VOS</td><td>65003</td><td>5.5.5.5</td><td>PE, VRF RED (RD 5.5.5.5:1, RT 65000:1)</td><td>vni-0/1.0 10.2.35.2/30 eBGP-LU to ASBR2</td></tr>
+  </table>
+  <p>PE2's RED loopback is reached through PE1; VOS has no VPNv4 session to PE2.</p>
+  <h2 id="prerequisites">Prerequisites</h2>
+  <p>VOS 23.1.x is required; the BGP-LU and MPLS-on-Ethernet knobs used here are not available on 22.1.4 [Inference from CLI checks on 22.1.4].</p>
+  <table>
+    <tr><th>Side</th><th>Requirement</th></tr>
+    <tr><td>VOS</td><td>Release 23.1.x (verified 23.1.2); standalone CLI configuration; no additional license needed for this setup</td></tr>
+    <tr><td>VOS</td><td>One routed interface towards the ASBR with <code>family inet</code> and <code>family mpls</code></td></tr>
+    <tr><td>Cisco ASBR</td><td><code>mpls bgp forwarding</code> on the interface facing VOS; <code>send-label</code> on the eBGP IPv4 session to VOS</td></tr>
+    <tr><td>Cisco PE</td><td>Multihop eBGP VPNv4 to the VOS loopback (<code>ebgp-multihop</code>, <code>update-source Loopback0</code>, <code>send-community extended</code>)</td></tr>
+    <tr><td>Cisco core</td><td>A labeled path to 5.5.5.5/32 end to end: eBGP-LU between ASBRs, iBGP-LU with next-hop-self inside each AS</td></tr>
+    <tr><td>Both</td><td>Matching route targets on the VRF (65000:1 in this lab)</td></tr>
+  </table>
+  <h2 id="configuration">Configuration</h2>
+  <h3 id="4a-asbr2-ios-xe">4a. ASBR2 (IOS XE)</h3>
+  <p>ASBR2 runs eBGP-LU to VOS on a plain Ethernet interface; <code>mpls bgp forwarding</code> enables MPLS on that interface without LDP.</p>
+  <pre class="cli"><code>interface GigabitEthernet1
+ description to VOS vni-0/1
+ ip address 10.2.35.1 255.255.255.252
+ <span class="cfg">mpls bgp forwarding</span>
+!
+router bgp 65002
+ bgp router-id 3.3.3.3
+ no bgp default ipv4-unicast
+ neighbor 4.4.4.4 remote-as 65002
+ neighbor 4.4.4.4 update-source Loopback0
+ neighbor 10.0.23.1 remote-as 65001
+ neighbor 10.2.35.2 remote-as 65003
+ address-family ipv4
+  network 4.4.4.4 mask 255.255.255.255
+  neighbor 4.4.4.4 activate
+  neighbor 4.4.4.4 <span class="cfg">next-hop-self</span>
+  neighbor 4.4.4.4 <span class="cfg">send-label</span>
+  neighbor 10.0.23.1 activate
+  neighbor 10.0.23.1 <span class="cfg">send-label</span>
+  neighbor 10.2.35.2 activate
+  neighbor 10.2.35.2 <span class="cfg">send-label</span>
+ exit-address-family</code></pre>
+  <h3 id="4b-pe1-ios-xe">4b. PE1 (IOS XE)</h3>
+  <p>PE1 peers VPNv4 directly with the VOS loopback over multihop eBGP; the next hop 5.5.5.5 is resolved through the iBGP-LU route learned from ASBR1.</p>
+  <pre class="cli"><code>router bgp 65001
+ bgp router-id 1.1.1.1
+ no bgp default ipv4-unicast
+ neighbor 2.2.2.2 remote-as 65001
+ neighbor 2.2.2.2 update-source Loopback0
+ neighbor 5.5.5.5 remote-as 65003
+ neighbor 5.5.5.5 <span class="cfg">ebgp-multihop 255</span>
+ neighbor 5.5.5.5 update-source Loopback0
+ address-family ipv4
+  neighbor 2.2.2.2 activate
+  neighbor 2.2.2.2 <span class="cfg">send-label</span>
+ exit-address-family
+ address-family vpnv4
+  neighbor 5.5.5.5 activate
+  neighbor 5.5.5.5 <span class="cfg">send-community extended</span>
+ exit-address-family
+ address-family ipv4 vrf RED
+  redistribute connected
+ exit-address-family
+!
+vrf definition RED
+ rd 1.1.1.1:1
+ address-family ipv4
+  <span class="cfg">route-target export 65000:1</span>
+  <span class="cfg">route-target import 65000:1</span></code></pre>
+  <h3 id="4c-vos-set-format">4c. VOS (set format)</h3>
+  <p>The complete L3VPN-relevant VOS configuration is below; this is the verified set.</p>
+  <pre class="cli"><code>set interfaces lo0 unit 0 family inet address 5.5.5.5
+set interfaces vni-0/0 enable true
+set interfaces vni-0/0 unit 100 vlan-id 100
+set interfaces vni-0/0 unit 100 family inet address 192.168.105.1/24
+set interfaces vni-0/1 enable true
+set interfaces vni-0/1 unit 0 family inet address 10.2.35.2/30
+set interfaces vni-0/1 unit 0 <span class="cfg">family mpls</span>
+set interfaces vni-0/3 enable true
+set interfaces vni-0/3 unit 0 family inet address 192.168.107.1/24
+set routing-instances CORE instance-type virtual-router
+set routing-instances CORE policy-options redistribution-policy TO-LU term LO match protocol direct
+set routing-instances CORE policy-options redistribution-policy TO-LU term LO action accept
+set routing-instances CORE policy-options <span class="cfg">redistribute-to-bgp-labeled-unicast TO-LU</span>
+set routing-instances CORE <span class="cfg">mpls-vpn-core</span>
+set routing-instances CORE interfaces [ lo0.0 vni-0/1.0 ]
+set routing-instances CORE routing-options <span class="cfg">mpls-vpn-local-router-address 5.5.5.5</span>
+set routing-instances CORE protocols bgp 1 router-id 5.5.5.5
+set routing-instances CORE protocols bgp 1 local-as as-number 65003
+set routing-instances CORE protocols bgp 1 group LU type external
+set routing-instances CORE protocols bgp 1 group LU <span class="cfg">family inet labeled-unicast</span>
+set routing-instances CORE protocols bgp 1 group LU peer-as 65002
+set routing-instances CORE protocols bgp 1 group LU neighbor 10.2.35.1
+set routing-instances CORE protocols bgp 1 group VPN type external
+set routing-instances CORE protocols bgp 1 group VPN <span class="cfg">family inet-vpn unicast</span>
+set routing-instances CORE protocols bgp 1 group VPN peer-as 65001
+set routing-instances CORE protocols bgp 1 group VPN local-address 5.5.5.5
+set routing-instances CORE protocols bgp 1 group VPN neighbor 1.1.1.1
+set routing-instances RED instance-type vrf
+set routing-instances RED policy-options redistribution-policy DIRECT term T1 match protocol direct
+set routing-instances RED policy-options redistribution-policy DIRECT term T1 action accept
+set routing-instances RED policy-options redistribute-to-bgp DIRECT
+set routing-instances RED <span class="cfg">mpls-vpn-core-instance CORE</span>
+set routing-instances RED interfaces [ vni-0/0.100 vni-0/3.0 ]
+set routing-instances RED route-distinguisher 5.5.5.5:1
+set routing-instances RED <span class="cfg">vrf-both-target target:65000:1</span>
+set orgs org LAB appliance-owner
+set orgs org LAB available-routing-instances [ CORE RED ]
+set orgs org LAB <span class="cfg">owned-routing-instances</span> [ CORE RED ]
+set orgs org LAB <span class="cfg">traffic-identification</span> using [ lo0.0 vni-0/0.100 vni-0/1.0 vni-0/3.0 ]
+set orgs org-services LAB objects <span class="cfg">zones MPLS-ZONE</span> interface-list [ lo0.0 vni-0/0.100 vni-0/1.0 vni-0/3.0 ]</code></pre>
+  <p>What each block does:</p>
+  <ul>
+    <li><code>interfaces</code>: <code>family mpls</code> on vni-0/1 unit 0 enables MPLS on the Ethernet link to ASBR2. The loopback address is entered without a prefix length.</li>
+    <li><code>CORE</code>: a <code>virtual-router</code> that carries both the labeled-unicast session (group LU, <code>family inet labeled-unicast</code>, peer-as 65002) and the VPNv4 session (group VPN, <code>family inet-vpn unicast</code>, peer-as 65001, sourced from 5.5.5.5).</li>
+    <li><code>mpls-vpn-core</code> + <code>mpls-vpn-local-router-address 5.5.5.5</code>: make CORE the MPLS VPN core instance and 5.5.5.5 the PE address used as the VPNv4 next hop.</li>
+    <li><code>redistribute-to-bgp-labeled-unicast TO-LU</code>: advertises the directly connected loopback 5.5.5.5/32 to ASBR2 with a label. VOS advertises implicit-null for its own loopback.</li>
+    <li><code>RED</code>: a <code>vrf</code> instance bound to the core via <code>mpls-vpn-core-instance CORE</code>, with RD 5.5.5.5:1 and RT 65000:1 in both directions. <code>redistribute-to-bgp DIRECT</code> exports the connected RED subnets into VPNv4.</li>
+    <li><code>orgs</code>: the org must own every routing-instance, and every interface must appear in <code>traffic-identification</code> and in a zone. Otherwise the commit is refused with <code>routing-instance CORE must be defined as a owned-routing-instance for an org</code>.</li>
+  </ul>
+  <h3 id="4d-optional-route-target-leaking-to-othe">4d. Optional: route-target leaking to other Cisco VRFs</h3>
+  <p>To reach additional Cisco VRFs (for example RT 65000:30, 65000:40 and 65000:110), replace <code>vrf-both-target</code> with explicit import and export lists.</p>
+  <pre class="cli"><code>delete routing-instances RED vrf-both-target
+set routing-instances RED <span class="cfg">vrf-import-target</span> "target:65000:1 target:65000:30 target:65000:40 target:65000:110"
+set routing-instances RED <span class="cfg">vrf-export-target</span> "target:65000:1 target:65000:30 target:65000:40 target:65000:110"</code></pre>
+  <p>The value is one string of space-separated targets. The <code>[ a b ]</code> list form is accepted by the parser but results in no change. With this configuration PE1 shows the VOS prefix with <code>Extended Community: RT:65000:1 RT:65000:30 RT:65000:40 RT:65000:110</code>, and one VPN label per destination VRF is used on the wire.</p>
+  <h2 id="verification">Verification</h2>
+  <h3 id="5a-bgp-sessions-and-labels">5a. BGP sessions and labels</h3>
+  <p>Both VOS sessions are established: VPNv4 to PE1 (17 prefixes received) and labeled unicast to ASBR2 (2 prefixes received). Outputs are verbatim, trimmed.</p>
+  <p>VOS:</p>
+  <pre class="cli"><code><span class="pr">admin@versa-cli&gt; </span><span class="cmd">show bgp neighbor brief</span>
+routing-instance: CORE
+Neighbor        V  MsgRcvd   MsgSent    Uptime     State/PfxRcd  PfxSent AS
+1.1.1.1         4  103       93         00:36:06   17            4       65001
+10.2.35.1       4  85        85         00:36:06   2             2       65002
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route routing-instance CORE</span>
+BGP    N/A  +1.1.1.1/32          0.0.0.0         00:36:37 Indirect
+BGP    N/A  +4.4.4.4/32          0.0.0.0         00:36:37 Indirect
+local  N/A  +5.5.5.5/32          0.0.0.0         00:36:47 directly connected
+conn   N/A  +10.2.35.0/30        0.0.0.0         00:36:41 vni-0/1.0</code></pre>
+  <p>ASBR2 holds a BGP-LU label for 5.5.5.5/32 with out-label <code>imp-null</code>, so it pops its own label towards VOS:</p>
+  <pre class="cli"><code><span class="pr">ASBR2#</span><span class="cmd">show bgp ipv4 unicast labels</span>
+   Network          Next Hop      In label/Out label
+   1.1.1.1/32       10.0.23.1       <span class="lbl">3002</span>/<span class="lbl">2000</span>
+   5.5.5.5/32       10.2.35.2       <span class="lbl">3004</span>/<span class="lbl">imp-null</span>
+<span class="pr">ASBR2#</span><span class="cmd">show mpls forwarding-table 5.5.5.5 32</span>
+Local      Outgoing   Prefix           Bytes Label   Outgoing   Next Hop
+<span class="lbl">3004</span>       <span class="lbl">Pop Label</span>  5.5.5.5/32       20089         Gi1        10.2.35.2</code></pre>
+  <p>PE1 learns 5.5.5.5/32 with a label from ASBR1 over iBGP-LU, which lets it resolve the VPNv4 next hop:</p>
+  <pre class="cli"><code><span class="pr">PE1#</span><span class="cmd">show bgp ipv4 unicast 5.5.5.5</span>
+  65002 65003
+    2.2.2.2 (metric 20) from <span class="lbl">2.2.2.2</span> (2.2.2.2)
+      mpls labels in/out <span class="lbl">nolabel</span>/<span class="lbl">2003</span></code></pre>
+  <h3 id="5b-vrf-red-routes">5b. VRF RED routes</h3>
+  <p>VOS imports both Cisco RED loopbacks with next hop 1.1.1.1, and PE1 imports the VOS RED subnet with next hop 5.5.5.5 and VPN label 24706.</p>
+  <pre class="cli"><code><span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route routing-instance RED</span>
+BGP    N/A  +192.168.101.1/32    1.1.1.1         00:01:05 Indirect
+BGP    N/A  +192.168.101.2/32    1.1.1.1         00:01:05 Indirect
+conn   N/A  +192.168.105.0/24    0.0.0.0         00:01:09 vni-0/0.100
+conn   N/A  +192.168.107.0/24    0.0.0.0         00:01:04 vni-0/3.0</code></pre>
+  <pre class="cli"><code><span class="pr">PE1#</span><span class="cmd">show bgp vpnv4 unicast vrf RED 192.168.107.0</span>
+  65003, imported path from <span class="lbl">5.5.5.5</span>:1:192.168.107.0/24 (global)
+    5.5.5.5 (metric 20) (via default) from <span class="lbl">5.5.5.5</span> (5.5.5.5)
+      Origin incomplete, localpref 100, valid, external, best
+      Extended Community: <span class="lbl">RT:65000:1</span>
+      mpls labels in/out <span class="lbl">nolabel</span>/<span class="lbl">24706</span>
+<span class="pr">PE1#</span><span class="cmd">show ip route vrf RED bgp</span>
+B     192.168.107.0/24 [20/0] via <span class="lbl">5.5.5.5</span>, 00:10:26</code></pre>
+  <h3 id="5c-data-plane">5c. Data plane</h3>
+  <p>All pings between the host behind VOS and the Cisco RED loopbacks succeed in both directions.</p>
+  <table>
+    <tr><th>Source</th><th>Destination</th><th>Result</th></tr>
+    <tr><td>Host 192.168.107.10 (behind VOS)</td><td>PE1 RED 192.168.101.1</td><td>4/4</td></tr>
+    <tr><td>Host 192.168.107.10 (behind VOS)</td><td>PE2 RED 192.168.101.2</td><td>4/4</td></tr>
+    <tr><td>PE1 <code>ping vrf RED 192.168.107.10 source 192.168.101.1</code></td><td>Host 192.168.107.10</td><td>5/5</td></tr>
+  </table>
+  <p>Label stacks captured on the VOS-ASBR2 link (EtherType 0x8847, plain Ethernet, no GRE):</p>
+  <table>
+    <tr><th>Direction</th><th>Label stack on the wire</th><th>Meaning</th></tr>
+    <tr><td>VOS to PE1 RED</td><td>[3002 | 1005]</td><td>3002 = ASBR2's BGP-LU label for 1.1.1.1/32; 1005 = PE1's VPN label for RED</td></tr>
+    <tr><td>PE1 RED to VOS</td><td>[24706]</td><td>VOS's VPN label for RED only; ASBR2 popped its transport label 3004 because VOS advertised implicit-null for 5.5.5.5/32</td></tr>
+  </table>
+  <p>Label values differ per lab (a first run showed [3002 | 1001] out and [24704] in); the stack structure is identical.</p>
+  <p>The PE1 traceroute and <code>show ip cef vrf RED 192.168.107.10 detail</code> in section 5e are the data-plane proof of the Option C stack: per-hop labels 2003/24706 then 3004/24706, and the CEF recursion 5.5.5.5 label 24706 via 2.2.2.2 label 2003.</p>
+  <h3 id="5d-how-to-read-the-label-stack">5d. How to read the label stack</h3>
+  <p>Outbound from VOS, the top label is the BGP-LU transport label that ASBR2 allocated for the remote PE loopback, and the bottom label is the VPN label the remote PE advertised in VPNv4. Inbound, only the VPN label that VOS advertised arrives, because VOS signals implicit-null for its own loopback and ASBR2 pops the transport label (penultimate hop popping).</p>
+  <h3 id="5e-full-command-outputs">5e. Full command outputs</h3>
+  <p>Raw console outputs from the verified lab, one block per device; only pagination commands, timestamps and the management address were removed.</p>
+  <p>VOS:</p>
+  <pre class="cli"><code><span class="pr">admin@versa-cli&gt; </span><span class="cmd">show bgp neighbor brief | nomore</span>
+routing-instance: CORE
+
+Neighbor        V  MsgRcvd   MsgSent    Uptime     State/PfxRcd  PfxSent AS
+1.1.1.1         4  137       129        00:51:37   17            4       65001
+10.2.35.1       4  119       120        00:51:37   2             2       65002
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show interfaces brief | nomore</span>
+NAME         MAC                OPER  ADMIN  TENANT  VRF     IP
+-----------------------------------------------------------------------------------------
+eth-0/0      52:54:00:cd:63:8a  up    up     0       global  &lt;mgmt-ip&gt;
+lo0          n/a                up    up     -       -
+lo0.0        n/a                up    up     1       CORE    5.5.5.5/32
+vni-0/0      52:54:00:44:f7:82  up    up     -       -
+vni-0/0.100  52:54:00:44:f7:82  up    up     1       RED     192.168.105.1/24
+vni-0/1      52:54:00:9a:92:65  up    up     -       -
+vni-0/1.0    52:54:00:9a:92:65  up    up     1       CORE    10.2.35.2/30
+vni-0/2      52:54:00:10:39:4e  up    up     -       -
+vni-0/2.106  52:54:00:10:39:4e  up    up     1       EVI106
+vni-0/3      52:54:00:61:1a:6b  up    up     -       -
+vni-0/3.0    52:54:00:61:1a:6b  up    up     1       RED     192.168.107.1/24
+vni-0/4      52:54:00:59:e6:e7  down  down   -       -
+vni-0/5      52:54:00:b1:ec:81  down  down   -       -
+vni-0/6      52:54:00:db:9a:e5  down  down   -       -
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route routing-instance CORE | nomore</span>
+
+Routes for Routing instance : CORE  AFI: ipv4  SAFI: unicast
+
+Prot   Type  Dest Address/Mask   Next-hop        Age      Interface name     Nexthop name
+----   ----  -----------------   --------        ---      --------------    ---------------
+BGP    N/A  +1.1.1.1/32          0.0.0.0         00:51:57 Indirect
+BGP    N/A  +4.4.4.4/32          0.0.0.0         00:51:57 Indirect
+local  N/A  +5.5.5.5/32          0.0.0.0         00:52:07 directly connected
+conn   N/A  +10.2.35.0/30        0.0.0.0         00:52:01 vni-0/1.0
+local  N/A  +10.2.35.2/32        0.0.0.0         00:52:01 directly connected
+
+
+Routes for Routing instance : CORE  AFI: ipv6  SAFI: unicast
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route routing-instance RED | nomore</span>
+
+Routes for Routing instance : RED  AFI: ipv4  SAFI: unicast
+
+Prot   Type  Dest Address/Mask   Next-hop        Age      Interface name     Nexthop name
+----   ----  -----------------   --------        ---      --------------    ---------------
+BGP    N/A  +172.16.30.0/24      1.1.1.1         00:41:06 Indirect
+BGP    N/A  +172.16.40.0/24      1.1.1.1         00:41:06 Indirect
+BGP    N/A  +172.16.100.0/24     1.1.1.1         00:41:06 Indirect
+BGP    N/A  +192.168.101.1/32    1.1.1.1         00:41:05 Indirect
+BGP    N/A  +192.168.101.2/32    1.1.1.1         00:41:05 Indirect
+conn   N/A  +192.168.105.0/24    0.0.0.0         00:04:14 vni-0/0.100
+local  N/A  +192.168.105.1/32    0.0.0.0         00:04:14 directly connected
+conn   N/A  +192.168.107.0/24    0.0.0.0         00:41:04 vni-0/3.0
+local  N/A  +192.168.107.1/32    0.0.0.0         00:41:04 directly connected
+
+
+Routes for Routing instance : RED  AFI: ipv6  SAFI: unicast
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route table l3vpn.ipv4.unicast routing-instance CORE receive-protocol bgp 192.168.101.1/32 exact | nomore</span>
+
+Routes for Routing instance : CORE  AFI: ipv4  SAFI: unicast
+
+Routing entry for 192.168.101.1/32
+   Peer Address       : <span class="lbl">1.1.1.1</span>
+   Route Distinguisher: <span class="lbl">1.1.1.1</span>:1
+   Next-hop           : <span class="lbl">1.1.1.1</span>
+   VPN Label          : <span class="lbl">1005</span>
+   Local Preference   : 100
+   AS Path            : 65001
+   AS Path(. notation): 65001
+   Origin             : Incomplete
+   MED                : 0
+   Community          : N/A
+   Extended community : <span class="lbl">target:65000:1</span>
+   Scalable group tag : 0
+   Preference         : Default
+   Weight             : 0
+   Best               : true
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route table l3vpn.ipv4.unicast routing-instance CORE advertising-protocol bgp 192.168.107.0/24 exact | nomore</span>
+
+Routes for Routing instance : CORE  AFI: ipv4  SAFI: unicast
+
+Routing entry for 192.168.107.0/24
+   Peer Address       : <span class="lbl">1.1.1.1</span>
+   Route Distinguisher: <span class="lbl">5.5.5.5</span>:1
+   Next-hop           : <span class="lbl">5.5.5.5</span>
+   VPN Label          : <span class="lbl">24706</span>
+   Local Preference   : 0
+   AS Path            : 65003
+   AS Path(. notation): 65003
+   Origin             : Incomplete
+   MED                : 0
+   Community          : N/A
+   Extended community : <span class="lbl">target:65000:1</span> <span class="lbl">target:65000:30</span> <span class="lbl">target:65000:40</span> <span class="lbl">target:65000:110</span>
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">ping 10.2.35.1 routing-instance CORE count 3</span>
+<span class="png">PING 10.2.35.1 (10.2.35.1) 56(84) bytes of data.</span>
+<span class="png">64 bytes from 10.2.35.1: icmp_seq=1 ttl=255 time=1.94 ms</span>
+<span class="png">64 bytes from 10.2.35.1: icmp_seq=2 ttl=255 time=1.67 ms</span>
+<span class="png">64 bytes from 10.2.35.1: icmp_seq=3 ttl=255 time=1.98 ms</span>
+
+<span class="png">--- 10.2.35.1 ping statistics ---</span>
+<span class="png sum">3 packets transmitted, 3 received, 0% packet loss, time 2002ms</span>
+<span class="png">rtt min/avg/max/mdev = 1.672/1.865/1.983/0.146 ms</span></code></pre>
+  <p>ASBR2:</p>
+  <pre class="cli"><code><span class="pr">ASBR2#</span><span class="cmd">show bgp ipv4 unicast summary | begin Neighbor</span>
+Neighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+4.4.4.4         4        65002      96     102       13    0    0 01:26:11        0
+10.0.23.1       4        65001      97     100       13    0    0 01:26:18        1
+10.2.35.2       4        65003     117     117       13    0    0 00:50:27        2
+<span class="pr">ASBR2#</span><span class="cmd">show bgp ipv4 unicast labels</span>
+   Network          Next Hop      In label/Out label
+   1.1.1.1/32       10.0.23.1       <span class="lbl">3002</span>/<span class="lbl">2000</span>
+   4.4.4.4/32       10.2.34.2       <span class="lbl">3001</span>/<span class="lbl">nolabel</span>
+   5.5.5.5/32       10.2.35.2       <span class="lbl">3004</span>/<span class="lbl">imp-null</span>
+   10.2.35.0/30     10.2.35.2       3005/<span class="lbl">imp-null</span>
+<span class="pr">ASBR2#</span><span class="cmd">show mpls forwarding-table</span>
+Local      Outgoing   Prefix           Bytes Label   Outgoing   Next Hop
+Label      Label      or Tunnel Id     Switched      interface
+3000       <span class="lbl">Pop Label</span>  10.0.23.1/32     0             Gi3        10.0.23.1
+<span class="lbl">3001</span>       <span class="lbl">Pop Label</span>  4.4.4.4/32       283730        Gi2        10.2.34.2
+<span class="lbl">3002</span>       <span class="lbl">2000</span>       1.1.1.1/32       327527        Gi3        10.0.23.1
+3003       <span class="lbl">Pop Label</span>  10.2.35.2/32     0             Gi1        10.2.35.2
+<span class="lbl">3004</span>       <span class="lbl">Pop Label</span>  5.5.5.5/32       26304         Gi1        10.2.35.2
+3005       <span class="lbl">Pop Label</span>  10.2.35.0/30     0             aggregate
+<span class="pr">ASBR2#</span><span class="cmd">show ip route 5.5.5.5</span>
+Routing entry for 5.5.5.5/32
+  Known via "bgp 65002", distance 20, metric 0
+  Tag 65003, type external
+  Last update from 10.2.35.2 00:50:57 ago
+  Routing Descriptor Blocks:
+<span class="fail">  * 10.2.35.2, from 10.2.35.2, 00:50:57 ago</span>
+      opaque_ptr 0x76B9A55ED9A8
+      Route metric is 0, traffic share count is 1
+      AS Hops 1
+      Route tag 65003
+      MPLS label: <span class="lbl">implicit-null</span>
+<span class="pr">ASBR2#</span><span class="cmd">ping 5.5.5.5 source 3.3.3.3 repeat 3</span>
+<span class="png">Type escape sequence to abort.</span>
+<span class="png">Sending 3, 100-byte ICMP Echos to 5.5.5.5, timeout is 2 seconds:</span>
+<span class="png">Packet sent with a source address of 3.3.3.3</span>
+<span class="png">...</span>
+<span class="fail">Success rate is 0 percent (0/3)</span></code></pre>
+  <p>PE1:</p>
+  <pre class="cli"><code><span class="pr">PE1#</span><span class="cmd">show bgp ipv4 unicast | begin Network</span>
+     Network          Next Hop            Metric LocPrf Weight Path
+ r&gt;i  1.1.1.1/32       2.2.2.2                 20    100      0 i
+ *&gt;i  4.4.4.4/32       2.2.2.2                 20    100      0 65002 i
+ *&gt;i  5.5.5.5/32       2.2.2.2                  0    100      0 65002 65003 ?
+ *&gt;i  10.2.35.0/30     2.2.2.2                  0    100      0 65002 65003 ?
+<span class="pr">PE1#</span><span class="cmd">show bgp vpnv4 unicast vrf RED | begin Network</span>
+     Network          Next Hop            Metric LocPrf Weight Path
+Route Distinguisher: <span class="lbl">1.1.1.1</span>:1 (default for vrf RED)
+ *&gt;   192.168.101.1/32 0.0.0.0                  0         32768 ?
+ *&gt;   192.168.101.2/32 4.4.4.4                  0             0 65002 ?
+ *&gt;   192.168.105.0    5.5.5.5                                0 65003 ?
+ *&gt;   192.168.107.0    5.5.5.5                                0 65003 ?
+<span class="pr">PE1#</span><span class="cmd">show ip route vrf RED | begin Gateway</span>
+Gateway of last resort is not set
+      192.168.101.0/32 is subnetted, 2 subnets
+C        192.168.101.1 is directly connected, Loopback101
+B        192.168.101.2 [20/0] via <span class="lbl">4.4.4.4</span>, 01:23:50
+B     192.168.105.0/24 [20/0] via <span class="lbl">5.5.5.5</span>, 00:01:07
+B     192.168.107.0/24 [20/0] via <span class="lbl">5.5.5.5</span>, 00:38:10
+<span class="pr">PE1#</span><span class="cmd">show ip cef vrf RED 192.168.107.10 detail</span>
+192.168.107.0/24, epoch 0, flags [rib defined all labels]
+  recursive via <span class="lbl">5.5.5.5</span> label <span class="lbl">24706</span>
+    recursive via <span class="lbl">2.2.2.2</span> label <span class="lbl">2003</span>
+      nexthop 10.1.12.2 GigabitEthernet2
+<span class="pr">PE1#</span><span class="cmd">ping vrf RED 192.168.107.10 source 192.168.101.1 repeat 5</span>
+<span class="png">Type escape sequence to abort.</span>
+<span class="png">Sending 5, 100-byte ICMP Echos to 192.168.107.10, timeout is 2 seconds:</span>
+<span class="png">Packet sent with a source address of 192.168.101.1</span>
+<span class="png">!!!!!</span>
+<span class="png sum">Success rate is 100 percent (5/5), round-trip min/avg/max = 4/5/9 ms</span>
+<span class="pr">PE1#</span><span class="cmd">traceroute vrf RED 192.168.107.10 source 192.168.101.1 numeric timeout 1 probe 1</span>
+<span class="png">Type escape sequence to abort.</span>
+<span class="png">Tracing the route to 192.168.107.10</span>
+<span class="png">VRF info: (vrf in name/id, vrf out name/id)</span>
+<span class="png">  1 10.1.12.2 [MPLS: Labels 2003/24706 Exp 0] 6 msec</span>
+<span class="png">  2 10.0.23.2 [MPLS: Labels 3004/24706 Exp 0] 5 msec</span>
+<span class="fail">  3  *</span>
+<span class="png">  4 192.168.107.10 5 msec</span></code></pre>
+  <p>Host C:</p>
+  <pre class="cli"><code><span class="pr">host-c:~$ </span><span class="cmd">ip -4 addr show eth0 | grep inet; ip route</span>
+    inet 192.168.107.10/24 scope global eth0
+default via 192.168.107.1 dev eth0
+192.168.107.0/24 dev eth0 scope link  src 192.168.107.10
+<span class="pr">host-c:~$ </span><span class="cmd">ping -c 4 192.168.101.1</span>
+<span class="png">PING 192.168.101.1 (192.168.101.1): 56 data bytes</span>
+<span class="png">64 bytes from 192.168.101.1: seq=0 ttl=42 time=3.282 ms</span>
+<span class="png">64 bytes from 192.168.101.1: seq=1 ttl=42 time=3.004 ms</span>
+<span class="png">64 bytes from 192.168.101.1: seq=2 ttl=42 time=3.191 ms</span>
+<span class="png">64 bytes from 192.168.101.1: seq=3 ttl=42 time=3.113 ms</span>
+<span class="png">--- 192.168.101.1 ping statistics ---</span>
+<span class="png sum">4 packets transmitted, 4 packets received, 0% packet loss</span>
+<span class="png">round-trip min/avg/max = 3.004/3.147/3.282 ms</span>
+<span class="pr">host-c:~$ </span><span class="cmd">ping -c 4 192.168.101.2</span>
+<span class="png">PING 192.168.101.2 (192.168.101.2): 56 data bytes</span>
+<span class="png">64 bytes from 192.168.101.2: seq=0 ttl=42 time=5.277 ms</span>
+<span class="png">64 bytes from 192.168.101.2: seq=1 ttl=42 time=4.779 ms</span>
+<span class="png">64 bytes from 192.168.101.2: seq=2 ttl=42 time=4.555 ms</span>
+<span class="png">64 bytes from 192.168.101.2: seq=3 ttl=42 time=4.494 ms</span>
+<span class="png">--- 192.168.101.2 ping statistics ---</span>
+<span class="png sum">4 packets transmitted, 4 packets received, 0% packet loss</span>
+<span class="png">round-trip min/avg/max = 4.494/4.776/5.277 ms</span>
+<span class="pr">host-c:~$ </span><span class="cmd">traceroute -n -w 1 -q 1 192.168.101.1</span>
+<span class="png">traceroute to 192.168.101.1 (192.168.101.1), 30 hops max, 46 byte packets</span>
+<span class="png"> 1  192.168.107.1  0.923 ms</span>
+<span class="png"> 2  10.2.35.1  7.075 ms</span>
+<span class="png"> 3  10.0.23.1  4.568 ms</span>
+<span class="png"> 4  192.168.101.1  71.877 ms</span></code></pre>
+  <h3 id="5f-host-to-host-tests-and-packet-capture">5f. Host-to-host tests and packet captures</h3>
+  <p>Host C (behind VOS) and Host A / Host B (behind the Cisco PEs) reach each other with 0% loss in both directions, and the captures on the VOS–ASBR2 and ASBR1–ASBR2 links show the expected two-label stacks on the wire. These tests use the RT leaking from section 4d (RED imports 65000:30 and 65000:40).</p>
+  <p><b>Host C → Host A and Host B</b></p>
+  <pre class="cli"><code><span class="pr">host-c:~$ </span><span class="cmd">ip -4 addr show eth0 | grep inet</span>
+    inet 192.168.107.10/24 scope global eth0
+<span class="pr">host-c:~$ </span><span class="cmd">ping -c 4 172.16.30.10</span>
+<span class="png">PING 172.16.30.10 (172.16.30.10): 56 data bytes</span>
+<span class="png">64 bytes from 172.16.30.10: seq=0 ttl=42 time=4.922 ms</span>
+<span class="png">64 bytes from 172.16.30.10: seq=1 ttl=42 time=3.790 ms</span>
+<span class="png">64 bytes from 172.16.30.10: seq=2 ttl=42 time=3.511 ms</span>
+<span class="png">64 bytes from 172.16.30.10: seq=3 ttl=42 time=3.897 ms</span>
+<span class="png">--- 172.16.30.10 ping statistics ---</span>
+<span class="png sum">4 packets transmitted, 4 packets received, 0% packet loss</span>
+<span class="pr">host-c:~$ </span><span class="cmd">ping -c 4 172.16.40.10</span>
+<span class="png">PING 172.16.40.10 (172.16.40.10): 56 data bytes</span>
+<span class="png">64 bytes from 172.16.40.10: seq=0 ttl=42 time=5.997 ms</span>
+<span class="png">64 bytes from 172.16.40.10: seq=1 ttl=42 time=5.771 ms</span>
+<span class="png">64 bytes from 172.16.40.10: seq=2 ttl=42 time=5.181 ms</span>
+<span class="png">64 bytes from 172.16.40.10: seq=3 ttl=42 time=5.479 ms</span>
+<span class="png">--- 172.16.40.10 ping statistics ---</span>
+<span class="png sum">4 packets transmitted, 4 packets received, 0% packet loss</span>
+<span class="pr">host-c:~$ </span><span class="cmd">traceroute -n -w 1 -q 1 172.16.30.10</span>
+<span class="png">traceroute to 172.16.30.10 (172.16.30.10), 30 hops max, 46 byte packets</span>
+<span class="png"> 1  192.168.107.1  0.972 ms</span><span class="ann">      (VOS vni-0/3, VRF RED)</span>
+<span class="png"> 2  10.2.35.1  6.192 ms</span><span class="ann">          (ASBR2 Gi1)</span>
+<span class="png"> 3  10.0.23.1  5.768 ms</span><span class="ann">          (ASBR1)</span>
+<span class="png"> 4  172.16.30.1  8.026 ms</span><span class="ann">        (PE1 Gi3, VRF VLAN30)</span>
+<span class="png"> 5  172.16.30.10  3.005 ms</span><span class="ann">       (Host A)</span>
+<span class="pr">host-c:~$ </span><span class="cmd">traceroute -n -w 1 -q 1 172.16.40.10</span>
+<span class="png">traceroute to 172.16.40.10 (172.16.40.10), 30 hops max, 46 byte packets</span>
+<span class="png"> 1  192.168.107.1  0.685 ms</span><span class="ann">      (VOS)</span>
+<span class="png"> 2  10.2.35.1  6.576 ms</span><span class="ann">          (ASBR2)</span>
+<span class="png"> 3  10.0.23.1  6.924 ms</span><span class="ann">          (ASBR1)</span>
+<span class="png"> 4  10.1.12.1  6.970 ms</span><span class="ann">          (PE1: re-exports the 65000:40 route into VLAN30)</span>
+<span class="png"> 5  10.1.12.2  6.486 ms</span><span class="ann">          (ASBR1)</span>
+<span class="png"> 6  10.0.23.2  6.388 ms</span><span class="ann">          (ASBR2)</span>
+<span class="png"> 7  172.16.40.1  21.286 ms</span><span class="ann">       (PE2 Gi3, VRF VLAN40)</span>
+<span class="png"> 8  172.16.40.10  5.489 ms</span><span class="ann">       (Host B)</span></code></pre>
+  <p>The Host B path hairpins through PE1 because VOS has a VPNv4 session only with PE1: PE1 imports 172.16.40.0/24 (RT 65000:40) into VRF VLAN30 and re-exports it with RT 65000:30 and itself as next hop, which is the copy VOS installs. A VPNv4 session to PE2 (or a route reflector) would give the direct path.</p>
+  <p><b>Host A → Host C and Host B → Host C</b></p>
+  <pre class="cli"><code><span class="pr">host-a:~$ </span><span class="cmd">ip -4 addr show eth0 | grep inet</span>
+    inet 172.16.30.10/24 scope global eth0
+<span class="pr">host-a:~$ </span><span class="cmd">ip route</span>
+default via 172.16.30.1 dev eth0
+172.16.30.0/24 dev eth0 scope link  src 172.16.30.10
+<span class="pr">host-a:~$ </span><span class="cmd">ping -c 4 192.168.107.10</span>
+<span class="png">PING 192.168.107.10 (192.168.107.10): 56 data bytes</span>
+<span class="png">64 bytes from 192.168.107.10: seq=0 ttl=42 time=3.185 ms</span>
+<span class="png">64 bytes from 192.168.107.10: seq=1 ttl=42 time=3.763 ms</span>
+<span class="png">64 bytes from 192.168.107.10: seq=2 ttl=42 time=3.404 ms</span>
+<span class="png">64 bytes from 192.168.107.10: seq=3 ttl=42 time=3.378 ms</span>
+<span class="png">--- 192.168.107.10 ping statistics ---</span>
+<span class="png sum">4 packets transmitted, 4 packets received, 0% packet loss</span>
+<span class="pr">host-a:~$ </span><span class="cmd">traceroute -n -w 1 -q 1 192.168.107.10</span>
+<span class="png">traceroute to 192.168.107.10 (192.168.107.10), 30 hops max, 46 byte packets</span>
+<span class="png"> 1  172.16.30.1  0.908 ms</span><span class="ann">        (PE1 Gi3)</span>
+<span class="png"> 2  10.1.12.2  5.047 ms</span><span class="ann">          (ASBR1)</span>
+<span class="png"> 3  10.0.23.2  6.122 ms</span><span class="ann">          (ASBR2)</span>
+<span class="fail"> 4  *                            (VOS: label-switched, no ICMP time-exceeded)</span>
+<span class="png"> 5  192.168.107.10  3.474 ms</span><span class="ann">     (Host C)</span>
+
+<span class="pr">host-b:~$ </span><span class="cmd">ip -4 addr show eth0 | grep inet</span>
+    inet 172.16.40.10/24 scope global eth0
+<span class="pr">host-b:~$ </span><span class="cmd">ping -c 4 192.168.107.10</span>
+<span class="png">PING 192.168.107.10 (192.168.107.10): 56 data bytes</span>
+<span class="png">64 bytes from 192.168.107.10: seq=0 ttl=42 time=5.377 ms</span>
+<span class="png">64 bytes from 192.168.107.10: seq=1 ttl=42 time=5.065 ms</span>
+<span class="png">64 bytes from 192.168.107.10: seq=2 ttl=42 time=5.245 ms</span>
+<span class="png">64 bytes from 192.168.107.10: seq=3 ttl=42 time=5.295 ms</span>
+<span class="png">--- 192.168.107.10 ping statistics ---</span>
+<span class="png sum">4 packets transmitted, 4 packets received, 0% packet loss</span>
+<span class="pr">host-b:~$ </span><span class="cmd">traceroute -n -w 1 -q 1 192.168.107.10</span>
+<span class="png">traceroute to 192.168.107.10 (192.168.107.10), 30 hops max, 46 byte packets</span>
+<span class="png"> 1  172.16.40.1  0.817 ms</span><span class="ann">        (PE2 Gi3)</span>
+<span class="png"> 2  10.2.34.1  63.870 ms</span><span class="ann">         (ASBR2)</span>
+<span class="png"> 3  10.0.23.1  6.719 ms</span><span class="ann">          (ASBR1)</span>
+<span class="png"> 4  10.1.12.1  6.883 ms</span><span class="ann">          (PE1, hairpin)</span>
+<span class="png"> 5  10.1.12.2  13.568 ms</span><span class="ann">         (ASBR1)</span>
+<span class="png"> 6  10.0.23.2  8.785 ms</span><span class="ann">          (ASBR2)</span>
+<span class="fail"> 7  *                            (VOS)</span>
+<span class="png"> 8  192.168.107.10  4.717 ms</span><span class="ann">     (Host C)</span></code></pre>
+  <p><b>Capture on the VOS–ASBR2 link (VOS vni-0/1 ↔ ASBR2 Gi1)</b> while Host C pinged Host A, Host B and PE1 Lo101. Every frame is plain Ethernet 0x8847; no GRE or IP tunnel header.</p>
+  <table>
+    <tr><th>Direction</th><th>Flow</th><th>Label stack on the wire</th><th>Meaning</th></tr>
+    <tr><td>VOS → ASBR2</td><td>192.168.107.10 → 172.16.30.10 (Host A)</td><td>[3002 | 1007]</td><td>3002 = ASBR2's BGP-LU label for 1.1.1.1; 1007 = PE1's VPN label for VRF VLAN30</td></tr>
+    <tr><td>VOS → ASBR2</td><td>192.168.107.10 → 172.16.40.10 (Host B)</td><td>[3002 | 1012]</td><td>1012 = PE1's VPN label for 172.16.40.0/24 imported into VLAN30</td></tr>
+    <tr><td>VOS → ASBR2</td><td>192.168.107.10 → 192.168.101.1 (PE1 Lo101)</td><td>[3002 | 1005]</td><td>1005 = PE1's VPN label for VRF RED</td></tr>
+    <tr><td>ASBR2 → VOS</td><td>any → 192.168.107.10</td><td>[24706]</td><td>24706 = VOS's VPN label for RED; the LU label is already popped by ASBR2 (PHP, imp-null)</td></tr>
+  </table>
+  <pre class="cli"><code><span class="pr">$ </span><span class="cmd">tshark -r vos_asbr2_hosts.pcap -Y icmp -T fields -e frame.number -e eth.type -e mpls.label -e mpls.bottom -e ip.src -e ip.dst -e icmp.type</span>
+8   <span class="lbl">0x8847</span>  <span class="lbl">3002</span>,<span class="lbl">1007</span>  0,1  192.168.107.10  172.16.30.10    8
+9   <span class="lbl">0x8847</span>  <span class="lbl">24706</span>      1    172.16.30.10    192.168.107.10  0
+15  <span class="lbl">0x8847</span>  <span class="lbl">3002</span>,<span class="lbl">1012</span>  0,1  192.168.107.10  172.16.40.10    8
+16  <span class="lbl">0x8847</span>  <span class="lbl">24706</span>      1    172.16.40.10    192.168.107.10  0
+23  <span class="lbl">0x8847</span>  <span class="lbl">3002</span>,<span class="lbl">1005</span>  0,1  192.168.107.10  192.168.101.1   8
+24  <span class="lbl">0x8847</span>  <span class="lbl">24706</span>      1    192.168.101.1   192.168.107.10  0
+
+<span class="pr">$ </span><span class="cmd">tshark -r vos_asbr2_hosts.pcap -Y "frame.number==8 || frame.number==9" -V</span>
+Frame 8: 106 bytes on wire
+Ethernet II, Src: 52:54:00:9a:92:65 (VOS vni-0/1), Dst: 52:54:00:7a:3e:aa (ASBR2 Gi1)
+    Type: MPLS label switched packet (<span class="lbl">0x8847</span>)
+MultiProtocol Label Switching Header, Label: <span class="lbl">3002</span>, Exp: 0, S: 0, TTL: 63
+MultiProtocol Label Switching Header, Label: <span class="lbl">1007</span>, Exp: 0, S: 1, TTL: 63
+Internet Protocol Version 4, Src: 192.168.107.10, Dst: 172.16.30.10
+Internet Control Message Protocol
+    Type: Echo (ping) request (8)
+Frame 9: 102 bytes on wire
+Ethernet II, Src: 52:54:00:7a:3e:aa (ASBR2 Gi1), Dst: 52:54:00:9a:92:65 (VOS vni-0/1)
+    Type: MPLS label switched packet (<span class="lbl">0x8847</span>)
+MultiProtocol Label Switching Header, Label: <span class="lbl">24706</span>, Exp: 0, S: 1, TTL: 61
+Internet Protocol Version 4, Src: 172.16.30.10, Dst: 192.168.107.10
+Internet Control Message Protocol
+    Type: Echo (ping) reply (0)</code></pre>
+  <p><b>Capture on the ASBR1–ASBR2 link</b> for the same pings. The Host B flow crosses this link twice in each direction, which is the PE1 hairpin seen in the traceroute.</p>
+  <table>
+    <tr><th>Direction</th><th>Flow</th><th>Label stack</th><th>Meaning</th></tr>
+    <tr><td>ASBR2 → ASBR1</td><td>Host C → Host A</td><td>[2000 | 1007]</td><td>2000 = ASBR1's BGP-LU label for 1.1.1.1 (ASBR2 swapped 3002 → 2000)</td></tr>
+    <tr><td>ASBR1 → ASBR2</td><td>Host A → Host C</td><td>[3004 | 24706]</td><td>3004 = ASBR2's BGP-LU label for 5.5.5.5</td></tr>
+    <tr><td>ASBR2 → ASBR1</td><td>Host C → Host B, first pass</td><td>[2000 | 1012]</td><td>toward PE1</td></tr>
+    <tr><td>ASBR1 → ASBR2</td><td>Host C → Host B, second pass</td><td>[3001 | 4005]</td><td>3001 = ASBR2's LU label for 4.4.4.4; 4005 = PE2's VPN label for VRF VLAN40</td></tr>
+    <tr><td>ASBR2 → ASBR1</td><td>Host B → Host C, first pass</td><td>[2000 | 1016]</td><td>1016 = PE1's VPN label for 192.168.107.0/24 re-exported into VLAN30</td></tr>
+    <tr><td>ASBR1 → ASBR2</td><td>Host B → Host C, second pass</td><td>[3004 | 24706]</td><td>toward VOS</td></tr>
+  </table>
+  <pre class="cli"><code><span class="pr">$ </span><span class="cmd">tshark -r asbr1_asbr2_hosts.pcap -Y icmp -T fields -e frame.number -e mpls.label -e ip.src -e ip.dst -e icmp.type</span>
+11  <span class="lbl">2000</span>,<span class="lbl">1007</span>   192.168.107.10  172.16.30.10    8
+12  <span class="lbl">3004</span>,<span class="lbl">24706</span>  172.16.30.10    192.168.107.10  0
+18  <span class="lbl">2000</span>,<span class="lbl">1012</span>   192.168.107.10  172.16.40.10    8
+19  <span class="lbl">3001</span>,<span class="lbl">4005</span>   192.168.107.10  172.16.40.10    8
+20  <span class="lbl">2000</span>,<span class="lbl">1016</span>   172.16.40.10    192.168.107.10  0
+21  <span class="lbl">3004</span>,<span class="lbl">24706</span>  172.16.40.10    192.168.107.10  0
+33  <span class="lbl">2000</span>,<span class="lbl">1005</span>   192.168.107.10  192.168.101.1   8
+34  <span class="lbl">3004</span>,<span class="lbl">24706</span>  192.168.101.1   192.168.107.10  0</code></pre>
+  <p>The transport labels match ASBR2's own tables in 5e: <code>show bgp ipv4 unicast labels</code> lists 1.1.1.1/32 in 3002 / out 2000, 4.4.4.4/32 in 3001, 5.5.5.5/32 in 3004 / imp-null, and <code>show mpls forwarding-table</code> shows 3002 → 2000 via Gi3 and 3004 → Pop Label via Gi1.</p>
+  <p><b>VOS view of the two labels.</b> The advertised Host C prefix carries VPN label 24706, the label seen on every frame coming back from ASBR2; the Host B prefix is received from PE1 (next hop 1.1.1.1, label 1012, AS path 65001 65002), which is why Host C to Host B traffic goes to PE1 first.</p>
+  <pre class="cli"><code><span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route table l3vpn.ipv4.unicast routing-instance CORE advertising-protocol bgp 192.168.107.0/24 exact | nomore</span>
+
+Routes for Routing instance : CORE  AFI: ipv4  SAFI: unicast
+
+Routing entry for 192.168.107.0/24
+   Peer Address       : <span class="lbl">1.1.1.1</span>
+   Route Distinguisher: <span class="lbl">5.5.5.5</span>:1
+   Next-hop           : <span class="lbl">5.5.5.5</span>
+   VPN Label          : <span class="lbl">24706</span>
+   Local Preference   : 0
+   AS Path            : 65003
+   Origin             : Incomplete
+   MED                : 0
+   Extended community : <span class="lbl">target:65000:1</span> <span class="lbl">target:65000:30</span> <span class="lbl">target:65000:40</span> <span class="lbl">target:65000:110</span>
+
+<span class="pr">admin@versa-cli&gt; </span><span class="cmd">show route table l3vpn.ipv4.unicast routing-instance CORE receive-protocol bgp 172.16.40.0/24 exact | nomore</span>
+
+Routes for Routing instance : CORE  AFI: ipv4  SAFI: unicast
+
+Routing entry for 172.16.40.0/24
+   Peer Address       : <span class="lbl">1.1.1.1</span>
+   Route Distinguisher: <span class="lbl">4.4.4.4</span>:40
+   Next-hop           : <span class="lbl">1.1.1.1</span>
+   VPN Label          : <span class="lbl">1012</span>
+   Local Preference   : 100
+   AS Path            : 65001 65002
+   Origin             : Incomplete
+   MED                : 0
+   Extended community : <span class="lbl">target:65000:40</span>
+   Best               : true</code></pre>
+  <h2 id="known-limitations-caveats">Known limitations / caveats</h2>
+  <p>Transit L3VPN traffic works; the open items below were observed in the same lab.</p>
+  <ol>
+    <li>Packets from the MPLS side addressed to VOS's own VRF interface IP (for example PE1 <code>ping vrf RED 192.168.105.1</code> or 192.168.107.1) are dropped (0/5). VOS packet trace shows that the lookup after the label pop lands in the core VR's FIB (NO_ROUTE). Transit traffic to hosts behind VOS is not affected. Workaround for testing: ping a host behind VOS, not the VOS interface.</li>
+    <li><code>global-vrf-id</code> / <code>announce-global-vrf-id-label true</code> on the VRF had no effect on the advertised VPN label.</li>
+    <li><code>family inet labeled-unicast</code> and MPLS on Ethernet are not available on VOS 22.1.4; this setup needs 23.1 or later [Inference from CLI checks on 22.1.4].</li>
+    <li>CLI traps: the loopback address takes no prefix length; <code>set &lt;leaf-list&gt; [ x ]</code> replaces the whole list, so rewrite org, zone and VRF interface lists in full; every routing-instance must be owned by an org; a vni cannot have <code>unit 0</code> next to an access bridge unit (error <code>Only one can be defined</code>).</li>
+    <li>VOS's loopback is not pingable from outside; use an interface or host address for reachability tests. Observed evidence: ASBR2 ping 5.5.5.5 source 3.3.3.3 gives 0/3, while BGP-LU on that same loopback is Established and labeled traffic to it is forwarded.</li>
+  </ol>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. Management addresses and credentials are placeholders; the routing addresses are private lab ranges — substitute your own environment's values.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
