@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borrowed Probes — Which SLA Monitor Steers Each Forwarding Class on Versa SD-WAN</title>
+<meta name="description" content="Versa SD-WAN keeps SLA state per probed forwarding class. A class without its own probe borrows another class's probe by a fixed order, and that order decides which path your traffic takes. Lab on VOS 22.1.4: NC-only delay injected with netem, four classes measured, three fixes compared.">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#deep-dives">Deep Dives</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa SD-WAN · SLA monitoring · Forwarding classes</div>
+  <h1>Borrowed Probes</h1>
+  <p class="lede">Versa keeps SLA state per <em>probed</em> forwarding class. A class that has no probe of its own borrows another class's probe by a fixed order &mdash; and that borrowed row, not the class your QoS policy assigned, decides which WAN circuit the session takes. Lab on VOS 22.1.4: delay injected on the NC probes only, four data classes measured, three fixes compared.</p>
+  <div class="meta">2026-11-03 · VOS 22.1.4 · path-policy · sla-monitor · forwarding-profile · path-state · netem</div>
+</div></div>
+
+<article><div class="wrap">
+
+<div class="toc"><b>Contents</b><br>
+<a href="#problem">The problem</a> <a href="#rule">The rule</a> <a href="#lab">Lab</a> <a href="#test-a">Test A: reproduce</a> <a href="#test-b">Test B: own probe</a> <a href="#test-c">Test C: re-mark NC</a> <a href="#test-d">Test D: move the probe to EF</a> <a href="#direction">Each direction is decided separately</a> <a href="#reading">Reading path-state correctly</a> <a href="#cli">Useful CLI</a> <a href="#timing">Timing notes</a>
+</div>
+
+<h2 id="problem">The problem</h2>
+<p>A spoke is connected to hub-controllers. By default the spoke probes the hubs on forwarding class <code>fc_nc</code> every 10 s (the <code>To_Controller</code> term of the SLAM path policy). The operator wanted faster SLA detection and added a second probe on <code>fc_be</code> every 2 s. Then the transport provider started adding delay <em>only</em> to CS6-marked packets &mdash; which is exactly what the NC probes carry. The result on the spoke:</p>
+<pre><code>INET-1 INET-1 fc_nc    priority "SLA Violated"
+INET-1 INET-1 fc_be    priority "Priority 1"
+MPLS-1 MPLS-1 fc_nc    priority "Priority 2"
+MPLS-1 MPLS-1 fc_be    priority "Priority 2"</code></pre>
+<p>Data traffic is mapped to <code>fc6</code> and <code>fc_be</code>. Some flows stayed on the Priority&nbsp;1 circuit, others moved to Priority&nbsp;2. Three questions came out of this:</p>
+<ol>
+<li>Which probe does a flow in <code>fc6</code> follow when there is no <code>fc6</code> probe &mdash; <code>fc_nc</code> or <code>fc_be</code>?</li>
+<li>Can all traffic be made to follow the BE probes? The NC probes cannot be disabled.</li>
+<li>Many sites have very low bandwidth; the operator does not want to enable more probes.</li>
+</ol>
+
+<h2 id="rule">The rule</h2>
+<p>SLA state is kept per (local circuit, remote circuit, forwarding class), but only for forwarding classes that actually have a probe configured. When a session arrives in a class with no probe, the forwarder picks the SLA row of another class in this order:</p>
+<ol>
+<li>A probed class in the <strong>same traffic class</strong>. Traffic class = FC &divide; 4: NC = {fc_nc, fc1, fc2, fc3}, EF = {fc_ef, fc5, fc6, fc7}, AF = {fc_af, fc9, fc10, fc11}, BE = {fc_be, fc13, fc14, fc15}.</li>
+<li>Otherwise, the first probed class found in a fixed neighbour order:</li>
+</ol>
+<table>
+<tr><th>Session's traffic class</th><th>Borrow order</th><th>Exercised in this lab</th></tr>
+<tr><td>EF (fc_ef, fc5, fc6, fc7)</td><td>same TC &rarr; NC &rarr; AF &rarr; BE</td><td>same TC (Test B, D); EF&rarr;NC (Test A)</td></tr>
+<tr><td>AF (fc_af, fc9&ndash;fc11)</td><td>same TC &rarr; BE &rarr; EF &rarr; NC</td><td>AF&rarr;BE (Test A); AF&rarr;EF when BE absent (Test D)</td></tr>
+<tr><td>BE (fc_be, fc13&ndash;fc15)</td><td>same TC &rarr; AF &rarr; EF &rarr; NC</td><td>BE&rarr;EF when AF absent (Test D)</td></tr>
+<tr><td>NC (fc_nc, fc1&ndash;fc3)</td><td>same TC &rarr; EF &rarr; AF &rarr; BE</td><td>not exercised (NC always had a probe)</td></tr>
+</table>
+<div class="call warn"><b>Two consequences.</b> (1) <code>fc6</code> is in the EF traffic class, so with only <code>fc_nc</code> and <code>fc_be</code> probed it borrows the <strong>NC</strong> row &mdash; that is why <code>fc6</code> flows moved to Priority 2 while <code>fc_be</code> flows stayed. (2) The often-repeated rule "an unprobed class follows the nearest equal-or-higher class" is wrong for AF and BE: AF borrows from BE first, BE borrows from AF first. There is no configuration knob for this order; the <code>specific-config</code> container of a path-policy term only holds the SLA-monitoring interval/adaptive leaves.</div>
+
+<h2 id="lab">Lab</h2>
+<p>CML 2.10, VOS 22.1.4. Spoke <code>BRANCH-1</code> with two WAN circuits (<code>INET-1</code> on vni-0/0, <code>MPLS-1</code> on vni-0/1) connected to three hub-controllers <code>HUB-1/2/3</code>; org <code>ACME</code>. A Linux host behind the spoke (10.1.11.10) sends four flows to a hub LAN address (10.1.1.1), one per forwarding class. Outputs below are from <code>BRANCH-1</code> unless stated; where the three hubs show identical values only the <code>HUB-1</code> rows are kept.</p>
+<p>To delay the NC probes and nothing else, the spoke's INET link was re-cabled through an Ubuntu bump host bridging two interfaces (<code>br0</code>), with a <code>prio</code> qdisc and a <code>u32</code> filter on the ToS byte:</p>
+<pre><code>tc qdisc add dev ens3 root handle 1: prio bands 3 priomap 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+tc qdisc add dev ens3 parent 1:1 handle 10: netem delay 300ms
+tc filter add dev ens3 parent 1: protocol ip prio 1 u32 match ip tos 0xc0 0xfc flowid 1:1   # CS6 only</code></pre>
+<p>Stock SLAM path policy on the spoke (generated by the orchestrator):</p>
+<pre><code>set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Controller match remote-site-type [ controller ]
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Controller action specific-config fc_nc
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Branches match remote-site-type [ branch ]
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Branches action specific-config fc_ef sla-monitoring interval 2000
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Branches action specific-config fc_ef sla-monitoring adaptive
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Branches action specific-config fc_ef sla-monitoring adaptive retries 3</code></pre>
+
+<h3>Test configuration (CLI via <code>vsh allow-cli</code>)</h3>
+<p>The operator's extra probe, plus a QoS policy that puts each of four well-known services into a different class, and an SD-WAN policy that sends all four through one forwarding profile with a 100 ms latency SLA, INET first, MPLS second:</p>
+<pre><code># the operator's addition: fc_be probe every 2 s toward the hub-controllers
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Controller action specific-config fc_be sla-monitoring interval 2000
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/1.0 term To_Controller action specific-config fc_be sla-monitoring interval 2000
+
+# one service per forwarding class
+set orgs org-services ACME class-of-service qos-profiles QP-FC6 forwarding-class fc6
+set orgs org-services ACME class-of-service qos-profiles QP-FC6 loss-priority low
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FC6  match services predefined-services-list [ ntp ]
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FC6  set action allow
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FC6  set qos-profile QP-FC6
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCAF match services predefined-services-list [ syslog ]
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCAF set action allow
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCAF set qos-profile Business-Critical-Class-Profile   # fc_af
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCEF match services predefined-services-list [ snmp ]
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCEF set action allow
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCEF set qos-profile Real-Time-Class-Profile          # fc_ef
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCBE match services predefined-services-list [ ICMP ]
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCBE set action allow
+set orgs org-services ACME class-of-service qos-policies Default-Policy rules Q-FCBE set qos-profile Default-Class-Profile            # fc_be
+
+# one forwarding profile, INET preferred, 100 ms latency SLA
+set orgs org-services ACME sd-wan sla-profiles SLA-TEST latency 100
+set orgs org-services ACME sd-wan forwarding-profiles FP-TEST sla-profile SLA-TEST
+set orgs org-services ACME sd-wan forwarding-profiles FP-TEST circuit-priorities priority 1 circuit-names local [ INET-1 ]
+set orgs org-services ACME sd-wan forwarding-profiles FP-TEST circuit-priorities priority 2 circuit-names local [ MPLS-1 ]
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FC6  match services predefined-services-list [ ntp ]
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FC6  set forwarding-profile FP-TEST
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FCAF match services predefined-services-list [ syslog ]
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FCAF set forwarding-profile FP-TEST
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FCEF match services predefined-services-list [ snmp ]
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FCEF set forwarding-profile FP-TEST
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FCBE match services predefined-services-list [ ICMP ]
+set orgs org-services ACME sd-wan policies Default-Policy rules T-FCBE set forwarding-profile FP-TEST</code></pre>
+<p>Why four services in four classes: the question is about <em>inheritance</em>, so one flow per traffic class is needed &mdash; <code>fc6</code> (the operator's class, EF traffic class), <code>fc_ef</code> (same traffic class, to show they behave alike), <code>fc_af</code> (AF, never probed in any test) and <code>fc_be</code> (its own probe). A QoS rule without <code>set action allow</code> is rejected at commit (<code>'... set action' is not configured</code>).</p>
+
+<h3>Probe rows and their outer DSCP</h3>
+<p>After the commit, <code>sla-monitor status</code> has an <code>fc_nc</code> and an <code>fc_be</code> row per circuit pair to each hub. The SLA PDUs are 192-byte VXLAN-GPE packets on UDP 4790; each class carries its own fixed outer DSCP, which is what lets a provider delay one class selectively:</p>
+<pre><code>bump$ sudo tcpdump -c 24 -nn -v -i eth1 udp and port 4790
+IP (tos <b>0xb8</b>, ttl 255, ...) 192.0.2.241.4790 &gt; 192.0.2.26.4790: VXLAN-GPE, vni 32787    # hub -&gt; spoke, fc_ef probe (EF)
+IP (tos <b>0x0</b>,  ttl 255, ...) 192.0.2.26.4790 &gt; 192.0.2.244.4790: VXLAN-GPE, vni 34097   # spoke -&gt; hub, fc_be probe
+bump$ sudo tcpdump -c 8 -nn -v -i eth1 'udp and port 4790 and (ip[1] &amp; 0xfc) == 0xc0'
+IP (tos <b>0xc0</b>, ttl 255, ...) 192.0.2.26.4790 &gt; 192.0.2.241.4790: VXLAN-GPE, vni 34097   # spoke -&gt; hub, fc_nc probe (CS6)</code></pre>
+<p>Measured mapping: <code>fc_nc</code> = 0xc0 (CS6), <code>fc_ef</code> = 0xb8 (EF), <code>fc6</code> = 0x88 (AF41, seen in Test B), <code>fc_be</code> = 0x0.</p>
+
+<h2 id="test-a">Test A: reproduce the operator's state</h2>
+<p>Baseline before the delay: all INET rows Priority 1, all four sessions on <code>INET-1</code>. Then <code>netem delay 300ms</code> on CS6. Ninety seconds later the metrics already show it, the path state not yet:</p>
+<pre><code>admin@BRANCH-1-cli&gt; show orgs org ACME sd-wan sla-monitor metrics last-10s
+ 8401152  fwd-class fc_nc  local-wan-link INET-1  remote-wan-link INET-1  <b>two-way-delay 301</b>  pdu-sent 1  pdu-rcvd 1
+ 8401164  fwd-class fc_be  local-wan-link INET-1  remote-wan-link INET-1  two-way-delay 0    pdu-sent 5  pdu-rcvd 5
+ 8405504  fwd-class fc_nc  local-wan-link MPLS-1  remote-wan-link MPLS-1  two-way-delay 1
+ 8405516  fwd-class fc_be  local-wan-link MPLS-1  remote-wan-link MPLS-1  two-way-delay 0</code></pre>
+<p>About three minutes after the delay started, the path state matches the operator's screenshot. The four flows were restarted <em>after</em> this point:</p>
+<pre><code>admin@BRANCH-1-cli&gt; show orgs org-services ACME sd-wan policies Default-Policy rules path-state brief T-FC6
+ HUB-1
+  forwarding-profile FP-TEST
+  sla-profile        SLA-TEST
+  INET-1 INET-1 fc_nc
+   priority <b>"SLA Violated"</b>
+  INET-1 INET-1 fc_be
+   priority "Priority 1"
+  MPLS-1 MPLS-1 fc_nc
+   priority "Priority 2"
+  MPLS-1 MPLS-1 fc_be
+   priority "Priority 2"
+
+admin@BRANCH-1-cli&gt; show orgs org ACME sessions sdwan detail | select source-port | select forward-fc | select tx-wan-ckt | select forward-sdwan-rule-name
+sessions sdwan detail 0 2 18   icmp            forward-fc <i>fc_be</i>   tx-wan-ckt INET-1:INET-1   forward-sdwan-rule-name T-FCBE
+sessions sdwan detail 0 2 19   40123 -&gt; 123    forward-fc <i>fc6</i>     tx-wan-ckt <b>MPLS-1:MPLS-1</b>   forward-sdwan-rule-name T-FC6
+sessions sdwan detail 0 2 20   40514 -&gt; 514    forward-fc <i>fc_af</i>   tx-wan-ckt INET-1:INET-1   forward-sdwan-rule-name T-FCAF
+sessions sdwan detail 0 2 21   40161 -&gt; 161    forward-fc <i>fc_ef</i>   tx-wan-ckt <b>MPLS-1:MPLS-1</b>   forward-sdwan-rule-name T-FCEF</code></pre>
+<table>
+<tr><th>Session class</th><th>Own probe?</th><th>Borrowed row</th><th>INET row state</th><th>Circuit chosen</th></tr>
+<tr><td>fc_be</td><td>yes</td><td>&mdash;</td><td>Priority 1</td><td>INET-1</td></tr>
+<tr><td>fc_af</td><td>no (AF class unprobed)</td><td>AF &rarr; BE</td><td>Priority 1</td><td>INET-1</td></tr>
+<tr><td>fc6</td><td>no (EF class unprobed)</td><td>EF &rarr; NC</td><td>SLA Violated</td><td>MPLS-1 (Priority 2)</td></tr>
+<tr><td>fc_ef</td><td>no</td><td>EF &rarr; NC</td><td>SLA Violated</td><td>MPLS-1 (Priority 2)</td></tr>
+</table>
+<p>So the answer to question 1 is <strong>NC</strong>: <code>fc6</code> is EF-class, EF borrows NC before anything else. The same result was reproduced a second time after a full rebuild of the setup.</p>
+
+<h2 id="test-b">Test B: give fc6 its own probe (works, but one more probe)</h2>
+<pre><code>set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Controller action specific-config fc6 sla-monitoring interval 2000
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/1.0 term To_Controller action specific-config fc6 sla-monitoring interval 2000</code></pre>
+<p>The bump now also sees 0x88 (AF41) probes from the spoke. Once <code>fc_nc</code> on INET was re-declared violated (every path-policy commit resets the SLA state, see <a href="#timing">timing</a>), the restarted flows:</p>
+<pre><code>admin@BRANCH-1-cli&gt; show orgs org-services ACME sd-wan policies Default-Policy rules path-state brief T-FCEF
+ HUB-1
+  INET-1 INET-1 fc_nc   priority "SLA Violated"
+  INET-1 INET-1 fc6     priority "Priority 1"
+  INET-1 INET-1 fc_be   priority "Priority 1"
+  MPLS-1 ...            priority "Priority 2"
+
+sessions 30  icmp          tx-wan-ckt INET-1:INET-1
+sessions 31  40123 -&gt; 123  tx-wan-ckt <i>INET-1:INET-1</i>     # fc6: own probe
+sessions 32  40514 -&gt; 514  tx-wan-ckt INET-1:INET-1
+sessions 33  40161 -&gt; 161  tx-wan-ckt <i>INET-1:INET-1</i>     # fc_ef: same traffic class as fc6, borrows fc6 now instead of fc_nc</code></pre>
+
+<h2 id="test-c">Test C: re-mark the NC probes on the WAN (works, with a side effect)</h2>
+<p>If the provider only delays CS6, the spoke can stop sending CS6 on that circuit. A DSCP rewrite rule bound to the WAN interface overrides the fixed per-class marking of the SLA PDUs:</p>
+<pre><code>set orgs org-services ACME class-of-service rw-rules dscp NC-REMARK forwarding-class fc_nc loss-priority low  code-point be
+set orgs org-services ACME class-of-service rw-rules dscp NC-REMARK forwarding-class fc_nc loss-priority high code-point be
+set orgs org-services ACME class-of-service interfaces vni-0/0.0 dscp-rewrite-rule NC-REMARK</code></pre>
+<pre><code>bump$ sudo tcpdump -c 80 -nn -v -i ens3 'udp and port 4790 and src 192.0.2.26' | grep -o 'tos 0x[0-9a-f]*' | sort | uniq -c
+     55 tos 0x0
+     13 tos 0x88
+     12 tos 0xb8            # no 0xc0 any more
+bump$ sudo tc -s qdisc show dev ens3 | grep -A1 netem
+qdisc netem 10: parent 1:1 limit 1000 delay 300ms
+ Sent 106830 bytes 521 pkt    # frozen: nothing matches CS6
+
+admin@BRANCH-1-cli&gt; show orgs org ACME sd-wan sla-monitor metrics last-10s
+ 8401152  fc_nc INET-1 INET-1  <b>two-way-delay 1</b>      # was 301
+ 8401158  fc6   INET-1 INET-1  two-way-delay 0
+ 8401164  fc_be INET-1 INET-1  two-way-delay 1
+
+admin@BRANCH-1-cli&gt; show bgp neighbor brief
+routing-instance: ACME-Control-VR
+Neighbor        V  MsgRcvd   MsgSent    Uptime     State/PfxRcd  PfxSent AS
+10.53.0.11      4  402       289        01:58:16   43            8       64512
+10.53.0.12      4  365       289        01:58:14   41            8       64512
+10.53.0.13      4  372       288        01:58:04   28            8       64512</code></pre>
+<div class="call warn"><b>Side effect.</b> The rule is per forwarding class, not per packet type: everything in <code>fc_nc</code> on that WAN &mdash; control-plane traffic included &mdash; now leaves with DSCP 0. BGP to the controllers stayed Established through the change in this lab, but the NC class loses its priority marking on the provider network. Use only if that is acceptable.</div>
+
+<h2 id="test-d">Test D: move the 2 s probe from fc_be to fc_ef (recommended, no extra probe)</h2>
+<p>Same probe count as the operator has today, different class. Remove the <code>fc_be</code> (and the Test B <code>fc6</code>) probes, add <code>fc_ef</code>:</p>
+<pre><code>delete orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Controller action specific-config fc_be
+delete orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/1.0 term To_Controller action specific-config fc_be
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/0.0 term To_Controller action specific-config fc_ef sla-monitoring interval 2000
+set orgs org ACME sd-wan site path-policy SLAM_Policy_vni-0/1.0 term To_Controller action specific-config fc_ef sla-monitoring interval 2000</code></pre>
+<pre><code>bump$ ... | grep -o 'tos 0x[0-9a-f]*' | sort | uniq -c
+      3 tos 0x0
+     42 tos 0xb8            # fc_ef probes
+      6 tos 0xc0            # fc_nc probes, delayed again
+
+admin@BRANCH-1-cli&gt; show orgs org-services ACME sd-wan policies Default-Policy rules path-state brief T-FCBE
+ HUB-1
+  INET-1 INET-1 fc_nc   priority "SLA Violated"
+  INET-1 INET-1 fc_ef   priority "Priority 1"
+  MPLS-1 MPLS-1 fc_nc   priority "Priority 2"
+  MPLS-1 MPLS-1 fc_ef   priority "Priority 2"
+
+admin@BRANCH-1-cli&gt; show orgs org ACME sessions sdwan detail | select source-port | select forward-fc | select tx-wan-ckt | select forward-sdwan-rule-name
+sessions 35  icmp          forward-fc fc_be   tx-wan-ckt <i>INET-1:INET-1</i>   T-FCBE
+sessions 36  40123 -&gt; 123  forward-fc fc6     tx-wan-ckt <i>INET-1:INET-1</i>   T-FC6
+sessions 37  40514 -&gt; 514  forward-fc fc_af   tx-wan-ckt <i>INET-1:INET-1</i>   T-FCAF
+sessions 38  40161 -&gt; 161  forward-fc fc_ef   tx-wan-ckt <i>INET-1:INET-1</i>   T-FCEF</code></pre>
+<table>
+<tr><th>Session class</th><th>Borrow path with probes {fc_nc, fc_ef}</th><th>Row used</th></tr>
+<tr><td>fc_ef</td><td>own</td><td>fc_ef (Priority 1)</td></tr>
+<tr><td>fc6</td><td>same traffic class &rarr; fc_ef</td><td>fc_ef</td></tr>
+<tr><td>fc_af</td><td>AF &rarr; BE (none) &rarr; EF</td><td>fc_ef</td></tr>
+<tr><td>fc_be</td><td>BE &rarr; AF (none) &rarr; EF</td><td>fc_ef</td></tr>
+</table>
+<div class="call ok"><b>Why EF is the right class for the second probe.</b> With one extra probe you want every data class to land on it. EF is the only class that all three other data classes reach before NC: AF and BE both fall through to EF once their own neighbour is absent, and the EF traffic class reaches it directly. A BE probe, by contrast, is reached by AF but not by EF &mdash; EF goes to NC first, which is the operator's symptom. Only the NC class itself keeps following <code>fc_nc</code>, and that is control-plane traffic. This answers questions 2 and 3: all data traffic follows a single 2 s probe, without adding one.</div>
+
+<h2 id="direction">Each direction is decided separately</h2>
+<p>The spoke's <code>To_Controller</code> probes decide only spoke&rarr;hub path selection. Hub&rarr;spoke is decided by the hub's own probes toward branches, i.e. the hub's <code>To_Branches</code> term. In this lab the hubs' <code>To_Branches</code> already carries <code>fc_ef</code> at 2 s adaptive (the orchestrator default), so the return direction was already "EF-steered" and nothing had to change there. If an operator changed the hub side to <code>fc_be</code> as well, the same move to <code>fc_ef</code> applies on the hubs.</p>
+<p>Branch-to-branch traffic is governed by each branch's <code>To_Branches</code> term, which the <code>To_Controller</code> change does not touch.</p>
+
+<h2 id="reading">Reading path-state correctly</h2>
+<p>A frequent misreading: <code>path-state</code> is not "one row per data class". It lists one row per <em>probed</em> class per circuit pair. With probes {fc_nc, fc_be} there is no row for <code>fc6</code>, <code>fc_af</code> or <code>fc_ef</code>; a session in one of those classes is evaluated against a borrowed row by the order above, and the only place that shows the outcome is the session table (<code>tx-wan-ckt</code>). To see the full chain for one flow:</p>
+<pre><code>show orgs org ACME sessions sdwan detail | select source-port | select forward-fc | select tx-wan-ckt | select forward-sdwan-rule-name
+show orgs org-services ACME sd-wan policies Default-Policy rules path-state brief &lt;rule&gt;</code></pre>
+<p>Note also that sessions established <em>before</em> a violation is declared keep their circuit; the forwarding profile in this lab has no <code>evaluate-continuously</code>, so every result above was taken on flows restarted after the state change.</p>
+
+<h2 id="cli">Useful CLI</h2>
+<pre><code>show orgs org ACME sd-wan sla-monitor status                 # which (circuit pair, fc) rows exist
+show orgs org ACME sd-wan sla-monitor metrics last-10s        # delay / loss per row; also last-1m, status-down, brief
+show orgs org-services ACME sd-wan policies Default-Policy rules path-state brief &lt;rule&gt;
+show orgs org ACME sessions sdwan brief
+show orgs org ACME sessions sdwan detail | select forward-fc | select tx-wan-ckt
+show configuration orgs org ACME sd-wan site path-policy | display set
+vsh allow-cli                                                  # orchestrator-managed device: unlock CLI commits (lab only)</code></pre>
+<p>On the bump: <code>tc -s qdisc show dev ens3</code> to confirm the netem counter moves only when CS6 packets pass; <code>tcpdump ... | grep -o 'tos 0x..' | sort | uniq -c</code> to see which probe classes are being sent.</p>
+
+<h2 id="timing">Timing notes</h2>
+<ul>
+<li>With a 10 s NC probe the "SLA Violated" state was declared 3 min after the delay started; after each path-policy commit it took 5.5&ndash;8 min to be re-declared, because a commit on the path policy resets the SLA state for every row.</li>
+<li>After the NC probes recovered (Test C), <code>path-state</code> still showed "SLA Violated" 3 min later; the clear is slower than the declare and was not timed to the end.</li>
+<li>Right after a WAN re-cable the path state briefly showed "SLA Violated" with zero metrics; it cleared on its own within about 5 min.</li>
+</ul>
+
+<h2>Summary</h2>
+<ul>
+<li>A session in an unprobed forwarding class is steered by a borrowed probe: same traffic class first, then EF&rarr;NC&rarr;AF&rarr;BE, AF&rarr;BE&rarr;EF&rarr;NC, BE&rarr;AF&rarr;EF&rarr;NC, NC&rarr;EF&rarr;AF&rarr;BE. Not configurable.</li>
+<li>With probes {fc_nc, fc_be}, EF-class data (<code>fc_ef</code>, <code>fc6</code>) follows the NC probe; AF-class data follows BE. That is the split the operator saw.</li>
+<li>Cheapest fix with the same probe count: probe <code>fc_ef</code> instead of <code>fc_be</code>. Every data class then follows the EF probe; only NC-class traffic follows <code>fc_nc</code>.</li>
+<li>Alternatives: a dedicated probe per data class (more probes), or a DSCP rewrite of <code>fc_nc</code> on the affected WAN (removes CS6 from control traffic too).</li>
+<li>Check both ends: spoke <code>To_Controller</code> for spoke&rarr;hub, hub <code>To_Branches</code> for hub&rarr;spoke.</li>
+</ul>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. All hostnames, organisation names and IPs are placeholders substituted for the lab's own; command output is reproduced from the lab with names normalised, protocol values unmodified. Behaviour described was measured on VOS 22.1.4; the borrow order rows marked "not exercised" are stated from the implementation's lookup order and were not triggered in this lab.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
