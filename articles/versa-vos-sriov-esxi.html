@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Past the vSwitch — Enabling SR-IOV for Versa VOS on VMware vSphere</title>
+<meta name="description" content="Step-by-step SR-IOV for Versa VOS on vCenter 8.0.3 / ESXi 7.0 U3 with an Intel X540: host VFs, the VM passthrough adapter, verification inside VOS and on ESXi, the gotchas, and a lab comparison with VMXNET3 (9.4 Gbps line rate vs 7.5-8.3 Gbps).">
+<style>
+  :root{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
+    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+  figure{margin:1.4em 0;text-align:center}
+  figure img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px;display:block;margin:0 auto}
+  figcaption{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:8px;text-align:left;line-height:1.5}
+  .danger{background:var(--warn-bg);border-color:#E05252}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#field-labs">Field Labs</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa VOS · VMware vSphere · SR-IOV</div>
+  <h1>Past the vSwitch</h1>
+  <p class="lede">With an Intel X540 virtual function handed to the VM, one VOS LAN/WAN pair carried 9.4 Gbps of TCP at 10GbE line rate with zero VOS drops; the same VM on VMXNET3 reached 7.5&ndash;8.3 Gbps and dropped on TX. This lab shows the host, VM and VOS steps, the outputs that prove the VF is in use, and what SR-IOV costs you in vSphere features.</p>
+  <div class="meta">2026-11-12 · VOS 22.1.4-GA · ESXi 7.0 U3 (build 21424296) · vCenter 8.0.3 (build 24022515) · Intel X540-AT2 (ixgben / ixgbevf) · SR-IOV · DPDK · VMXNET3</div>
+</div></div>
+
+<article><div class="wrap">
+
+<div class="call danger"><b>Lab results only.</b> Every number on this page comes from one lab setup built by the author: one ESXi host, one VOS VM, one 20-second run per test (n=1). These are not official Versa Networks performance figures, they have not been validated by any vendor, and they are not sizing guidance. For sizing, use Versa's published specifications.</div>
+<p><b>Method:</b> written with AI assistance; all commands and outputs are from the author's lab (9 Nov 2026).<br>
+<b>Applies to:</b> VOS 22.1.4 and later · ESXi 7.0 U3 and later.<br>
+<b>Tested on:</b> VOS 22.1.4-GA · ESXi 7.0 U3 (build 21424296) · vCenter 8.0.3 (build 24022515) · Intel X540-AT2 (ixgben) · 2&times; Intel Xeon Platinum 8160 (2.1 GHz).</p>
+
+<div class="toc"><b>Contents</b><br>
+<a href="#what">What SR-IOV is</a> <a href="#when">Why and when</a> <a href="#prereq">Prerequisites</a> <a href="#vfcount">How many VFs</a> <a href="#step1">Step 1: host NIC</a> <a href="#step2">Step 2: VM adapter</a> <a href="#step3">Step 3: verify in VOS</a> <a href="#gotchas">Gotchas</a> <a href="#lab">Test bed</a> <a href="#results">Results</a> <a href="#cli">Useful CLI</a> <a href="#caveats">Caveats</a> <a href="#summary">Summary</a> <a href="#refs">References</a>
+</div>
+
+<h2 id="what">What SR-IOV is</h2>
+<p>SR-IOV (Single Root I/O Virtualization) is a PCIe standard that lets one physical NIC present itself as many lightweight virtual NICs, called virtual functions (VFs). ESXi hands a VF directly to a VM, so the guest driver reads and writes the NIC's hardware queues itself and the ESXi virtual switch is not in the data path. The result is close to bare-metal throughput and latency, at the cost of tying the VM to that host and NIC.</p>
+<p>The NIC port itself is the physical function (PF); ESXi owns it and manages the VFs through it. Each VF is a lightweight copy that one VM uses directly. In this lab the PF is <code>vmnic4</code> (Intel X540, port 2), and VOS <code>vni-0/0</code> and <code>vni-0/2</code> each use one of its VFs.</p>
+
+<h2 id="when">Why and when</h2>
+<p>All steps use the vSphere Client in vCenter 8.0.3 managing an ESXi 7.0 U3 host. The standalone ESXi Host Client has similar settings under different menus; it is not covered here.</p>
+<p>Use SR-IOV for a VOS on ESXi that has to forward more than about 700 kpps or 7 Gbps per port pair. Below that, VMXNET3 is simpler and keeps vMotion and snapshots.</p>
+<p>In this lab (VOS 22.1.4, 8 vCPU, one LAN/WAN pair, Intel X540 10GbE), SR-IOV reached 10GbE line rate: 9.4 Gbps TCP and 1.2 Mpps at 64 B, with zero drops. On the same host, VMXNET3 reached 7.5 to 8.3 Gbps and 1.02 Mpps, dropped packets on TX, and caused SSH timeouts on other VMs. SR-IOV gives the VF to the VM, so the VOS DPDK poller talks to the NIC directly and the vSwitch is bypassed.</p>
+<div class="call info"><b>The cost is mobility.</b> An SR-IOV VM is pinned to its host and its NIC. See <a href="#gotchas">Gotchas</a> for the vSphere features you lose.</div>
+
+<h2 id="prereq">Prerequisites</h2>
+<p>Check these before touching the host. The NIC must pass on both sides: ESXi must support SR-IOV on it, and VOS must have a DPDK driver for its VF.</p>
+<table>
+<tr><th>Item</th><th>Requirement</th><th>How to check</th></tr>
+<tr><td>Server BIOS</td><td>IOMMU (Intel VT-d / AMD-Vi) and SR-IOV enabled</td><td>Server vendor BIOS setup</td></tr>
+<tr><td>NIC firmware</td><td>SR-IOV enabled in firmware (some vendors need a separate firmware tool)</td><td>NIC vendor docs</td></tr>
+<tr><td>ESXi PF driver</td><td>VMware-certified driver that supports SR-IOV</td><td>VMware Compatibility Guide; Configure &gt; Physical adapters shows an SR-IOV column</td></tr>
+<tr><td>VOS VF driver</td><td>VF PMD supported by VOS. 22.1.4: Intel ixgbe VF (82599/X520/X540/X550), iavf (X710/E810), igb VF (I350). Not supported: Mellanox/NVIDIA ConnectX (mlx4/mlx5) and Broadcom (bnxt)</td><td><code>/var/log/versa/versa-service.log</code> shows <code>Unsupported device type</code> for a rejected PMD</td></tr>
+<tr><td>VM hardware</td><td>Compatibility ESXi 5.5 or later; all guest memory reserved</td><td>VM Edit Settings</td></tr>
+<tr><td>VOS sizing</td><td>1:1 CPU and memory, no overcommit; Versa recommends High latency sensitivity</td><td>Versa branch hardware requirements</td></tr>
+</table>
+<div class="call warn"><b>Check the VOS side first.</b> In this lab a ConnectX-4 Lx had working VFs on ESXi but could not be used by VOS 22.1.4: VOS has no mlx5 driver, and the VF was rejected with <code>Unsupported device type</code>.</div>
+
+<h2 id="vfcount">How many VFs you need</h2>
+<p>Count SR-IOV adapters, not VMs. Each SR-IOV network adapter in a powered-on VM uses one VF on the PF it is mapped to, so size each PF separately.</p>
+<table>
+<tr><th>Scenario</th><th>VFs used on that PF</th></tr>
+<tr><td>1 VOS, WAN and LAN on the same port</td><td>2</td></tr>
+<tr><td>1 VOS, WAN on port 1 and LAN on port 2</td><td>1 on each port</td></tr>
+<tr><td>VOS HA pair, each with WAN and LAN on the same port</td><td>4</td></tr>
+<tr><td>10 VOS, 3 SR-IOV ports each, all on one port</td><td>30</td></tr>
+</table>
+<ul>
+<li>VFs are assigned at power-on and released at power-off. The limit is the sum over VMs running at the same time on that PF. A VM that finds no free VF is expected to fail to power on (not tested in this lab).</li>
+<li>Size with headroom. Changing the VF count needs a host reboot. On ixgben, enabling SR-IOV on a port cuts that port's vSwitch queues (VMDq 8 to 2) whether you create 1 VF or 61, so extra VFs cost little.</li>
+<li>The NIC sets the ceiling. Intel X540 supports 63 VFs per port, and 61 when the port also uplinks a vSwitch (see <a href="#gotchas">Gotchas</a>).</li>
+<li>Management uses no VF. Keep VOS <code>eth0</code> on VMXNET3; only the data ports need VFs.</li>
+</ul>
+
+<h2 id="step1">Step 1: Enable virtual functions on the host NIC</h2>
+<p>SR-IOV is enabled per physical port (PF), and the host must reboot. Plan a maintenance window: every VM on the host goes down, including vCenter if it runs there.</p>
+<ol>
+<li>In the vSphere Client, select the host and open <b>Configure &gt; Networking &gt; Physical adapters</b>. The SR-IOV column shows whether each port supports it.</li>
+<li>Select the port that will carry VOS traffic and click <b>Edit adapter settings</b>.</li>
+<li>Under SR-IOV, set <b>Status = Enabled</b> and type the <b>Number of virtual functions</b>. One VF is used per VOS vNIC on that port, so size it for the VOS interfaces you plan plus spares. 0 disables SR-IOV.</li>
+<li>Click OK and reboot the host.</li>
+<li>After the reboot, the VFs appear under <b>Configure &gt; Hardware &gt; PCI Devices</b>, and the adapter shows SR-IOV Enabled with the VF count.</li>
+</ol>
+<figure><img src="versa-vos-sriov-esxi-fig1-physical-adapters.png" alt="vSphere Client Physical adapters list with SR-IOV Status and SR-IOV VFs columns"><figcaption>Physical adapters after the reboot. vmnic3: Enabled, 1 VF. vmnic4: Enabled, &quot;63 (61 currently available)&quot;. vmnic5/6 (ConnectX-4 Lx): Enabled, 4 VFs each, but not usable by VOS 22.1.4. Host name and MAC column masked.</figcaption></figure>
+<figure><img src="versa-vos-sriov-esxi-fig2-enable-vfs.png" alt="Edit Settings dialog for vmnic3 with SR-IOV Status Enabled and Number of virtual functions 1"><figcaption>Edit adapter settings for vmnic3: SR-IOV Status Enabled, Number of virtual functions 1. MAC column masked.</figcaption></figure>
+
+<p>The same information from the ESXi shell (enable SSH first under Host &gt; Services). Output from the lab host, 9 Nov 2026.</p>
+<h3>SR-IOV capable ports</h3>
+<p>Lists every port whose ESXi driver supports SR-IOV. It does not say whether VOS can use the VFs: vmnic5 and vmnic6 (ConnectX-4 Lx) appear here, but VOS 22.1.4 has no driver for them. MAC and Duplex columns removed for width.</p>
+<pre><code># esxcli network sriovnic list
+Name    PCI Device    Driver      Link  Speed  MTU   Description
+------  ------------  ----------  ----  -----  ----  -----------------------------------------------------
+vmnic3  0000:3b:00.0  <i>ixgben</i>      Up    10000  1500  Intel(R) Ethernet Controller X540-AT2
+vmnic4  0000:3b:00.1  <i>ixgben</i>      Up    10000  9000  Intel(R) Ethernet Controller X540-AT2
+vmnic5  0000:86:00.0  <b>nmlx5_core</b>  Up    10000  1500  Mellanox Technologies MT27710 Family [ConnectX-4 Lx]
+vmnic6  0000:86:00.1  <b>nmlx5_core</b>  Up    10000  9000  Mellanox Technologies MT27710 Family [ConnectX-4 Lx]</code></pre>
+
+<h3>Driver parameters</h3>
+<p>On this host <code>max_vfs</code> reads 64, yet the ports run 1 and 61 VFs. The driver applied the per-port values set in the vSphere Client: <code>vmkernel.log</code> at boot shows &quot;SR-IOV set to 1&quot; for vmnic3 and &quot;set to 63&quot; for vmnic4, then the reduction to 61. Do not read the VF count from <code>max_vfs</code>; prefer the vSphere Client for setting it too. <code>VMDQ</code> is the vSwitch queue setting that drops from 8 to 2 when SR-IOV is on. Other parameters removed.</p>
+<pre><code># esxcli system module parameters list -m ixgben
+Name     Type          Value  Description
+-------  ------------  -----  -----------
+VMDQ     array of int         Number of Virtual Machine Device Queues: 0/1 = disable, 2-16 enable (default = 8)
+max_vfs  array of int  <b>64</b>     Maximum number of VFs to be enabled (0..63)</code></pre>
+
+<h3>VFs on one port</h3>
+<p>One row per VF, 61 on vmnic4 (VF ID 0 to 60). All show Active false here because the VOS VM was powered off. When it runs, each of its SR-IOV adapters holds one VF, shown as Active true with the VM's Owner World ID. Rows 3 to 59 removed.</p>
+<pre><code># esxcli network sriovnic vf list -n vmnic4
+VF ID  Active  PCI Address     Owner World ID
+-----  ------  --------------  --------------
+    0   false  00000:059:16.1   -
+    1   false  00000:059:16.3   -
+    2   false  00000:059:16.5   -
+  ...
+   <b>60</b>   false  00000:059:31.1   -</code></pre>
+
+<h2 id="step2">Step 2: Add an SR-IOV adapter to the VOS VM</h2>
+<p>The VM must be powered off: SR-IOV adapters cannot be hot-added. Keep management (<code>eth0</code>) on VMXNET3, and use SR-IOV only for the WAN and LAN data ports.</p>
+<ol>
+<li>Power off the VOS VM and open <b>Actions &gt; Edit Settings &gt; Virtual Hardware</b>.</li>
+<li>Click <b>Add new device &gt; Network Adapter</b>.</li>
+<li>Under <b>New Network</b>, pick the port group. The VF does not send data through this port group: ESXi only reads its settings, for example the VLAN tag, and applies them to the VF.</li>
+<li>Set <b>Adapter Type = PCI Device passthrough</b> (shown as SR-IOV passthrough).</li>
+<li>Set <b>Physical function</b> to the port you enabled in Step 1.</li>
+<li>Leave <b>Guest OS MTU Change</b> at Disallow unless VOS needs jumbo frames on that port.</li>
+<li>Expand <b>Memory</b>, tick <b>Reserve all guest memory (All locked)</b>, and click OK. Without it, the VM does not power on: the passthrough device needs all VM memory locked for DMA.</li>
+<li>Repeat steps 2 to 7 for each data port, then power on. ESXi picks a free VF on that PF at power-on.</li>
+</ol>
+<figure><img src="versa-vos-sriov-esxi-fig3-vm-sriov-adapter.png" alt="VM Edit Settings with an SR-IOV network adapter, Adapter Type PCI Device passthrough, Device vmnic4 X540-AT2 and the vSphere warning about vMotion and snapshots"><figcaption>SR-IOV network adapter 2: Adapter Type PCI Device passthrough, Device vmnic4 0000:3b:00.1 (X540-AT2), Access Type DirectPath IO. The yellow banner is vSphere's own warning: no suspend, vMotion or snapshots. MAC addresses and vCenter name masked.</figcaption></figure>
+<figure><img src="versa-vos-sriov-esxi-fig4-reserve-memory.png" alt="VM Edit Settings Memory section with Reserve all guest memory (All locked) ticked"><figcaption>Memory: Reserve all guest memory (All locked) ticked; the reservation follows the 8 GB VM size.</figcaption></figure>
+<div class="call warn"><b>Which VOS port is which.</b> VOS names data ports <code>vni-0/0</code>, <code>vni-0/1</code>, and so on, in the order the guest finds the NICs. With mixed VMXNET3 and SR-IOV adapters, that order can differ from the Edit Settings list. Match by MAC address before you configure anything (Step 3).</div>
+
+<h2 id="step3">Step 3: Verify inside VOS</h2>
+<p>Four checks: the VF is visible, DPDK claimed it, the vni has the right MAC, and traffic counts match ESXi. Output from the lab VOS (22.1.4) and host, 9 Nov 2026.</p>
+
+<h3>1. The VF is visible and DPDK claimed it (VOS shell)</h3>
+<pre><code>$ lspci | grep -i 'virtual function'
+03:00.0 Ethernet controller: Intel Corporation <i>X540 Ethernet Controller Virtual Function</i> (rev 01)
+0b:00.0 Ethernet controller: Intel Corporation <i>X540 Ethernet Controller Virtual Function</i> (rev 01)
+
+$ sudo /opt/versa/scripts/versa_pci_unbind.py --status
+network devices using DPDK-compatible driver
+============================================
+0000:03:00.0 'X540 Ethernet Controller Virtual Function 1515' <b>drv=igb_uio</b> unused=ixgbevf,vfio-pci
+0000:0b:00.0 'X540 Ethernet Controller Virtual Function 1515' <b>drv=igb_uio</b> unused=ixgbevf,vfio-pci
+0000:1b:00.0 'VMXNET3 Ethernet Controller 07b0' drv=igb_uio unused=vmxnet3,vfio-pci
+
+network devices using kernel driver
+===================================
+0000:13:00.0 'VMXNET3 Ethernet Controller 07b0' if=eth0 drv=vmxnet3 unused=igb_uio,vfio-pci *Active*
+
+$ sudo grep -hE 'Probe PCI|Unsupported device' /var/log/versa/versa-service.log | tail -12
+...                                                     # last 3 of 12 lines; the same 3 probes repeat per restart
+EAL: Probe PCI driver: <b>net_ixgbe_vf</b> (8086:1515) device: 0000:03:00.0 (socket 0)
+EAL: Probe PCI driver: <b>net_ixgbe_vf</b> (8086:1515) device: 0000:0b:00.0 (socket 0)
+EAL: Probe PCI driver: net_vmxnet3 (15ad:7b0) device: 0000:1b:00.0 (socket 0)</code></pre>
+<p>Each SR-IOV adapter shows up as an X540 Virtual Function. Both VFs sit under the DPDK-compatible driver (<code>igb_uio</code>), and the log shows they were probed by <code>net_ixgbe_vf</code>. <code>eth0</code> (management) stays on the kernel driver. <code>Unsupported device type, dpdk pmd : [...]</code> in this log means VOS has no driver for that NIC (see <a href="#prereq">Prerequisites</a>).</p>
+
+<h3>2. Map each vni to its MAC (VOS CLI)</h3>
+<p>Compare with the MAC addresses on the VM's Summary / Edit Settings page from Step 2.</p>
+<pre><code>admin@BRANCH-1-cli&gt; show interfaces brief | tab
+NAME         MAC                OPER   ADMIN  TENANT  VRF                   IP
+vni-0/0      <b>00:50:56:aa:bb:01</b>  up     up     -       -
+vni-0/0.0    00:50:56:aa:bb:01  up     up     2       INET-1-Transport-VR   192.168.100.40/24
+vni-0/1      00:50:56:aa:bb:02  up     up     -       -
+vni-0/1.0    00:50:56:aa:bb:02  up     up     2       INET-2-Transport-VR   198.51.100.97/24
+vni-0/2      <b>00:50:56:aa:bb:03</b>  up     up     -       -
+vni-0/2.0    00:50:56:aa:bb:03  up     up     2       ACME-LAN-VR           10.40.40.40/24
+
+admin@BRANCH-1-cli&gt; show interfaces detail vni-0/0
+  MAC address           : 00:50:56:aa:bb:01
+  Routing instance      : INET-1-Transport-VR (12)
+  Host interface        : eth1
+  Duplex / Speed        : full-duplex / <i>10Gbps</i></code></pre>
+<p>In this lab <code>vni-0/0</code> (WAN) and <code>vni-0/2</code> (LAN) carry the MACs of the two SR-IOV adapters, and <code>vni-0/1</code> is the VMXNET3 adapter. Rows for <code>eth-0/0</code> and tunnel interfaces, and most detail lines, are removed.</p>
+
+<h3>3. Run traffic and check the counters</h3>
+<p>Outputs taken during two 8-stream iperf3 TCP runs through VOS: the port statistics in the first run (9.18 Gbps average), the vsmd outputs in the second (9.39 Gbps average).</p>
+<pre><code>admin@BRANCH-1-cli&gt; show interfaces port statistics brief | tab
+NAME     HOST INF  OPER  RX PPS   RX BPS      TX PPS   TX BPS      RX USAGE  TX USAGE
+vni-0/0  eth1      up    22614    11940544    <b>810842</b>   9820922336  0.11      <b>98.2</b>
+vni-0/1  eth3      up    1        640         0        0           0.0       0.0
+vni-0/2  eth4      up    <b>811251</b>   9825872112  22615    11940720    <b>98.25</b>     0.11
+
+$ vsh connect vsmd
+vsm-vcsn0&gt; show vsm load
+                Svc   Svc   CPU
+Thread    PID   Load  EWMA  Load
+WT-0      4093   20    16   100
+WT-1      4094    8     8    98
+WT-2      4095   16    16   100
+WT-3      4096   20    18   100
+WT-4      4097   22    20   100
+PT-0      4098   <b>30</b>   ---   100
+PT-1      4099   <b>47</b>   ---   100
+
+vsm-vcsn0&gt; show vsm statistics port mac dpdk-raw
+DPDK Stats for port : 0 [vni-0/2]                 # SR-IOV VF
+    rx_good_packets : 28319517
+    tx_good_packets : 812937
+      rx_good_bytes : 42875433071
+      tx_good_bytes : 53673747
+rx_multicast_packets : 132
+DPDK Stats for port : 2 [vni-0/1]                 # VMXNET3, for comparison
+    rx_good_packets : 258
+    tx_good_packets : 20
+      rx_q0_packets : 258
+      tx_q0_packets : 20
+
+vsm-vcsn0&gt; show vsm statistics dropped all
+THRM ERROR STATISTICS
+~~~~~~~~~~~~~~~~~~~~~~
+                                                  # <i>empty in this run: no TX driver drops</i></code></pre>
+<p>At line rate, <code>vni-0/2</code> receives and <code>vni-0/0</code> sends about 811 kpps (98% of 10G). The two poller threads (PT) are at 30% and 47% service load; CPU Load reads about 100 on every busy DPDK thread, so read the Svc Load column. A VF reports only <code>good_*</code> and multicast counters in dpdk-raw, with no per-queue or drop counters. Watch the THRM section of <code>show vsm statistics dropped all</code> for &quot;Drop Packets TX - Driver&quot;. Columns, port blocks and other drop sections are removed for width.</p>
+
+<h3>4. Cross-check on the ESXi side</h3>
+<pre><code># esxcli network sriovnic vf list -n vmnic4
+VF ID  Active  PCI Address     Owner World ID
+-----  ------  --------------  --------------
+    0    true  00000:059:16.1  2104751
+    1    true  00000:059:16.3  2104915
+    2    true  00000:059:16.5  <b>2104724</b>
+    3    true  00000:059:16.7  <b>2104724</b>
+    4   false  00000:059:17.1   -
+  ...
+
+# esxcli network sriovnic vf stats -n vmnic4 -v 2
+   Rx Errordrops: 0
+   Rx Multicast Pkts: 165
+   Rx Outof Bufferdrops: 0
+   Rx Unicast Bytes: 48562888456
+   Rx Unicast Pkt: 32076132
+   Tx Discards: 0
+   Tx Unicast Bytes: 60726626
+   Tx Unicast Pkt: 919409</code></pre>
+<table>
+<tr><th>Idle, after the tests</th><th>Counter</th><th>VOS dpdk-raw</th><th>ESXi VF stats</th><th>Difference</th></tr>
+<tr><td>vni-0/2 = VF2</td><td>RX packets</td><td>32,076,129</td><td>32,076,297</td><td>168</td></tr>
+<tr><td>vni-0/2 = VF2</td><td>TX packets</td><td>919,409</td><td>919,409</td><td>0</td></tr>
+<tr><td>vni-0/2 = VF2</td><td>RX bytes</td><td>48,562,888,216</td><td>48,562,888,456</td><td>240</td></tr>
+<tr><td>vni-0/0 = VF3</td><td>RX packets</td><td>919,576</td><td>919,745</td><td>169</td></tr>
+<tr><td>vni-0/0 = VF3</td><td>TX packets</td><td>32,075,977</td><td>32,075,977</td><td>0</td></tr>
+</table>
+<p>VF2 and VF3 share Owner World ID 2104724: they are the VOS VM's two SR-IOV adapters. VF0 and VF1 belong to two other VMs on the same port. When the VM powers off, its VFs go back to Active false. TX counts match exactly; ESXi counts about 170 more received packets than VOS, close to the multicast count (cause not checked). ESXi RX here = unicast + multicast + broadcast packets. Other counter lines are removed.</p>
+
+<h2 id="gotchas">Gotchas</h2>
+<p>The biggest trade-off is that an SR-IOV VM loses most vSphere mobility and protection features. The rest are traps hit in the lab.</p>
+<div class="call warn"><b>vSphere features not available with SR-IOV.</b> VMware lists (<a href="https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-networking/managing-network-resources/sr-iov/sr-iov-support.html">SR-IOV Support</a>): vMotion, Storage vMotion, vSphere HA, Fault Tolerance, DRS, DPM, suspend and resume, VM snapshots, hot add or remove of devices, memory and vCPU, participation in a cluster environment, and network statistics for the SR-IOV NIC. Tell the VMware team that runs the hosts before the design is final.</div>
+<h3>Lab findings</h3>
+<ul>
+<li><b>Check the VF count after the reboot.</b> 63 VFs were set on an X540 port that also carries a vSwitch, and vSphere showed &quot;63 (61 currently available)&quot;. The ixgben driver keeps queue pools for the port's own vSwitch traffic (VMDq), so at boot it logs &quot;VMDq reduced to 2 when SR-IOV is enabled&quot; and &quot;Reducing the number of SR-IOV VFs to 61&quot;. The first number is what you asked for; the number in brackets is what the driver created. Size against the second one.</li>
+<li><b>Changing the VF count needs another host reboot.</b> If vCenter runs on the same host, use the host client or esxcli for the change.</li>
+<li><b>ESXi SSH is off after a reboot</b> unless its policy is &quot;Start and stop with host&quot;. Enable it before you need esxcli.</li>
+<li><b>Cloned VOS VMs get new MACs, and the vni order can shift.</b> VOS keeps the old MACs in its udev persistent-net rules, so the new NICs come up under other names. Follow the persistent-MAC section of <a href="https://learn.versa-networks.com/docs/install-on-vmware-esxi-installation">Install on VMware ESXi</a>, or re-check the vni-to-MAC map after every clone.</li>
+<li><b>vCenter performance charts do not show SR-IOV NIC traffic.</b> Use the VOS counters and <code>esxcli network sriovnic vf stats</code>.</li>
+<li><b>TX descriptors.</b> At 10GbE line rate, the default 512 TX descriptors showed TX driver drops in bursts. <code>set system service-options tx-descriptors-count 4096</code> followed by <code>vsh restart</code> removed them on SR-IOV with no throughput loss. Do not copy this to VMXNET3: there it cut forwarding by 10 to 25%.</li>
+</ul>
+
+<h2 id="lab">Test bed</h2>
+<table>
+<tr><th>Item</th><th>Value</th></tr>
+<tr><td>Host</td><td>ESXi 7.0 U3 (build 21424296), workstation-class server, 2&times; Intel Xeon Platinum 8160 2.1 GHz</td></tr>
+<tr><td>NICs</td><td>Intel X540-AT2 (ixgben): vmnic3 &harr; vmnic4 cabled back-to-back, 10G. ConnectX-4 Lx: present, not usable by VOS 22.1.4</td></tr>
+<tr><td>SR-IOV VOS</td><td>VOS 22.1.4-GA, 8 vCPU (5 worker + 2 poller threads + control), 8 GB, routing + DIA NAT; WAN <code>vni-0/0</code> and LAN <code>vni-0/2</code> = X540 VFs on vmnic4 (ixgbevf)</td></tr>
+<tr><td>VMXNET3 VOS</td><td>Clone of the SR-IOV VOS, same config, WAN and LAN on VMXNET3</td></tr>
+<tr><td>Client VM</td><td>10.40.40.50/24, VMXNET3 on vSwitch1 (uplink vmnic3)</td></tr>
+<tr><td>Server VM</td><td>192.168.100.10/24, VMXNET3 on vSwitch1</td></tr>
+<tr><td>Path</td><td>client &rarr; VOS LAN <code>vni-0/2</code> (10.40.40.40) &rarr; VOS WAN <code>vni-0/0</code> (192.168.100.40, NAT) &rarr; server</td></tr>
+<tr><td>Load</td><td>20 s per test. UDP: <code>iperf3 -u -l &lt;size&gt; -b 0 -P 4</code>. TCP: <code>iperf3 -P 8</code> (upload) and <code>-R</code> (download)</td></tr>
+<tr><td>Side measurements</td><td><code>ping -i 0.01</code> client &rarr; server through VOS during each test; one <code>show vsm load</code> sample ~11 s into each test; SSH to the client VM's management address every 2 s from an outside PC</td></tr>
+<tr><td>Cells</td><td>VMXNET3 and SR-IOV, each with <code>tx-descriptors-count</code> 512 (default) and 4096</td></tr>
+</table>
+<div class="call info"><b>Path caveat.</b> On the VMXNET3 VOS the WAN vNIC sits on vSwitch1 with the server (in-host), and only the LAN leg crosses the vmnic3&harr;vmnic4 cable. On the SR-IOV VOS both legs cross the cable. Small-packet SR-IOV rows are client-bound (~1.2 Mpps offered).</div>
+
+<h2 id="results">Results</h2>
+<p>On the same host and with the same VOS config, SR-IOV reached 10GbE line rate with zero drops; VMXNET3 did not. Each column is the best setting for that NIC type (VMXNET3 at 512 TX descriptors, SR-IOV at 4096).</p>
+<table>
+<tr><th>Metric (one VOS LAN/WAN pair, 20 s tests)</th><th>VMXNET3</th><th>SR-IOV</th></tr>
+<tr><td>TCP, 8 streams (Gbps)</td><td>7.48 up / 8.25 down</td><td>9.40 / 9.39</td></tr>
+<tr><td>UDP 64 B forwarded (kpps)</td><td>1,023</td><td>1,257 (client-bound)</td></tr>
+<tr><td>UDP 1472 B forwarded (kpps)</td><td>683</td><td>803 (line rate ~813)</td></tr>
+<tr><td>VOS drops per test</td><td>up to 28,908 (TX ring full)</td><td>0</td></tr>
+<tr><td>Ping RTT under UDP load (ms)</td><td>3.3 to 4.4</td><td>2.3 to 3.1</td></tr>
+<tr><td>SSH failures to another VM on the host</td><td>39 to 45 per run</td><td>0</td></tr>
+</table>
+
+<h3>Forwarded rate, all four cells</h3>
+<p>VOS forwarded rate = VOS egress <code>tx_good_packets</code> / 20 s, in kpps. TCP rows: iperf3 receiver Gbps / sender retransmits.</p>
+<table>
+<tr><th>Test</th><th>VMXNET3 512</th><th>VMXNET3 4096</th><th>SR-IOV 512</th><th>SR-IOV 4096</th></tr>
+<tr><td>UDP 64 B</td><td>1022.6</td><td>896.5</td><td>1201.7</td><td>1256.8</td></tr>
+<tr><td>UDP 128 B</td><td>853.4</td><td>768.9</td><td>1210.2</td><td>1129.1</td></tr>
+<tr><td>UDP 256 B</td><td>843.2</td><td>758.0</td><td>1200.7</td><td>1136.2</td></tr>
+<tr><td>UDP 512 B</td><td>812.8</td><td>731.1</td><td>1176.3</td><td>1169.3</td></tr>
+<tr><td>UDP 1024 B</td><td>726.5</td><td>641.0</td><td>1109.4</td><td>1098.9</td></tr>
+<tr><td>UDP 1472 B</td><td>683.4</td><td>595.3</td><td>810.9 (line rate)</td><td>802.9</td></tr>
+<tr><td>TCP up (Gbps / retr)</td><td>7.48 / 8,469</td><td>6.64 / 9,679</td><td>9.39 / 3,753</td><td>9.40 / 2,392</td></tr>
+<tr><td>TCP down, -R (Gbps / retr)</td><td>8.25 / 28,901</td><td>6.22 / 2,588</td><td>9.40 / 1,200</td><td>9.39 / 2,540</td></tr>
+</table>
+
+<h3>VOS drops per 20 s test (TX / RX)</h3>
+<p>TX = THRM &quot;Drop Packets TX - Driver&quot; (on VMXNET3 equal to the vni <code>tx_q0_drop_total</code>). RX = DPDK <code>rx_missed_errors</code> (LAN + WAN). The ixgbevf VF exposes no per-port drop counters beyond THRM. On VMXNET3, part of the loss before VOS is not visible in VOS counters (ESXi side) [Inference], so these are lower bounds.</p>
+<table>
+<tr><th>Test</th><th>VMXNET3 512</th><th>VMXNET3 4096</th><th>SR-IOV 512</th><th>SR-IOV 4096</th></tr>
+<tr><td>UDP 64 B</td><td>352 / 16,717</td><td>0 / 12,033</td><td>0 / 0</td><td>0 / 0</td></tr>
+<tr><td>UDP 128 B</td><td>0 / 7,886</td><td>0 / 6,736</td><td>0 / 0</td><td>0 / 0</td></tr>
+<tr><td>UDP 256 B</td><td>43 / 0</td><td>0 / 25,037</td><td>0 / 0</td><td>0 / 0</td></tr>
+<tr><td>UDP 512 B</td><td>2 / 0</td><td>0 / 17,359</td><td>0 / 0</td><td>0 / 0</td></tr>
+<tr><td>UDP 1024 B</td><td>2,097 / 0</td><td>0 / 20,735</td><td>6,490 / 0</td><td>0 / 0</td></tr>
+<tr><td>UDP 1472 B</td><td>650 / 0</td><td>0 / 6,213</td><td>6,250 / 0</td><td>0 / 0</td></tr>
+<tr><td>TCP up</td><td>867 / 0</td><td>0 / 2,475</td><td>1,409 / 0</td><td>0 / 0</td></tr>
+<tr><td>TCP down</td><td><b>28,908</b> / 0</td><td>1,557 / 284</td><td>1,060 / 0</td><td>0 / 0</td></tr>
+</table>
+<p>The VMXNET3 512 download retransmits (28,901) match the VOS TX-driver drops (28,908) in the same test.</p>
+
+<h3>Poller CPU cost per packet</h3>
+<p>SR-IOV forwards each packet with less poller CPU than VMXNET3 at every size where both were captured. The metric is (PT-0 Svc % + PT-1 Svc %) / forwarded Mpps, read as &quot;% of one poller core per 1 Mpps&quot;; divide by 100 for microseconds of poller CPU per packet. Worked example, SR-IOV 512, UDP 64 B: (39 + 43) = 82% at 1.2017 Mpps = 68, i.e. 0.68 &micro;s per packet.</p>
+<figure><img src="versa-vos-sriov-esxi-fig5-poller-cpu.png" alt="Chart of poller percent per Mpps by UDP payload size and TCP direction for the four cells"><figcaption>Poller % per Mpps, lower is cheaper. Gaps are tests where the <code>show vsm load</code> sample was not captured. The highest PT Svc Load in any cell was 60%, so the VOS poller was not the limit in any test [Inference].</figcaption></figure>
+
+<h3>TCP, 8 streams, 20 s</h3>
+<p>SR-IOV carried TCP at the 10GbE ceiling in both directions with either descriptor count; VMXNET3 fell short by 1.2&ndash;3.2 Gbps.</p>
+<figure><img src="versa-vos-sriov-esxi-fig6-tcp-throughput.png" alt="Bar chart of TCP receiver throughput, sender retransmits and VOS egress kpps for upload and download in the four cells"><figcaption>Receiver throughput, sender retransmits and VOS egress kpps per cell. 10GbE line rate at 1514 B frames is ~812.7 kpps.</figcaption></figure>
+
+<h3>Latency under load and impact on other VMs</h3>
+<table>
+<tr><th>Ping avg RTT ms / ping loss</th><th>VMXNET3 512</th><th>VMXNET3 4096</th><th>SR-IOV 512</th><th>SR-IOV 4096</th></tr>
+<tr><td>Idle</td><td>0.28</td><td>0.27</td><td>0.30</td><td>0.28</td></tr>
+<tr><td>UDP 64 B</td><td>3.31 / 59%</td><td>3.35 / 81%</td><td>2.32 / 51%</td><td>2.28 / 54%</td></tr>
+<tr><td>UDP 512 B</td><td>3.77 / 67%</td><td>4.04 / 62%</td><td>2.27 / 54%</td><td>2.49 / 60%</td></tr>
+<tr><td>UDP 1024 B</td><td>4.19 / 66%</td><td>4.31 / 56%</td><td>176 (one 2 s stall) / 60%</td><td>2.69 / 62%</td></tr>
+<tr><td>UDP 1472 B</td><td>4.42 / 45%</td><td>4.90 / 51%</td><td>3.59 / 44%</td><td>3.07 / 38%</td></tr>
+<tr><td>SSH to client VM, OK / FAIL per run</td><td>181 / <b>45</b></td><td>267 / <b>39</b></td><td>250 / 0</td><td>257 / 0</td></tr>
+</table>
+<p>Ping loss under a UDP flood mostly reflects the saturated receiving VM and shared queues, not VOS alone (<code>-b 0</code> floods the path). Same client VM, same flood: the SSH failures only occurred with the VMXNET3 VOS, which points to host vSwitch/vmxnet3 backend load [Inference].</p>
+
+<h2 id="cli">Useful CLI</h2>
+<pre><code># ESXi shell
+esxcli network sriovnic list                          # SR-IOV capable ports and PF driver
+esxcli system module parameters list -m ixgben        # max_vfs / VMDQ (not the per-port VF count)
+esxcli network sriovnic vf list -n vmnic4             # VF -&gt; Active / Owner World ID
+esxcli network sriovnic vf stats -n vmnic4 -v 2       # per-VF hardware counters
+
+# VOS shell
+lspci | grep -i 'virtual function'
+sudo /opt/versa/scripts/versa_pci_unbind.py --status   # which driver owns each NIC
+sudo grep -hE 'Probe PCI|Unsupported device' /var/log/versa/versa-service.log
+
+# VOS CLI
+show interfaces brief | tab                           # vni -&gt; MAC
+show interfaces port statistics brief | tab           # live PPS / BPS / usage per vni
+set system service-options tx-descriptors-count 4096  # SR-IOV only, then vsh restart
+
+# vsmd (vsh connect vsmd)
+show vsm load                                         # read Svc Load, not CPU Load
+show vsm statistics port mac dpdk-raw                 # VF: good_* and multicast only
+show vsm statistics dropped all                       # THRM: "Drop Packets TX - Driver"</code></pre>
+
+<h2 id="caveats">Caveats</h2>
+<ul>
+<li>One host, one run of 20 s per cell (n=1). Repeat before relying on any number; not sizing guidance.</li>
+<li>Small-packet SR-IOV rows are limited by the client VM (~1.2 Mpps offered), not by VOS.</li>
+<li>The two VOS VMs did not have identical paths (see the path caveat under <a href="#lab">Test bed</a>).</li>
+<li>Several VMXNET3 <code>show vsm load</code> samples were not captured; those cells are gaps in the poller chart.</li>
+<li>A VM that finds no free VF at power-on was not tested; the expected failure is stated, not observed.</li>
+<li>The ~170-packet RX difference between ESXi and VOS counters was not investigated.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+<ul>
+<li>Check the VOS side first: VOS 22.1.4 drives Intel ixgbe VF, iavf and igb VF; a ConnectX-4 Lx VF was rejected with <code>Unsupported device type</code>.</li>
+<li>Enable SR-IOV per port in the vSphere Client, reboot, and size against the VF count in brackets (61 of 63 on an X540 port that also uplinks a vSwitch).</li>
+<li>Add the VM adapter as PCI Device passthrough with the VM powered off, reserve all guest memory, keep <code>eth0</code> on VMXNET3, and map vni to MAC before configuring.</li>
+<li>Verify with <code>versa_pci_unbind.py --status</code> (<code>igb_uio</code>), the <code>net_ixgbe_vf</code> probe line, and matching VOS / ESXi VF counters.</li>
+<li>In this lab SR-IOV held 10GbE line rate (9.4 Gbps TCP, ~811 kpps) with zero drops at 4096 TX descriptors; VMXNET3 reached 6.2&ndash;8.3 Gbps, dropped on TX or RX, and disturbed other VMs on the host.</li>
+<li>The price is vSphere mobility: no vMotion, HA, DRS, snapshots or hot-add for that VM.</li>
+</ul>
+
+<h2 id="refs">References</h2>
+<ul>
+<li>VMware: <a href="https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-networking/managing-network-resources/sr-iov/sr-iov-support.html">SR-IOV Support</a> (requirements, unsupported features)</li>
+<li>VMware: <a href="https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-networking/managing-network-resources/sr-iov/sr-iov-configure-a-virtual-machine-with-sr-iov-in-the-vsphere-web-client/sr-iov-enable-on-a-host-physical-adapter.html">Enable SR-IOV on a Host Physical Adapter</a></li>
+<li>VMware: <a href="https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-networking/managing-network-resources/sr-iov/sr-iov-configure-a-virtual-machine-with-sr-iov-in-the-vsphere-web-client/sr-iov-assign-an-sr-iov-passthrough-adapter-to-a-virtual-machine.html">Assign a Virtual Function as SR-IOV Passthrough Adapter to a Virtual Machine</a></li>
+<li>Versa: <a href="https://learn.versa-networks.com/docs/install-on-vmware-esxi-installation">Install on VMware ESXi (VOS)</a></li>
+<li>Versa: <a href="https://learn.versa-networks.com/docs/hardware-and-software-requirements-for-branch">Hardware and Software Requirements for Branch</a></li>
+<li>Lab data: <a href="https://github.com/Enizaksoy/Versa-VOS-SRIOV-ESXi-Lab">Versa-VOS-SRIOV-ESXi-Lab</a> (result tables and full esxcli / VOS outputs)</li>
+</ul>
+<p>VMware pages are the vSphere 8.0 versions, matching the vSphere Client 8.0.3 used for the screenshots.</p>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education. Hostnames, organisation names, management and WAN IPs and MAC addresses are placeholders substituted for the lab's own; screenshots have the host name, MAC addresses and vCenter name masked. Command output is reproduced from the lab with rows and columns trimmed as stated, counter values unmodified. Single lab, single 20 s run per test; not official vendor performance figures and not sizing guidance.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
