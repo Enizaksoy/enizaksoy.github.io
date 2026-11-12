@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Past the vSwitch — Enabling SR-IOV for Versa VOS on VMware vSphere</title>
+<title>Enabling SR-IOV for Versa VOS on VMware vSphere (vCenter and ESXi)</title>
 <meta name="description" content="Step-by-step SR-IOV for Versa VOS on vCenter 8.0.3 / ESXi 7.0 U3 with an Intel X540: host VFs, the VM passthrough adapter, verification inside VOS and on ESXi, the gotchas, and a lab comparison with VMXNET3 (9.4 Gbps line rate vs 7.5-8.3 Gbps).">
 <style>
   :root{
@@ -82,7 +82,7 @@
 
 <div class="hero"><div class="wrap">
   <div class="kicker">Versa VOS · VMware vSphere · SR-IOV</div>
-  <h1>Past the vSwitch</h1>
+  <h1>Enabling SR-IOV for Versa VOS on VMware vSphere (vCenter and ESXi)</h1>
   <p class="lede">With an Intel X540 virtual function handed to the VM, one VOS LAN/WAN pair carried 9.4 Gbps of TCP at 10GbE line rate with zero VOS drops; the same VM on VMXNET3 reached 7.5&ndash;8.3 Gbps and dropped on TX. This lab shows the host, VM and VOS steps, the outputs that prove the VF is in use, and what SR-IOV costs you in vSphere features.</p>
   <div class="meta">2026-11-12 · VOS 22.1.4-GA · ESXi 7.0 U3 (build 21424296) · vCenter 8.0.3 (build 24022515) · Intel X540-AT2 (ixgben / ixgbevf) · SR-IOV · DPDK · VMXNET3</div>
 </div></div>
