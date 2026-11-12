@@ -19,6 +19,7 @@
     --font-mono: "Cascadia Code", Consolas, "SF Mono", "JetBrains Mono", ui-monospace, monospace;
 
     color-scheme: light;
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
   }
 
   :root[data-theme="dark"] {
@@ -70,7 +71,7 @@
   }
   .topbar-inner {
     display: flex; align-items: center; justify-content: space-between;
-    padding-top: 16px; padding-bottom: 16px;
+    padding-top: var(--sp-4); padding-bottom: var(--sp-4);
   }
   .mark {
     font-family: var(--font-mono);
@@ -83,39 +84,45 @@
   nav.links a:hover { color: var(--teal); border-color: var(--teal); }
 
   /* ---------- hero ---------- */
-  .hero { padding: 30px 0 28px; border-bottom: 1px solid var(--line); }
+  .hero { padding: var(--sp-5) 0; border-bottom: 1px solid var(--line); }
   .eyebrow {
     font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em;
-    color: var(--copper); text-transform: uppercase; margin: 0 0 10px;
+    color: var(--copper); text-transform: uppercase; margin: 0 0 var(--sp-3);
   }
   h1.lede {
     font-family: var(--font-body); font-weight: 400;
-    font-size: 1.15rem; color: var(--ink-soft); max-width: 58ch;
-    margin: 0 0 18px; text-wrap: balance;
+    font-size: 2rem; line-height: 1.3; color: var(--ink); max-width: 30ch;
+    margin: 0 0 var(--sp-4); text-wrap: balance;
   }
-  .hero-links { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 0.85rem; }
-  .hero-links a { text-decoration: none; color: var(--teal-ink); }
+  .hero-links { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); font-family: var(--font-mono); font-size: 0.85rem; }
+  .hero-links a { text-decoration: none; color: var(--teal-ink); white-space: nowrap; }
   .hero-links a:hover { text-decoration: underline; }
 
   /* ---------- sections ---------- */
-  section.grid-section { padding: 36px 0; border-bottom: 1px solid var(--line); }
-  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+  section.grid-section { padding: var(--sp-5) 0 var(--sp-6); border-bottom: 1px solid var(--line); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sp-1); }
   h2.section-title {
     font-family: var(--font-display); font-weight: 700;
     font-size: 1.9rem; margin: 0; letter-spacing: -0.005em;
   }
   .section-note { font-family: var(--font-mono); font-size: 0.78rem; color: var(--slate); }
-  .section-desc { color: var(--ink-soft); max-width: 62ch; margin: 6px 0 34px; }
+  .section-desc { color: var(--ink-soft); max-width: 62ch; margin: 0 0 var(--sp-4); }
 
   .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
   .card {
-    background: var(--paper-raised); padding: 22px 24px;
-    display: flex; flex-direction: column; gap: 10px;
+    background: var(--paper-raised); padding: var(--sp-5);
+    display: flex; flex-direction: column; gap: var(--sp-2);
     transition: background .15s;
   }
   .card:hover { background: color-mix(in srgb, var(--teal) 6%, var(--paper-raised)); }
   .card h3 { font-family: var(--font-display); font-size: 1.18rem; font-weight: 700; margin: 0; letter-spacing: -0.005em; }
-  .card p { margin: 0; font-size: 0.92rem; color: var(--ink-soft); flex: 1; }
+  /* description clamped to 5 lines (full text stays in the HTML); margin-bottom:auto pins tags + links to the card bottom */
+  .card p {
+    margin: 0 0 auto; font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft);
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-clamp: 5; overflow: hidden;
+  }
+  .card .tags { margin-top: var(--sp-2); }
+  .card-grid > .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .card-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--slate); letter-spacing: 0.02em; }
 
   /* ---------- archive panel (real grid column from 1100px up) ---------- */
@@ -131,7 +138,7 @@
     }
     .labs-content { grid-column: 1; grid-row: 1; min-width: 0; }
     .labs-content .wrap { max-width: none; margin: 0; padding: 0; }
-    .archive-panel { display: block; grid-column: 2; grid-row: 1; min-width: 0; }
+    .archive-panel { display: block; grid-column: 2; grid-row: 1; min-width: 0; padding-top: var(--sp-5); }
     .archive-panel-inner {
       position: sticky; top: 90px;
       max-height: calc(100vh - 110px); overflow-y: auto;
@@ -139,7 +146,7 @@
   }
   .archive-panel .archive-title {
     text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.68rem;
-    color: var(--slate); margin: 18px 0 8px;
+    color: var(--slate); margin: var(--sp-5) 0 var(--sp-2);
   }
   .archive-panel .archive-title:first-child { margin-top: 0; }
   .archive-panel details.archive-month {
@@ -169,13 +176,13 @@
     border: 1px solid var(--line-strong); color: var(--slate);
     padding: 2px 7px; letter-spacing: 0.02em; text-transform: uppercase;
   }
-  .card-links { display: flex; gap: 16px; font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px; }
+  .card-links { display: flex; gap: var(--sp-4); font-family: var(--font-mono); font-size: 0.8rem; margin-top: var(--sp-1); }
   .card-links a { text-decoration: none; color: var(--teal-ink); border-bottom: 1px solid transparent; }
   .card-links a:hover { border-color: var(--teal-ink); }
   .card-links a.source { color: var(--slate); }
 
   /* ---------- footer ---------- */
-  footer { padding: 40px 0 60px; }
+  footer { padding: var(--sp-6) 0; }
   .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   footer p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--slate); margin: 0; }
   footer .flinks { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 0.78rem; }
@@ -193,28 +200,30 @@
 
   /* ---- featured work card (beside the hero) ---- */
   .hero-grid {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
-    gap: 36px; align-items: center;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px);
+    gap: var(--sp-6); align-items: stretch;
   }
+  .hero-text { display: flex; flex-direction: column; padding-top: var(--sp-1); }
+  .hero-text .hero-links { margin-top: auto; }
   .feat-card {
     background: var(--paper-raised); border: 1px solid var(--line);
-    border-radius: 8px; padding: 16px 18px 14px;
+    border-radius: 8px; padding: var(--sp-4);
   }
   .feat-tag {
     font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--copper); display: block; margin-bottom: 4px;
+    text-transform: uppercase; color: var(--copper); display: block; margin-bottom: var(--sp-1);
   }
   .feat-card h2 {
     font-family: var(--font-display); font-size: 1.32rem; letter-spacing: 0.01em;
     margin: 0; line-height: 1.15;
   }
-  .feat-desc { margin: 6px 0 0; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.45; }
+  .feat-desc { margin: var(--sp-2) 0 0; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.45; }
   .feat-stats {
     display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
-    gap: 1px; margin: 12px 0 10px;
+    gap: 1px; margin: var(--sp-3) 0;
     background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
   }
-  .feat-stat { background: var(--paper); padding: 8px 9px; }
+  .feat-stat { background: var(--paper); padding: var(--sp-2); }
   .feat-stat b {
     display: block; font-family: var(--font-mono); font-size: 0.98rem;
     color: var(--teal-ink); letter-spacing: -0.01em; font-weight: 700; white-space: nowrap;
@@ -223,24 +232,28 @@
     display: block; font-family: var(--font-mono); font-size: 0.6rem;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); margin-top: 2px; line-height: 1.3;
   }
-  .feat-links { display: flex; gap: 6px 18px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.8rem; }
+  .feat-links { display: flex; align-items: baseline; gap: var(--sp-2) var(--sp-4); flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.8rem; }
   .feat-links a { text-decoration: none; color: var(--teal-ink); }
   .feat-links a:hover { text-decoration: underline; }
-  .feat-details { margin-top: 8px; font-size: 0.85rem; }
+  .feat-details { margin-left: auto; font-family: var(--font-body); font-size: 0.88rem; }
+  .feat-details[open] { flex-basis: 100%; margin-left: 0; }
   .feat-details summary {
     cursor: pointer; font-family: var(--font-mono); font-size: 0.74rem; color: var(--slate);
   }
   .feat-details summary:hover { color: var(--teal-ink); }
-  .feat-details p { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.5; }
+  .feat-details p { margin: var(--sp-2) 0 0; color: var(--ink-soft); line-height: 1.5; }
   .feat-spec { font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.7; }
   .feat-spec em { font-style: normal; color: var(--slate); }
-  .feat-more { margin-top: 8px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--slate); line-height: 1.7; }
+  .feat-more { margin-top: var(--sp-2); font-family: var(--font-mono); font-size: 0.72rem; color: var(--slate); line-height: 1.7; }
   .feat-more a { color: var(--ink-soft); }
   .feat-more a:hover { color: var(--teal-ink); }
   @media (max-width: 860px) {
-    .hero-grid { grid-template-columns: 1fr; gap: 22px; }
+    .hero-grid { grid-template-columns: 1fr; gap: var(--sp-5); }
+    .hero-text .hero-links { margin-top: 0; }
+    h1.lede { font-size: 1.3rem; }
   }
   @media (max-width: 480px) {
+    .card { padding: var(--sp-4); }
     .feat-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
   }
 </style>
@@ -284,10 +297,9 @@
         <div class="feat-links">
           <a href="https://enizaksoy.github.io/ai-lab/">&rarr; Open the full lab</a>
           <a href="https://github.com/Enizaksoy">&rarr; Source on GitHub</a>
-        </div>
 
         <details class="feat-details">
-          <summary>Build details and deep dives</summary>
+          <summary>Details and deep dives</summary>
           <p>A 2-spine / 2-leaf Clos built on real hardware, not simulation &mdash; eBGP underlay, dual RDMA rails, and PFC/ECN/DCQCN tuned until the fabric stopped dropping under congestion. Raw bandwidth is capped by the 40G fabric, so the NIC generation shows up in collectives instead: NCCL all-reduce went from 3.66 to 6.08 GB/s. Every number was measured, then re-measured after tuning.</p>
           <p class="feat-spec">
             <em>fabric</em> Cisco Nexus 9332PQ &middot; 2-spine / 2-leaf Clos &middot; eBGP underlay &middot; ECMP &middot; BFD<br>
@@ -303,6 +315,7 @@
             <a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">Making pause frames visible</a>
           </div>
         </details>
+        </div>
       </aside>
     </div>
   </section>
@@ -451,7 +464,7 @@
         <article class="card" id="m-2026-02">
           <h3>Cisco SD-Access with SXP Integration</h3>
           <div class="card-date">2026-02-27</div>
-          <p>Cisco SD-Access on CML — Catalyst Center, ISE 3.5, 802.1X, SGT/TrustSec, SXP propagation across the fabric.</p>
+          <p>A four-node Cat9Kv SD-Access fabric on CML (border, control plane, two edges): IS-IS underlay, LISP pub/sub and VXLAN, automated from Catalyst Center 2.3.7.10, with ISE 3.5 for 802.1X, SGT/TrustSec and SXP. Built to carry IP-SGT bindings out of the fabric over SXP. Verified: shutting an edge port ends the 802.1X session and ISE withdraws the IP-SGT binding from every SXP listener; SGACL tests on the SXP-fed router passed.</p>
           <div class="tags"><span>Cisco</span><span>ISE</span><span>SXP</span></div>
           <div class="card-links">
             <a href="https://enizaksoy.github.io/Cisco-SD-Access-Lab-with-SXP-Integration/">View lab →</a>
@@ -462,7 +475,7 @@
         <article class="card">
           <h3>AI/GPU Cluster Lab</h3>
           <div class="card-date">2026-02-13</div>
-          <p>2-Spine / 2-Leaf Clos fabric on Cisco Nexus 9332PQ — RDMA rail design, QoS/PFC/ECN tuned for lossless RoCEv2. 38.98 Gb/s same-rail, ~3 µs latency.</p>
+          <p>2-Spine / 2-Leaf Clos fabric on Cisco Nexus 9332PQ — RDMA rail design, QoS/PFC/ECN tuned for lossless RoCEv2. 38.98 Gb/s same-rail, ~3 µs latency. eBGP underlay with BFD (no OSPF, no EVPN), one leaf per rail with no LACP, per-NIC policy routing on the servers and jumbo MTU end to end. The 40G links cap raw bandwidth, so the move from ConnectX-3 Pro to ConnectX-5 Ex shows up in collectives: NCCL all-reduce rose from 3.66 to 5.27&ndash;6.08 GB/s (+66%).</p>
           <div class="tags"><span>RDMA</span><span>Cisco Nexus</span><span>Clos</span></div>
           <div class="card-links">
             <a href="https://enizaksoy.github.io/ai-lab/">View lab →</a>
@@ -506,7 +519,7 @@
         <article class="card">
           <h3>Cisco VXLAN EVPN Multi-AS Lab</h3>
           <div class="card-date">2026-07-14</div>
-          <p>NX-OS VXLAN EVPN Multi-AS fabric — eBGP underlay/overlay per RFC 7938, three tenant VRFs with symmetric IRB, anycast gateway, VRF-aware DHCP relay deep dive.</p>
+          <p>NX-OS VXLAN EVPN Multi-AS fabric — eBGP underlay/overlay per RFC 7938, three tenant VRFs with symmetric IRB, anycast gateway, VRF-aware DHCP relay deep dive. Six Nexus 9000v switches (NX-OS 10.5(3)) on CML 2.10: every leaf is its own AS, and the two spines share one AS and carry EVPN without a single VRF or VNI configured. 6 L2 + 3 L3 VNIs and 16 hosts; route targets are manual because auto-derived ASN:VNI can never match across leaf ASNs. Every design rule was broken first and fixed second, with the CLI evidence in a troubleshooting journal.</p>
           <div class="tags"><span>Cisco NX-OS</span><span>eBGP</span></div>
           <div class="card-links">
             <a href="https://enizaksoy.github.io/Cisco-VXLAN-EVPN-Multi-AS-Lab/">View lab →</a>
