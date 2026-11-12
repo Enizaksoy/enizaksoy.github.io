@@ -1,22 +1,24 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Eniz Aksoy</title>
 <style>
   :root {
-    --paper: #0B0E12;
-    --paper-raised: #141A20;
-    --ink: #E7EAED;
-    --ink-soft: #AEB7BF;
-    --line: #262E36;
-    --line-strong: #384049;
-    --teal: #2FC7B6;
-    --teal-ink: #7FE0D3;
-    --copper: #E2984F;
-    --slate: #8B96A1;
+    --paper: #FFFFFF;
+    --paper-raised: #F6F8FA;
+    --ink: #10151B;
+    --ink-soft: #3C444C;
+    --line: #D8DDE1;
+    --line-strong: #B8C0C6;
+    --teal: #0B7A6F;
+    --teal-ink: #086158;
+    --copper: #9A5413;
+    --slate: #5B6672;
 
     --font-display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Haettenschweiler", sans-serif;
     --font-body: Charter, "Iowan Old Style", Georgia, "Times New Roman", serif;
     --font-mono: "Cascadia Code", Consolas, "SF Mono", "JetBrains Mono", ui-monospace, monospace;
 
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   :root[data-theme="dark"] {
@@ -33,15 +35,15 @@
     color-scheme: dark;
   }
   :root[data-theme="light"] {
-    --paper: #F1F3F4;
-    --paper-raised: #FFFFFF;
+    --paper: #FFFFFF;
+    --paper-raised: #F6F8FA;
     --ink: #10151B;
     --ink-soft: #3C444C;
     --line: #D8DDE1;
     --line-strong: #B8C0C6;
-    --teal: #0E8F82;
+    --teal: #0B7A6F;
     --teal-ink: #086158;
-    --copper: #B96A25;
+    --copper: #9A5413;
     --slate: #5B6672;
     color-scheme: light;
   }
@@ -68,7 +70,7 @@
   }
   .topbar-inner {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 0;
+    padding-top: 16px; padding-bottom: 16px;
   }
   .mark {
     font-family: var(--font-mono);
@@ -81,7 +83,7 @@
   nav.links a:hover { color: var(--teal); border-color: var(--teal); }
 
   /* ---------- hero ---------- */
-  .hero { padding: 44px 0 36px; border-bottom: 1px solid var(--line); }
+  .hero { padding: 30px 0 28px; border-bottom: 1px solid var(--line); }
   .eyebrow {
     font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em;
     color: var(--copper); text-transform: uppercase; margin: 0 0 10px;
@@ -96,7 +98,7 @@
   .hero-links a:hover { text-decoration: underline; }
 
   /* ---------- sections ---------- */
-  section.grid-section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section.grid-section { padding: 36px 0; border-bottom: 1px solid var(--line); }
   .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
   h2.section-title {
     font-family: var(--font-display); font-weight: 700;
@@ -189,54 +191,57 @@
     * { transition: none !important; }
   }
 
-  /* ---- featured work band ---- */
-  .featured {
-    border-bottom: 1px solid var(--line);
-    background: transparent;
+  /* ---- featured work card (beside the hero) ---- */
+  .hero-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
+    gap: 36px; align-items: center;
   }
-  .featured .wrap { padding: 30px 28px 32px; }
+  .feat-card {
+    background: var(--paper-raised); border: 1px solid var(--line);
+    border-radius: 8px; padding: 16px 18px 14px;
+  }
   .feat-tag {
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--copper); display: block; margin-bottom: 10px;
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--copper); display: block; margin-bottom: 4px;
   }
-  .feat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-  .feat-head h2 {
-    font-family: var(--font-display); font-size: 1.72rem; letter-spacing: 0.01em;
-    margin: 0; line-height: 1.1;
+  .feat-card h2 {
+    font-family: var(--font-display); font-size: 1.32rem; letter-spacing: 0.01em;
+    margin: 0; line-height: 1.15;
   }
-  .feat-sub { font-family: var(--font-mono); font-size: 0.8rem; color: var(--slate); }
-  .feat-desc { margin: 12px 0 0; max-width: 62ch; }
+  .feat-desc { margin: 6px 0 0; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.45; }
   .feat-stats {
     display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
-    gap: 1px; margin: 20px 0 18px;
-    background: var(--line); border: 1px solid var(--line); border-radius: 7px; overflow: hidden;
+    gap: 1px; margin: 12px 0 10px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
   }
-  .feat-stat { background: var(--paper); padding: 13px 14px; }
+  .feat-stat { background: var(--paper); padding: 8px 9px; }
   .feat-stat b {
-    display: block; font-family: var(--font-mono); font-size: 1.24rem;
-    color: var(--teal-ink); letter-spacing: -0.01em; font-weight: 700;
+    display: block; font-family: var(--font-mono); font-size: 0.98rem;
+    color: var(--teal-ink); letter-spacing: -0.01em; font-weight: 700; white-space: nowrap;
   }
   .feat-stat span {
-    display: block; font-family: var(--font-mono); font-size: 0.68rem;
-    letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate); margin-top: 3px;
+    display: block; font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); margin-top: 2px; line-height: 1.3;
   }
-  .feat-spec {
-    font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft);
-    line-height: 1.85; margin: 0 0 16px;
-  }
-  .feat-spec em { font-style: normal; color: var(--slate); }
-  .feat-links { display: flex; gap: 8px 20px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.85rem; }
+  .feat-links { display: flex; gap: 6px 18px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.8rem; }
   .feat-links a { text-decoration: none; color: var(--teal-ink); }
   .feat-links a:hover { text-decoration: underline; }
-  .feat-more {
-    margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem;
-    color: var(--slate); line-height: 1.9;
+  .feat-details { margin-top: 8px; font-size: 0.85rem; }
+  .feat-details summary {
+    cursor: pointer; font-family: var(--font-mono); font-size: 0.74rem; color: var(--slate);
   }
-  .feat-more a { color: var(--ink-soft); text-decoration: none; }
-  .feat-more a:hover { color: var(--teal); text-decoration: underline; }
-  @media (max-width: 760px) {
+  .feat-details summary:hover { color: var(--teal-ink); }
+  .feat-details p { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.5; }
+  .feat-spec { font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.7; }
+  .feat-spec em { font-style: normal; color: var(--slate); }
+  .feat-more { margin-top: 8px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--slate); line-height: 1.7; }
+  .feat-more a { color: var(--ink-soft); }
+  .feat-more a:hover { color: var(--teal-ink); }
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 22px; }
+  }
+  @media (max-width: 480px) {
     .feat-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .feat-head h2 { font-size: 1.42rem; }
   }
 </style>
 
@@ -254,51 +259,51 @@
 
 <main>
   <section class="hero">
-    <div class="wrap">
-      <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
-      <h1 class="lede">Notes from building AI cluster fabrics, EVPN underlays, and SD-WAN deployments.</h1>
-      <div class="hero-links">
-        <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
-        <a href="#field-labs">→ Browse the labs</a>
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <p class="eyebrow">CCIE #23970 · Senior Network Architect</p>
+        <h1 class="lede">Notes from building AI cluster fabrics, EVPN underlays, and SD-WAN deployments.</h1>
+        <div class="hero-links">
+          <a href="https://github.com/Enizaksoy">→ github.com/Enizaksoy</a>
+          <a href="#field-labs">→ Browse the labs</a>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <section class="featured" id="featured">
-    <div class="wrap">
-      <span class="feat-tag">Featured work</span>
-      <div class="feat-head">
+      <aside class="feat-card" id="featured">
+        <span class="feat-tag">Featured work</span>
         <h2>AI / GPU Cluster Fabric</h2>
-        <span class="feat-sub">lossless RoCEv2 on Cisco Nexus 9332PQ</span>
-      </div>
-      <p class="feat-desc">A 2-spine / 2-leaf Clos built on real hardware, not simulation &mdash; eBGP underlay, dual RDMA rails, and PFC/ECN/DCQCN tuned until the fabric stopped dropping under congestion. Raw bandwidth is capped by the 40G fabric, so the NIC generation shows up in collectives instead: NCCL all-reduce went from 3.66 to 6.08 GB/s. Every number was measured, then re-measured after tuning.</p>
+        <p class="feat-desc">Lossless RoCEv2 on Cisco Nexus 9332PQ: a 2-spine / 2-leaf Clos on real hardware, with PFC/ECN/DCQCN tuned until the fabric stopped dropping.</p>
 
-      <div class="feat-stats">
-        <div class="feat-stat"><b>38.98 Gb/s</b><span>same-rail RDMA</span></div>
-        <div class="feat-stat"><b>~3 &micro;s</b><span>same-rail latency</span></div>
-        <div class="feat-stat"><b>96%</b><span>drop reduction</span></div>
-        <div class="feat-stat"><b>+66%</b><span>NCCL all-reduce</span></div>
-      </div>
+        <div class="feat-stats">
+          <div class="feat-stat"><b>38.98 Gb/s</b><span>same-rail RDMA</span></div>
+          <div class="feat-stat"><b>~3 &micro;s</b><span>same-rail latency</span></div>
+          <div class="feat-stat"><b>96%</b><span>drop reduction</span></div>
+          <div class="feat-stat"><b>+66%</b><span>NCCL all-reduce</span></div>
+        </div>
 
-      <p class="feat-spec">
-        <em>fabric</em> &nbsp;Cisco Nexus 9332PQ &middot; 2-spine / 2-leaf Clos &middot; eBGP underlay &middot; ECMP &middot; BFD<br>
-        <em>rdma</em> &nbsp;&nbsp;&nbsp;Mellanox ConnectX-5 Ex dual-port 100GbE &middot; 40G link (switch-limited) &middot; one leaf per rail &middot; no LACP<br>
-        <em>lossless</em> PFC &middot; ECN marking &middot; DCQCN &middot; strict-priority queue<br>
-        <em>telemetry</em> sFlow &middot; Prometheus &middot; Grafana &middot; ERSPAN capture
-      </p>
+        <div class="feat-links">
+          <a href="https://enizaksoy.github.io/ai-lab/">&rarr; Open the full lab</a>
+          <a href="https://github.com/Enizaksoy">&rarr; Source on GitHub</a>
+        </div>
 
-      <div class="feat-links">
-        <a href="https://enizaksoy.github.io/ai-lab/">&rarr; Open the full lab</a>
-        <a href="https://github.com/Enizaksoy">&rarr; Source on GitHub</a>
-      </div>
-
-      <div class="feat-more">
-        Deep dives &nbsp;
-        <a href="https://enizaksoy.github.io/articles/rdma-ai-cluster.html">Lossless RDMA for AI training</a> &middot;
-        <a href="https://enizaksoy.github.io/articles/rocev2-ecn-cnp-deep-dive.html">RoCEv2 ECN &amp; CNP, packet level</a> &middot;
-        <a href="https://enizaksoy.github.io/articles/mpi-ai-cluster-benchmark.html">MPI benchmarks</a> &middot;
-        <a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">Making pause frames visible</a>
-      </div>
+        <details class="feat-details">
+          <summary>Build details and deep dives</summary>
+          <p>A 2-spine / 2-leaf Clos built on real hardware, not simulation &mdash; eBGP underlay, dual RDMA rails, and PFC/ECN/DCQCN tuned until the fabric stopped dropping under congestion. Raw bandwidth is capped by the 40G fabric, so the NIC generation shows up in collectives instead: NCCL all-reduce went from 3.66 to 6.08 GB/s. Every number was measured, then re-measured after tuning.</p>
+          <p class="feat-spec">
+            <em>fabric</em> Cisco Nexus 9332PQ &middot; 2-spine / 2-leaf Clos &middot; eBGP underlay &middot; ECMP &middot; BFD<br>
+            <em>rdma</em> Mellanox ConnectX-5 Ex dual-port 100GbE &middot; 40G link (switch-limited) &middot; one leaf per rail &middot; no LACP<br>
+            <em>lossless</em> PFC &middot; ECN marking &middot; DCQCN &middot; strict-priority queue<br>
+            <em>telemetry</em> sFlow &middot; Prometheus &middot; Grafana &middot; ERSPAN capture
+          </p>
+          <div class="feat-more">
+            Deep dives:
+            <a href="https://enizaksoy.github.io/articles/rdma-ai-cluster.html">Lossless RDMA for AI training</a> &middot;
+            <a href="https://enizaksoy.github.io/articles/rocev2-ecn-cnp-deep-dive.html">RoCEv2 ECN &amp; CNP, packet level</a> &middot;
+            <a href="https://enizaksoy.github.io/articles/mpi-ai-cluster-benchmark.html">MPI benchmarks</a> &middot;
+            <a href="https://enizaksoy.github.io/articles/lossless-ethernet-monitoring.html">Making pause frames visible</a>
+          </div>
+        </details>
+      </aside>
     </div>
   </section>
 

@@ -7,13 +7,13 @@
 <meta name="description" content="Versa SD-WAN policy is matched once per session. Lab notes on VOS 23.1.2: what happens when the DSCP changes mid-flow, the re-evaluate options, the additional-flow-key-attribute dscp knob, copy-from-inner, and a full 2x2 measurement matrix.">
 <style>
   :root{
-    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
-    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
-    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;
+    --paper:#FFFFFF; --paper-raised:#F6F8FA; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0B7A6F; --teal-ink:#086158;
+    --copper:#9A5413; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;
     --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
     --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
     --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
-    color-scheme: dark;
+    color-scheme: light;
   }
   
   :root[data-theme="dark"]{
@@ -21,9 +21,9 @@
     --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
     --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
   :root[data-theme="light"]{
-    --paper:#F1F3F4; --paper-raised:#FFFFFF; --ink:#10151B; --ink-soft:#3C444C;
-    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0E8F82; --teal-ink:#086158;
-    --copper:#B96A25; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+    --paper:#FFFFFF; --paper-raised:#F6F8FA; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0B7A6F; --teal-ink:#086158;
+    --copper:#9A5413; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
     font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
