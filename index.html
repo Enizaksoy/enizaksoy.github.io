@@ -326,8 +326,9 @@
     <div class="archive-title">Field Labs</div>
 
     <details class="archive-month" open>
-      <summary class="archive-month-head">2026 November<span>1</span></summary>
+      <summary class="archive-month-head">2026 November<span>2</span></summary>
       <div class="archive-articles">
+        <a href="https://enizaksoy.github.io/articles/versa-pim-anycast-rp-cisco-msdp.html">Two RPs, One Address: Versa PIM Anycast RP (RFC 4610) Meets a Cisco MSDP Domain</a>
         <a href="https://enizaksoy.github.io/articles/versa-vos-sriov-esxi.html">Enabling SR-IOV for Versa VOS on VMware vSphere (vCenter and ESXi)</a>
       </div>
     </details>
@@ -445,10 +446,21 @@
     <div class="wrap">
       <div class="section-head">
         <h2 class="section-title">Field Labs</h2>
-        <span class="section-note">15 live builds</span>
+        <span class="section-note">16 live builds</span>
       </div>
       <p class="section-desc">Full lab documentation, built on CML and real hardware, published as GitHub Pages straight from the repo.</p>
       <div class="card-grid">
+
+        <article class="card" id="m-2026-11b">
+          <h3>Two RPs, One Address: Versa PIM Anycast RP (RFC 4610) Meets a Cisco MSDP Domain</h3>
+          <div class="card-date">2026-11-24</div>
+          <p>A Versa SD-WAN hub as a PIM anycast RP (RFC 4610) peer of a Cisco Nexus RP that also runs MSDP toward two more Cisco RPs for the same RP address &mdash; so multicast sources cross in both directions. VOS 22.1.4 and NX-OS 10.5(3): the Director steps with screenshots, the NX-OS configuration, and an eight-step verification with one terminal picture per command, down to 0 of 40 datagrams lost at both receivers. Also covers what the lab showed on the way: the Director GUI not storing the anycast local address (REST call used), two commit validation messages, and the 1470-byte datagram observation. Repo has the device configuration and the raw outputs.</p>
+          <div class="tags"><span>Versa VOS</span><span>Cisco NX-OS</span><span>PIM Anycast RP</span><span>MSDP</span></div>
+          <div class="card-links">
+            <a href="https://enizaksoy.github.io/articles/versa-pim-anycast-rp-cisco-msdp.html">View lab &rarr;</a>
+            <a class="source" href="https://github.com/Enizaksoy/Versa-PIM-AnycastRP-Cisco-MSDP-Lab">Source</a>
+          </div>
+        </article>
 
         <article class="card" id="m-2026-10">
           <h3>SONiC SN2410 RoCE Lab: PFC, ECN and DCQCN on One Timeline</h3>

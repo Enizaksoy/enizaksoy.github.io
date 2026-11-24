@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two RPs, One Address: Versa PIM Anycast RP (RFC 4610) Meets a Cisco MSDP Domain — Versa</title>
+<meta name="description" content="A Versa SD-WAN hub is a PIM anycast RP (RFC 4610) peer of a Cisco Nexus RP, and that Nexus runs MSDP toward two more Cisco RPs for the same RP address, so multicast sources are learned across in both directions. Director steps, NX-OS configuration and an eight-step verification on VOS 22.1.4 and NX-OS 10.5(3).">
+<style>
+  :root{
+    --paper:#FFFFFF; --paper-raised:#F6F8FA; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0B7A6F; --teal-ink:#086158;
+    --copper:#9A5413; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;
+    --font-display:"Bahnschrift","DIN Alternate","Arial Narrow","Haettenschweiler",sans-serif;
+    --font-body:Charter,"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --font-mono:"Cascadia Code",Consolas,"SF Mono","JetBrains Mono",ui-monospace,monospace;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B0E12; --paper-raised:#141A20; --ink:#E7EAED; --ink-soft:#AEB7BF;
+    --line:#262E36; --line-strong:#384049; --teal:#2FC7B6; --teal-ink:#7FE0D3;
+    --copper:#E2984F; --slate:#8B96A1; --warn-bg:#2A2015; --ok-bg:#122019; --info-bg:#121A24;}
+  :root[data-theme="light"]{
+    --paper:#FFFFFF; --paper-raised:#F6F8FA; --ink:#10151B; --ink-soft:#3C444C;
+    --line:#D8DDE1; --line-strong:#B8C0C6; --teal:#0B7A6F; --teal-ink:#086158;
+    --copper:#9A5413; --slate:#5B6672; --warn-bg:#FBF0E2; --ok-bg:#E6F3EE; --info-bg:#E9F0F6;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  header.top{border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--ink);text-decoration:none}
+  .brand b{color:var(--teal)}
+  header.top nav a{font-family:var(--font-display);font-size:15px;letter-spacing:.4px;color:var(--ink-soft);
+    text-decoration:none;margin-left:20px}
+  header.top nav a:hover{color:var(--teal)}
+  .hero{border-bottom:1px solid var(--line);padding:46px 0 30px}
+  .kicker{font-family:var(--font-mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper)}
+  h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.08;margin:.28em 0 .18em;letter-spacing:.3px}
+  .lede{font-size:19px;color:var(--ink-soft);margin:.4em 0 0}
+  .meta{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:16px}
+  article{padding:34px 0 60px}
+  h2{font-family:var(--font-display);font-size:26px;letter-spacing:.3px;margin:1.7em 0 .3em;
+    padding-bottom:.18em;border-bottom:2px solid var(--teal)}
+  h3{font-family:var(--font-display);font-size:19px;letter-spacing:.3px;margin:1.3em 0 .2em;color:var(--ink)}
+  p{margin:.6em 0}
+  a{color:var(--teal-ink)}
+  code{font-family:var(--font-mono);font-size:.86em;background:rgba(128,128,128,.14);padding:.08em .35em;border-radius:4px}
+  pre{font-family:var(--font-mono);font-size:13.5px;line-height:1.5;background:var(--paper-raised);
+    border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:6px;
+    padding:14px 16px;overflow-x:auto;margin:1em 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre b{color:var(--copper);font-weight:700}
+  pre i{color:var(--teal-ink);font-style:normal;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:15px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--teal);color:#fff;font-family:var(--font-display);font-weight:600;letter-spacing:.3px}
+  tr:nth-child(even) td{background:rgba(128,128,128,.06)}
+  .call{border-radius:6px;padding:13px 16px;margin:1.2em 0;font-size:15.5px;border-left:4px solid}
+  .call b{font-family:var(--font-display);letter-spacing:.3px}
+  .warn{background:var(--warn-bg);border-color:var(--copper)}
+  .ok{background:var(--ok-bg);border-color:var(--teal)}
+  .info{background:var(--info-bg);border-color:#4a83b8}
+  .toc{font-size:15px;background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:1.4em 0}
+  .toc b{font-family:var(--font-display);letter-spacing:.3px}
+  .toc a{display:inline-block;margin:2px 14px 2px 0;color:var(--ink-soft);text-decoration:none}
+  .toc a:hover{color:var(--teal)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--slate);font-family:var(--font-mono);font-size:12.5px}
+  .disc{font-family:var(--font-mono);font-size:12px;color:var(--slate);margin-top:8px}
+  @media (max-width:600px){h1{font-size:30px}body{font-size:17px}header.top nav a{margin-left:12px}}
+  figure{margin:1.4em 0}
+  figure img{max-width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:6px;background:var(--paper-raised)}
+  figcaption{font-family:var(--font-mono);font-size:12.5px;color:var(--slate);margin-top:8px}
+  .shot{margin:.6em 0 1.2em;overflow-x:auto}
+  .shot img{display:block;width:auto;max-width:none;height:auto;border:1px solid var(--line);border-radius:6px}
+  pre.cli{font-size:12.5px;line-height:1.45;overflow-x:auto}
+  b.pass{color:var(--teal-ink)}
+  table{font-size:14px}
+  ul,ol{margin:.5em 0;padding-left:1.4em}
+  li{margin:.25em 0}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://enizaksoy.github.io/">Line<b>Rate</b></a>
+  <nav><a href="https://enizaksoy.github.io/#field-labs">Field Labs</a><a href="https://enizaksoy.github.io/">Home</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="kicker">Versa SD-WAN · Multicast · PIM Anycast RP · MSDP</div>
+  <h1>Two RPs, One Address: Versa PIM Anycast RP (RFC 4610) Meets a Cisco MSDP Domain</h1>
+  <p class="lede">A Versa SD-WAN hub and a Cisco Nexus RP share one anycast RP address and act as RFC 4610 peers, while the same Nexus runs MSDP toward two more Cisco RPs that own that address too. Multicast sources are learned across in both directions; validated on 24 Nov 2026 with 0 % loss.</p>
+  <div class="meta">2026-11-24 · VOS 22.1.4 · Director 22.1.4 · NX-OS 10.5(3) · PIM sparse mode · RFC 4610 · MSDP</div>
+</div></div>
+
+<article><div class="wrap">
+
+<div class="call warn"><b>Lab guide only.</b> This configuration was built and validated in a lab with the software versions listed below. It is not an official Versa or Cisco procedure; check the product documentation for your release before using it in production.</div><p>Topology: one Versa SD-WAN hub (the Versa rendezvous point) and two branches, connected through a Cisco Nexus RP to a Cisco multicast domain whose three RPs share one anycast RP address and exchange source information with MSDP. Every address and name below is the value of this lab. All device outputs are from the lab devices, collected on 2026-11-24 and not edited.</p><table><tr><th>Item</th><th>Value</th></tr><tr><td>Author</td><td>Eniz Aksoy</td></tr><tr><td>Method</td><td>Written with AI assistance; all commands and outputs are from the author's lab.</td></tr><tr><td>Version</td><td>VOS 22.1.4 and Director 22.1.4; Cisco Nexus 9000v running NX-OS 10.5(3)</td></tr><tr><td>Validated</td><td>24 Nov 2026: multicast in both directions between a Versa source / receiver and a Cisco source / receiver, 0 % loss</td></tr></table><div class="call info"><b>Source files:</b> the configuration of every device as text, the verbatim output of every verification command and all pictures are in the repo <a href="https://github.com/Enizaksoy/Versa-PIM-AnycastRP-Cisco-MSDP-Lab">Versa-PIM-AnycastRP-Cisco-MSDP-Lab</a>. The terminal pictures below show the output of one command each; the same output as copyable text is in <code>outputs/VERIFICATION.md</code> in the repo.</div>
+<div class="toc"><b>Contents</b><br>
+<a href="#1-topology-addresses-and-software">1. Topology, addresses and software</a> <a href="#2-how-it-works">2. How it works</a> <a href="#3-versa-configuration-hub1-the-versa-rp">3. Versa configuration: HUB1 (the Versa RP)</a> <a href="#4-versa-configuration-branch1-and-branch2">4. Versa configuration: Branch1 and Branch2</a> <a href="#5-cisco-nx-os-configuration">5. Cisco NX-OS configuration</a> <a href="#6-test-streams">6. Test streams</a> <a href="#7-verification">7. Verification</a> <a href="#8-confirmation">8. Confirmation</a> <a href="#9-things-to-know-before-you-repeat-this">9. Things to know before you repeat this</a>
+</div><h2 id="1-topology-addresses-and-software">1. Topology, addresses and software</h2><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig1-topology.png" alt="Figure 1. Lab topology (LabDeck view). Purple dashed arrows: MSDP sessions between the Cisco RPs. Orange dashed arrow: RFC 4610 Register exc"><figcaption>Figure 1. Lab topology (LabDeck view). Purple dashed arrows: MSDP sessions between the Cisco RPs. Orange dashed arrow: RFC 4610 Register exchange between the Versa RP (HUB1) and the Cisco gateway RP (nexus-2).</figcaption></figure><table><tr><th>Role</th><th>Device</th><th>RP address (shared)</th><th>Own address</th><th>Links used in this guide</th></tr><tr><td>Versa RP (hub)</td><td>HUB1</td><td>10.255.255.1/32 on tvi-0/111</td><td>10.200.12.1 (vni-0/2)</td><td>vni-0/2 10.200.12.1/30 to nexus-2; SD-WAN overlay to the branches</td></tr><tr><td>Versa branch</td><td>Branch1</td><td>–</td><td>–</td><td>LAN 172.30.2.1/24, host alpine-3 172.30.2.10</td></tr><tr><td>Versa branch</td><td>Branch2</td><td>–</td><td>–</td><td>LAN 172.30.3.1/24, host alpine-2 172.30.3.10</td></tr><tr><td>Cisco RP, gateway</td><td>nexus-2</td><td>10.255.255.1/32 on loopback0</td><td>10.255.254.12 (loopback1)</td><td>Eth1/3 10.200.12.2/30 to HUB1; Eth1/2 to nexus-0; Eth1/1 to nexus-4</td></tr><tr><td>Cisco RP</td><td>nexus-0</td><td>10.255.255.1/32 on loopback0</td><td>10.255.254.10 (loopback1)</td><td>Eth1/1 to nexus-2; Eth1/2 to nexus-3</td></tr><tr><td>Cisco RP</td><td>nexus-3</td><td>10.255.255.1/32 on loopback0</td><td>10.255.254.13 (loopback1)</td><td>Eth1/1 to nexus-0; Eth1/2 to nexus-1</td></tr><tr><td>Cisco first / last hop</td><td>nexus-4</td><td>–</td><td>–</td><td>LAN 10.20.40.1/24, host alpine-0 10.20.40.10</td></tr><tr><td>Cisco first / last hop</td><td>nexus-1</td><td>–</td><td>–</td><td>LAN 10.20.10.1/24, host alpine-1 10.20.10.10</td></tr></table><table><tr><th>Item</th><th>Value</th></tr><tr><td>Anycast RP address</td><td>10.255.255.1 for 224.0.0.0/4, configured as static RP on every router</td></tr><tr><td>RFC 4610 anycast-RP set</td><td>HUB1 (10.200.12.1) and nexus-2 (10.255.254.12)</td></tr><tr><td>MSDP mesh</td><td>nexus-2, nexus-0, nexus-3 between their loopback1 addresses</td></tr><tr><td>Routing</td><td>OSPF area 0 between the Nexus switches and on the HUB1 LAN link; HUB1 redistributes between OSPF and the SD-WAN overlay</td></tr><tr><td>Versa organization / VR</td><td>ACME / ACME-LAN-VR; templates HUB (HUB1) and BRANCH (Branch1, Branch2)</td></tr><tr><td>Test groups</td><td>239.1.1.1 (source alpine-3 behind Branch1) and 239.1.1.2 (source alpine-0 behind nexus-4)</td></tr></table><h2 id="2-how-it-works">2. How it works</h2><p>Versa VOS supports PIM Anycast RP as described in RFC 4610: the RPs that share an RP address tell each other about active sources by copying the PIM Register messages they receive. VOS does not run MSDP. A Cisco network with several RPs behind one anycast address normally uses MSDP for the same job. The two methods do not talk to each other, so one RP has to speak both.</p><ul><li>Shared RP address. HUB1, nexus-2, nexus-0 and nexus-3 all own 10.255.255.1. Every router uses that address as its static RP and reaches the nearest RP.</li><li>RFC 4610 between HUB1 and nexus-2. Each lists the other's own (not shared) address as an anycast-RP peer. A Register that reaches one of them is copied to the other.</li><li>MSDP between the Cisco RPs. nexus-2, nexus-0 and nexus-3 form a full mesh and announce active sources as Source-Active (SA) messages.</li><li>nexus-2 is the gateway. A source registered at HUB1 reaches nexus-2 as a Register and leaves it as an MSDP SA; a source registered on the Cisco side is copied by nexus-2 to HUB1 as a Register.</li></ul><p>Cisco platform note: the gateway needs IPv4 <code>ip pim anycast-rp</code> and MSDP on the same RP. On Cisco IOS XE 17.3.08a (CSR1000v) and 17.16.01a (Catalyst 8000V) the CLI offers <code>anycast-rp</code> only under <code>ipv6 pim</code>, not under <code>ip pim</code>, so IOS XE cannot be the RFC 4610 peer of Versa for IPv4. NX-OS has both; this guide uses NX-OS 10.5(3).</p><h2 id="3-versa-configuration-hub1-the-versa-rp">3. Versa configuration: HUB1 (the Versa RP)</h2><p>All steps are done in the Director GUI on the post-staging template HUB and its bind data, then committed to HUB1. The last part of this section shows the resulting configuration on the device.</p><h3 id="s3-1-lan-address-toward-the-cisco-rp">3.1 LAN address toward the Cisco RP</h3><p>The hub LAN interface vni-0/2 connects to nexus-2. Its address is also the hub's own address in the anycast-RP set.</p><p><b>GUI</b></p><p>Director View &gt; Workflows &gt; Devices &gt; Devices &gt; HUB1 &gt; Bind Data &gt; User Input &gt; Post Staging Template &gt; Template: HUB &gt; Interfaces. Set ACME-branch-lan_IPv4__staticaddress to 10.200.12.1/30.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig2-hub1-bind-lan.png" alt="Figure 2. HUB1 bind data: LAN address 10.200.12.1/30."><figcaption>Figure 2. HUB1 bind data: LAN address 10.200.12.1/30.</figcaption></figure><h3 id="s3-2-tunnel-interface-for-the-anycast-rp-">3.2 Tunnel interface for the anycast RP address</h3><p>The shared RP address needs an interface of its own that is always up. A tunnel virtual interface (TVI) with a /32 address is used as a loopback.</p><p><b>GUI</b></p><p>Template View (HUB) &gt; Configuration &gt; Networking &gt; Interfaces &gt; Tunnel &gt; Add. Interface tvi-0/111, subinterface unit 0, IPv4 address 10.255.255.1/32. The other fields were left at the values of the dialog (MTU 1400, Mode IPsec, Point-to-multi-point IPsec tunnel).</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig3-tvi.png" alt="Figure 3. Template HUB: tunnel interface tvi-0/111 with the anycast RP address."><figcaption>Figure 3. Template HUB: tunnel interface tvi-0/111 with the anycast RP address.</figcaption></figure><h3 id="s3-3-put-the-tvi-into-the-lan-network">3.3 Put the TVI into the LAN network</h3><p>The LAN network ACME-branch-lan is already a member of ACME-LAN-VR, of its zone and of the organization's traffic identification. Adding tvi-0/111.0 to this network gives the TVI all three memberships in one step.</p><p><b>GUI</b></p><p>Template View (HUB) &gt; Configuration &gt; Networking &gt; Networks &gt; ACME-branch-lan &gt; Interfaces &gt; Add &gt; tvi-0/111.0.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig4-network.png" alt="Figure 4. Network ACME-branch-lan now holds vni-0/2.0 and tvi-0/111.0."><figcaption>Figure 4. Network ACME-branch-lan now holds vni-0/2.0 and tvi-0/111.0.</figcaption></figure><h3 id="s3-4-ospf-toward-nexus-2">3.4 OSPF toward nexus-2</h3><p>OSPF area 0 on the LAN network forms the adjacency with nexus-2. HUB1 learns the Cisco prefixes from it and gives the branch prefixes to it; the LAN-VR of a workflow template already redistributes between OSPF and the overlay, no extra policy was needed.</p><p><b>GUI</b></p><p>Template View (HUB) &gt; Configuration &gt; Networking &gt; Virtual Routers &gt; ACME-LAN-VR &gt; OSPF &gt; OSPF Instance &gt; Add. Instance ID 3014, Router ID as a variable, Areas: Area ID 0, Network ACME-branch-lan.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig5-ospf.png" alt="Figure 5. ACME-LAN-VR: OSPF instance with area 0 on the LAN network."><figcaption>Figure 5. ACME-LAN-VR: OSPF instance with area 0 on the LAN network.</figcaption></figure><p>Then give the router ID variable a value in the bind data of HUB1 (Workflows &gt; Devices &gt; HUB1 &gt; Bind Data &gt; OSPF). The lab used 10.255.255.1; use an address that only this router has when more than one Versa RP shares the anycast address.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig6-ospf-router-id.png" alt="Figure 6. HUB1 bind data: OSPF router ID."><figcaption>Figure 6. HUB1 bind data: OSPF router ID.</figcaption></figure><h3 id="s3-5-pim-instance-cluster-list-and-pim-on">3.5 PIM instance, cluster list and PIM on the LAN network</h3><p>The cluster list number makes the PIM routers of the SD-WAN overlay neighbours of each other; use the same number on the hub and on every branch. PIM is enabled on the Networks tab, with the network that holds the LAN interface and the TVI.</p><p><b>GUI</b></p><p>Template View (HUB) &gt; Virtual Routers &gt; ACME-LAN-VR &gt; PIM &gt; Add. Instance ID 1, Cluster List 1. Networks tab &gt; Add &gt; ACME-branch-lan.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig7-pim-networks.png" alt="Figure 7. PIM instance 1 with Cluster List 1 and the LAN network on the Networks tab."><figcaption>Figure 7. PIM instance 1 with Cluster List 1 and the LAN network on the Networks tab.</figcaption></figure><p>Note: do not add vni-0/2.0 or tvi-0/111.0 on the Interfaces tab. An interface that is a member of a network has to be referenced through the network; otherwise the commit fails (section 9).</p><h3 id="s3-6-static-rp">3.6 Static RP</h3><p>The RP itself also needs the static RP entry: it tells HUB1 that 10.255.255.1, which it owns, is the RP for the group range.</p><p><b>GUI</b></p><p>PIM instance 1 &gt; Static RPs tab &gt; Add. RP Address 10.255.255.1, Group Range 224.0.0.0/4.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig8-static-rp.png" alt="Figure 8. Static RP 10.255.255.1 for 224.0.0.0/4."><figcaption>Figure 8. Static RP 10.255.255.1 for 224.0.0.0/4.</figcaption></figure><h3 id="s3-7-anycast-rp-shared-address-own-addres">3.7 Anycast RP: shared address, own address and the Cisco peer</h3><p>Three values: Address is the shared RP address. Local Address is the hub's own address, used as the source of the Registers it sends to the peer; it must not be the shared address. RP is the own address of the peer RP, here loopback1 of nexus-2.</p><p><b>GUI</b></p><p>PIM instance 1 &gt; Anycast RP tab &gt; Add. Address 10.255.255.1, Local Address 10.200.12.1, RP 10.255.254.12.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig9-anycast-rp.png" alt="Figure 9. Anycast RP entry: shared address, local address of HUB1, peer nexus-2."><figcaption>Figure 9. Anycast RP entry: shared address, local address of HUB1, peer nexus-2.</figcaption></figure><p>Observation on Director 22.1.4: in this lab the GUI did not store the Local Address. After OK the row showed no local address, and the template read through the REST API had no local-address leaf. Without it the configuration commits, but HUB1 answers the Registers of the peer with a Register-Stop and learns no source from it. The value was written with the Director REST API:</p><p><b>REST call (anycast-RP entry with its local address, template HUB)</b></p><pre class="cli"><code>POST https://&lt;director&gt;:9182/api/config/devices/template/HUB/config/routing-instances/routing-instance/ACME-LAN-VR/protocols/pim/rti-pim/1/rp
+{"anycast-rp":{"address":"10.255.255.1","local-address":"10.200.12.1","rp":[{"address":"10.255.254.12"}]}}</code></pre><p>Check it on the device with the command in section 7.3: the output must have a row with LOCAL true.</p><h3 id="s3-8-commit-and-the-configuration-on-hub1">3.8 Commit and the configuration on HUB1</h3><p><b>GUI</b></p><p>Director View &gt; Commit Template &gt; organization ACME, template HUB, device HUB1 &gt; Commit.</p><p><b>Resulting configuration on HUB1 (VOS CLI)</b></p><pre class="cli"><code>admin@HUB1-cli&gt; show configuration interfaces tvi-0/111 | display set
+set interfaces tvi-0/111 enable true
+set interfaces tvi-0/111 mtu 1400
+set interfaces tvi-0/111 mode ipsec
+set interfaces tvi-0/111 type p2mp-esp
+set interfaces tvi-0/111 unit 0 enable true
+set interfaces tvi-0/111 unit 0 family
+set interfaces tvi-0/111 unit 0 family inet
+set interfaces tvi-0/111 unit 0 family inet address 10.255.255.1/32
+
+admin@HUB1-cli&gt; show configuration interfaces vni-0/2 | display set
+set interfaces vni-0/2 enable true
+set interfaces vni-0/2 unit 0 description "LAN interface: ACME-branch-lan"
+set interfaces vni-0/2 unit 0 vlan-id 0
+set interfaces vni-0/2 unit 0 enable true
+set interfaces vni-0/2 unit 0 family
+set interfaces vni-0/2 unit 0 family inet
+set interfaces vni-0/2 unit 0 family inet address 10.200.12.1/30
+
+admin@HUB1-cli&gt; show configuration networks ACME-branch-lan | display set
+set networks ACME-branch-lan interfaces [ tvi-0/111.0 vni-0/2.0 ]
+
+admin@HUB1-cli&gt; show configuration routing-instances ACME-LAN-VR protocols ospf | display set
+set routing-instances ACME-LAN-VR protocols ospf 3014 router-id 10.255.255.1
+set routing-instances ACME-LAN-VR protocols ospf 3014 domain-vpn-tag 2
+set routing-instances ACME-LAN-VR protocols ospf 3014 enable-alarms
+set routing-instances ACME-LAN-VR protocols ospf 3014 area 0 network-name ACME-branch-lan metric 1
+
+admin@HUB1-cli&gt; show configuration routing-instances ACME-LAN-VR protocols pim | display set
+set routing-instances ACME-LAN-VR protocols pim 1 cluster-list [ 1 ]
+set routing-instances ACME-LAN-VR protocols pim 1 network ACME-branch-lan
+set routing-instances ACME-LAN-VR protocols pim 1 rp static address 10.255.255.1 group-ranges 224.0.0.0/4 override-subranges false
+<b>set routing-instances ACME-LAN-VR protocols pim 1 rp anycast-rp 10.255.255.1 rp 10.255.254.12</b>
+<b>set routing-instances ACME-LAN-VR protocols pim 1 rp anycast-rp 10.255.255.1 local-address 10.200.12.1</b></code></pre><h2 id="4-versa-configuration-branch1-and-branch2">4. Versa configuration: Branch1 and Branch2</h2><p>The branches are ordinary PIM sparse-mode routers. They need PIM on the LAN network, the same cluster list as the hub, and the static RP. No tunnel interface, no OSPF and no anycast-RP entry.</p><h3 id="s4-1-pim-instance-cluster-list-lan-networ">4.1 PIM instance, cluster list, LAN network</h3><p><b>GUI</b></p><p>Template View (BRANCH) &gt; Virtual Routers &gt; ACME-LAN-VR &gt; PIM &gt; Add. Instance ID 1, Cluster List 1. Networks tab &gt; Add &gt; ACME-branch-lan. IGMP version 2 runs on the LAN interface as soon as PIM is enabled on it; no IGMP configuration is needed.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig10-branch-pim.png" alt="Figure 10. Template BRANCH: PIM instance 1, Cluster List 1, LAN network."><figcaption>Figure 10. Template BRANCH: PIM instance 1, Cluster List 1, LAN network.</figcaption></figure><h3 id="s4-2-static-rp">4.2 Static RP</h3><p><b>GUI</b></p><p>PIM instance 1 &gt; Static RPs tab &gt; Add. RP Address 10.255.255.1, Group Range 224.0.0.0/4. Then Commit Template BRANCH to Branch1 and Branch2.</p><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig11-branch-static-rp.png" alt="Figure 11. Template BRANCH: static RP."><figcaption>Figure 11. Template BRANCH: static RP.</figcaption></figure><p><b>Resulting configuration on Branch1 (VOS CLI)</b></p><pre class="cli"><code>admin@Branch1-cli&gt; show configuration routing-instances ACME-LAN-VR protocols pim | display set
+set routing-instances ACME-LAN-VR protocols pim 1 cluster-list [ 1 ]
+set routing-instances ACME-LAN-VR protocols pim 1 network ACME-branch-lan
+set routing-instances ACME-LAN-VR protocols pim 1 rp static address 10.255.255.1 group-ranges 224.0.0.0/4 override-subranges false</code></pre><p><b>Resulting configuration on Branch2 (VOS CLI)</b></p><pre class="cli"><code>admin@Branch2-cli&gt; show configuration routing-instances ACME-LAN-VR protocols pim | display set
+set routing-instances ACME-LAN-VR protocols pim 1 cluster-list [ 1 ]
+set routing-instances ACME-LAN-VR protocols pim 1 network ACME-branch-lan
+set routing-instances ACME-LAN-VR protocols pim 1 rp static address 10.255.255.1 group-ranges 224.0.0.0/4 override-subranges false</code></pre><h2 id="5-cisco-nx-os-configuration">5. Cisco NX-OS configuration</h2><p>The three Cisco RPs carry the shared address on loopback0 and their own address on loopback1. MSDP runs between the loopback1 addresses, and the OSPF router ID is pinned to loopback1 because loopback0 is the same on all three.</p><h3 id="s5-1-nexus-2-the-gateway-rp-rfc-4610-towa">5.1 nexus-2: the gateway RP (RFC 4610 toward Versa, MSDP toward Cisco)</h3><p><b>Commands (nexus-2, configuration mode)</b></p><pre class="cli"><code>feature ospf
+feature pim
+feature msdp
+router ospf 1
+  router-id 10.255.254.12
+interface loopback0
+  description ANYCAST-RP
+  ip address 10.255.255.1/32
+  ip router ospf 1 area 0.0.0.0
+  ip pim sparse-mode
+interface loopback1
+  description UNIQUE-RP
+  ip address 10.255.254.12/32
+  ip router ospf 1 area 0.0.0.0
+  ip pim sparse-mode
+interface Ethernet1/3
+  description to HUB1 vni-0/2
+  no switchport
+  ip address 10.200.12.2/30
+  ip router ospf 1 area 0.0.0.0
+  ip pim sparse-mode
+  no shutdown
+ip pim rp-address 10.255.255.1 group-list 224.0.0.0/4
+<b>ip pim anycast-rp 10.255.255.1 10.255.254.12</b>
+<b>ip pim anycast-rp 10.255.255.1 10.200.12.1</b>
+<b>ip msdp originator-id loopback1</b>
+ip msdp peer 10.255.254.10 connect-source loopback1
+ip msdp peer 10.255.254.13 connect-source loopback1
+<b>ip msdp mesh-group 10.255.254.10 RP-MESH</b>
+<b>ip msdp mesh-group 10.255.254.13 RP-MESH</b></code></pre><ul><li><code>ip pim anycast-rp 10.255.255.1 &lt;address&gt;</code>: one line per member of the RFC 4610 set, including the switch itself (10.255.254.12) and HUB1 (10.200.12.1).</li><li><code>ip msdp originator-id loopback1</code>: the SA messages carry the own address. With the default (the RP address) every RP would announce the same ID and the peers would drop the messages.</li><li><code>ip msdp mesh-group</code>: the three RPs are fully meshed, so an SA received from one peer is not sent on to the other.</li><li><code>Ethernet1/1</code> and <code>Ethernet1/2</code> (to nexus-4 and nexus-0) are configured like Ethernet1/3 with their own /30 addresses.</li></ul><p><b>Running configuration on nexus-2</b></p><pre class="cli"><code>nexus-2# show running-config interface loopback0
+
+!Command: show running-config interface loopback0
+!Running configuration last done at: Tue Nov 24 20:17:42 2026
+!Time: Tue Nov 24 21:11:38 2026
+
+version 10.5(3) Bios:version  
+
+interface loopback0
+  description ANYCAST-RP
+  ip address 10.255.255.1/32
+  ip router ospf 1 area 0.0.0.0
+  ip pim sparse-mode
+
+nexus-2# show running-config interface loopback1
+
+!Command: show running-config interface loopback1
+!Running configuration last done at: Tue Nov 24 20:17:42 2026
+!Time: Tue Nov 24 21:11:38 2026
+
+version 10.5(3) Bios:version  
+
+interface loopback1
+  description UNIQUE-RP
+  ip address 10.255.254.12/32
+  ip router ospf 1 area 0.0.0.0
+  ip pim sparse-mode
+
+nexus-2# show running-config interface Ethernet1/3
+
+!Command: show running-config interface Ethernet1/3
+!Running configuration last done at: Tue Nov 24 20:17:42 2026
+!Time: Tue Nov 24 21:11:38 2026
+
+version 10.5(3) Bios:version  
+
+interface Ethernet1/3
+  description to HUB1 vni-0/2
+  no switchport
+  ip address 10.200.12.2/30
+  ip router ospf 1 area 0.0.0.0
+  ip pim sparse-mode
+  no shutdown
+
+nexus-2# show running-config ospf
+
+!Command: show running-config ospf
+!Running configuration last done at: Tue Nov 24 20:17:42 2026
+!Time: Tue Nov 24 21:11:39 2026
+
+version 10.5(3) Bios:version  
+feature ospf
+
+router ospf 1
+  router-id 10.255.254.12
+
+interface loopback0
+  ip router ospf 1 area 0.0.0.0
+
+interface loopback1
+  ip router ospf 1 area 0.0.0.0
+
+interface Ethernet1/1
+  ip router ospf 1 area 0.0.0.0
+
+interface Ethernet1/2
+  ip router ospf 1 area 0.0.0.0
+
+interface Ethernet1/3
+  ip router ospf 1 area 0.0.0.0
+
+nexus-2# show running-config pim
+
+!Command: show running-config pim
+!Running configuration last done at: Tue Nov 24 20:17:42 2026
+!Time: Tue Nov 24 21:11:39 2026
+
+version 10.5(3) Bios:version  
+feature pim
+
+ip pim rp-address 10.255.255.1 group-list 224.0.0.0/4
+ip pim anycast-rp 10.255.255.1 10.200.12.1
+ip pim anycast-rp 10.255.255.1 10.255.254.12
+
+
+interface loopback0
+  ip pim sparse-mode
+
+interface loopback1
+  ip pim sparse-mode
+
+interface Ethernet1/1
+  ip pim sparse-mode
+
+interface Ethernet1/2
+  ip pim sparse-mode
+
+interface Ethernet1/3
+  ip pim sparse-mode
+
+nexus-2# show running-config msdp
+
+!Command: show running-config msdp
+!Running configuration last done at: Tue Nov 24 20:17:42 2026
+!Time: Tue Nov 24 21:11:40 2026
+
+version 10.5(3) Bios:version  
+feature msdp
+
+ip msdp originator-id loopback1
+ip msdp peer 10.255.254.10 connect-source loopback1
+ip msdp mesh-group 10.255.254.10 RP-MESH
+ip msdp peer 10.255.254.13 connect-source loopback1
+ip msdp mesh-group 10.255.254.13 RP-MESH</code></pre><h3 id="s5-2-nexus-0-and-nexus-3-cisco-rps-with-m">5.2 nexus-0 and nexus-3: Cisco RPs with MSDP only</h3><p>Same as nexus-2 without the two anycast-rp lines; each has its own loopback1 address and lists the other two RPs as MSDP peers.</p><p><b>Running configuration on nexus-0</b></p><pre class="cli"><code>nexus-0# show running-config pim
+
+!Command: show running-config pim
+!Running configuration last done at: Tue Nov 24 20:04:03 2026
+!Time: Tue Nov 24 21:11:43 2026
+
+version 10.5(3) Bios:version  
+feature pim
+
+ip pim rp-address 10.255.255.1 group-list 224.0.0.0/4
+
+
+interface loopback0
+  ip pim sparse-mode
+
+interface loopback1
+  ip pim sparse-mode
+
+interface Ethernet1/1
+  ip pim sparse-mode
+
+interface Ethernet1/2
+  ip pim sparse-mode
+
+nexus-0# show running-config msdp
+
+!Command: show running-config msdp
+!Running configuration last done at: Tue Nov 24 20:04:03 2026
+!Time: Tue Nov 24 21:11:43 2026
+
+version 10.5(3) Bios:version  
+feature msdp
+
+ip msdp originator-id loopback1
+ip msdp peer 10.255.254.12 connect-source loopback1
+ip msdp mesh-group 10.255.254.12 RP-MESH
+ip msdp peer 10.255.254.13 connect-source loopback1
+ip msdp mesh-group 10.255.254.13 RP-MESH</code></pre><p><b>Running configuration on nexus-3</b></p><pre class="cli"><code>nexus-3# show running-config pim
+
+!Command: show running-config pim
+!Running configuration last done at: Tue Nov 24 20:17:40 2026
+!Time: Tue Nov 24 21:11:44 2026
+
+version 10.5(3) Bios:version  
+feature pim
+
+ip pim rp-address 10.255.255.1 group-list 224.0.0.0/4
+
+
+interface loopback0
+  ip pim sparse-mode
+
+interface loopback1
+  ip pim sparse-mode
+
+interface Ethernet1/1
+  ip pim sparse-mode
+
+interface Ethernet1/2
+  ip pim sparse-mode
+
+nexus-3# show running-config msdp
+
+!Command: show running-config msdp
+!Running configuration last done at: Tue Nov 24 20:17:40 2026
+!Time: Tue Nov 24 21:11:45 2026
+
+version 10.5(3) Bios:version  
+feature msdp
+
+ip msdp originator-id loopback1
+ip msdp peer 10.255.254.10 connect-source loopback1
+ip msdp mesh-group 10.255.254.10 RP-MESH
+ip msdp peer 10.255.254.12 connect-source loopback1
+ip msdp mesh-group 10.255.254.12 RP-MESH</code></pre><h3 id="s5-3-nexus-1-and-nexus-4-first-hop-and-la">5.3 nexus-1 and nexus-4: first-hop and last-hop routers</h3><p>Not RPs. They run OSPF and PIM on their links and use the shared address as static RP.</p><p><b>Running configuration on nexus-1</b></p><pre class="cli"><code>nexus-1# show running-config pim
+
+!Command: show running-config pim
+!Running configuration last done at: Tue Nov 24 19:59:09 2026
+!Time: Tue Nov 24 21:11:46 2026
+
+version 10.5(3) Bios:version  
+feature pim
+
+ip pim rp-address 10.255.255.1 group-list 224.0.0.0/4
+
+
+interface Ethernet1/1
+  ip pim sparse-mode
+
+interface Ethernet1/2
+  ip pim sparse-mode</code></pre><p><b>Running configuration on nexus-4</b></p><pre class="cli"><code>nexus-4# show running-config pim
+
+!Command: show running-config pim
+!Running configuration last done at: Tue Nov 24 19:02:30 2026
+!Time: Tue Nov 24 21:11:48 2026
+
+version 10.5(3) Bios:version  
+feature pim
+
+ip pim rp-address 10.255.255.1 group-list 224.0.0.0/4
+
+
+interface Ethernet1/1
+  ip pim sparse-mode
+
+interface Ethernet1/2
+  ip pim sparse-mode</code></pre><h2 id="6-test-streams">6. Test streams</h2><p>The hosts are Alpine Linux nodes with iperf 2. A receiver joins the group with IGMP and prints one line every five seconds while data arrives; a sender transmits UDP to the group.</p><p><b>Commands (receiver host)</b></p><pre class="cli"><code>nohup iperf -s -u -B 239.1.1.1%eth1 -i 5 &gt; /tmp/rx-239.1.1.1.log 2&gt;&amp;1 &amp;
+tail -f /tmp/rx-239.1.1.1.log</code></pre><p><b>Commands (sender host)</b></p><pre class="cli"><code>nohup iperf -c 239.1.1.1 -u -l 1000 -T 16 -t 7200 -b 64k -i 30 &gt; /tmp/tx.log 2&gt;&amp;1 &amp;</code></pre><ul><li><code>-T 16</code> sets the multicast TTL. The default is 1 and the stream would stop at the first router.</li><li><code>-l 1000</code> sets the datagram size. With the iperf default of 1470 bytes no stream passed the SD-WAN overlay in this lab (section 9).</li><li>A second group uses another port on both sides: <code>-B 239.1.1.2%eth1 -p 5002</code> and <code>-c 239.1.1.2 -p 5002</code>.</li></ul><table><tr><th>Test</th><th>Sender</th><th>Group</th><th>Receivers</th></tr><tr><td>A</td><td>alpine-3 (behind Branch1, 172.30.2.10)</td><td>239.1.1.1 port 5001</td><td>alpine-1 (behind nexus-1) and alpine-2 (behind Branch2)</td></tr><tr><td>B</td><td>alpine-0 (behind nexus-4, 10.20.40.10)</td><td>239.1.1.2 port 5002</td><td>alpine-2 (behind Branch2)</td></tr></table><h2 id="7-verification">7. Verification</h2><p>Each step names the device, shows the command and the output of the lab, and says what to look at.</p><h3 id="s7-1-ospf-between-hub1-and-nexus-2">7.1 OSPF between HUB1 and nexus-2</h3><p><b>HUB1</b></p><p>The adjacency with nexus-2 (router ID 10.255.254.12) on vni-0/2.0 is full.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t01.png" alt="The adjacency with nexus-2 (router ID 10.255.254.12) on vni-0/2.0 is full."></div><p>HUB1 reaches the own address of nexus-2, its anycast-RP peer, through OSPF.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t02.png" alt="HUB1 reaches the own address of nexus-2, its anycast-RP peer, through OSPF."></div><p><b>nexus-2</b></p><p>HUB1 (router ID 10.255.255.1, address 10.200.12.1) is FULL on Eth1/3.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t03.png" alt="HUB1 (router ID 10.255.255.1, address 10.200.12.1) is FULL on Eth1/3."></div><p>The branch LAN behind the SD-WAN overlay is learned from HUB1 (OSPF type-2, tag 2).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t04.png" alt="The branch LAN behind the SD-WAN overlay is learned from HUB1 (OSPF type-2, tag 2)."></div><p><b>Branch1</b></p><p>A Cisco-side LAN is known on the branch through the overlay, next hop HUB1.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t05.png" alt="A Cisco-side LAN is known on the branch through the overlay, next hop HUB1."></div><h3 id="s7-2-pim-neighbours-and-the-rp">7.2 PIM neighbours and the RP</h3><p><b>HUB1</b></p><p>Three PIM neighbours: nexus-2 on the LAN link and the two branches on the overlay (dtvi interfaces).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t06.png" alt="Three PIM neighbours: nexus-2 on the LAN link and the two branches on the overlay (dtvi interfaces)."></div><p>10.255.255.1 is the static RP for 224.0.0.0/4.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t07.png" alt="10.255.255.1 is the static RP for 224.0.0.0/4."></div><p>PIM runs on the LAN link, on the overlay interfaces and on tvi-0/111.0, the RP address.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t08.png" alt="PIM runs on the LAN link, on the overlay interfaces and on tvi-0/111.0, the RP address."></div><p><b>Branch1 and Branch2</b></p><p>Branch1: HUB1 and Branch2 are PIM neighbours over the overlay.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t09.png" alt="Branch1: HUB1 and Branch2 are PIM neighbours over the overlay."></div><p>Branch1 uses the same static RP.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t10.png" alt="Branch1 uses the same static RP."></div><p>Branch1 reaches the RP address through HUB1.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t11.png" alt="Branch1 reaches the RP address through HUB1."></div><p>Branch2: HUB1 and Branch1 are PIM neighbours.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t12.png" alt="Branch2: HUB1 and Branch1 are PIM neighbours."></div><p>Branch2 uses the same static RP.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t13.png" alt="Branch2 uses the same static RP."></div><p><b>nexus-2 and nexus-1</b></p><p>HUB1 (10.200.12.1) is a PIM neighbour of nexus-2 on Ethernet1/3.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t14.png" alt="HUB1 (10.200.12.1) is a PIM neighbour of nexus-2 on Ethernet1/3."></div><p>nexus-2 is RP for 10.255.255.1 (the asterisk) and lists the anycast-RP members.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t15.png" alt="nexus-2 is RP for 10.255.255.1 (the asterisk) and lists the anycast-RP members."></div><p>nexus-1, not an RP: its PIM neighbour is nexus-3.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t16.png" alt="nexus-1, not an RP: its PIM neighbour is nexus-3."></div><p>nexus-1 uses 10.255.255.1 as RP (no asterisk: the address is not its own).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t17.png" alt="nexus-1 uses 10.255.255.1 as RP (no asterisk: the address is not its own)."></div><h3 id="s7-3-the-anycast-rp-set-rfc-4610-between-">7.3 The anycast-RP set (RFC 4610) between HUB1 and nexus-2</h3><p><b>HUB1</b></p><p>Two rows for the anycast RP 10.255.255.1: the own address of HUB1 with LOCAL true and the peer nexus-2 with LOCAL false. If the LOCAL true row is missing, the local address is not configured (section 3.7).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t18.png" alt="Two rows for the anycast RP 10.255.255.1: the own address of HUB1 with LOCAL true and the peer nexus-2 with LOCAL false. If the LOCAL true r"></div><p><b>nexus-2</b></p><p>nexus-2 lists the same two members from its side: itself (asterisk) and HUB1 10.200.12.1.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t19.png" alt="nexus-2 lists the same two members from its side: itself (asterisk) and HUB1 10.200.12.1."></div><h3 id="s7-4-msdp-between-the-cisco-rps">7.4 MSDP between the Cisco RPs</h3><p>nexus-2: both MSDP peers are Established. The last column counts the (S,G) entries received from each peer.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t20.png" alt="nexus-2: both MSDP peers are Established. The last column counts the (S,G) entries received from each peer."></div><p>nexus-0: both peers Established.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t21.png" alt="nexus-0: both peers Established."></div><p>nexus-3: both peers Established.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t22.png" alt="nexus-3: both peers Established."></div><h3 id="s7-5-receivers-have-joined-igmp">7.5 Receivers have joined (IGMP)</h3><p>Branch2: both groups are joined on the LAN interface, reported by alpine-2 (172.30.3.10).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t23.png" alt="Branch2: both groups are joined on the LAN interface, reported by alpine-2 (172.30.3.10)."></div><p>nexus-1: 239.1.1.1 is joined on Ethernet1/2, reported by alpine-1 (10.20.10.10).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t24.png" alt="nexus-1: 239.1.1.1 is joined on Ethernet1/2, reported by alpine-1 (10.20.10.10)."></div><h3 id="s7-6-versa-source-to-cisco-receiver-alpin">7.6 Versa source to Cisco receiver: alpine-3 &gt; Branch1 &gt; HUB1 &gt; nexus-2 &gt; MSDP &gt; nexus-3 &gt; nexus-1 &gt; alpine-1</h3><p>This is the direction that needs the gateway: the source registers at the Versa RP, and the receiver has joined a Cisco RP that only learns sources through MSDP.</p><p>Sender alpine-3 (172.30.2.10) transmits 1000-byte datagrams to 239.1.1.1.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t25.png" alt="Sender alpine-3 (172.30.2.10) transmits 1000-byte datagrams to 239.1.1.1."></div><p>Branch1, first-hop router: the source 172.30.2.10 is known on the LAN interface vni-0/2.0.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t26.png" alt="Branch1, first-hop router: the source 172.30.2.10 is known on the LAN interface vni-0/2.0."></div><p>HUB1, the Versa RP: (172.30.2.10, 239.1.1.1) comes in from Branch1 over the overlay (dtvi) and goes out on vni-0/2.0 toward nexus-2. The second entry belongs to step 7.7.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t27.png" alt="HUB1, the Versa RP: (172.30.2.10, 239.1.1.1) comes in from Branch1 over the overlay (dtvi) and goes out on vni-0/2.0 toward nexus-2. The sec"></div><p>HUB1 forwards both streams; the SDWAN column shows which one leaves through the overlay.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t28.png" alt="HUB1 forwards both streams; the SDWAN column shows which one leaves through the overlay."></div><p>nexus-2, the gateway: the stream arrives on Ethernet1/3 from HUB1 (RPF neighbour 10.200.12.1).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t29.png" alt="nexus-2, the gateway: the stream arrives on Ethernet1/3 from HUB1 (RPF neighbour 10.200.12.1)."></div><p>RFC 4610 half: nexus-2 receives the PIM Registers that HUB1 sends to its anycast-RP peer for this source.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t30.png" alt="RFC 4610 half: nexus-2 receives the PIM Registers that HUB1 sends to its anycast-RP peer for this source."></div><p>MSDP half: nexus-3 has the Versa source 172.30.2.10 in its SA cache, announced by nexus-2 (RP 10.255.254.12), In_MRIB True.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t31.png" alt="MSDP half: nexus-3 has the Versa source 172.30.2.10 in its SA cache, announced by nexus-2 (RP 10.255.254.12), In_MRIB True."></div><p>nexus-3, the RP the Cisco receiver joined: the (S,G) entry carries the msdp flag and forwards to Ethernet1/2 toward nexus-1.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t32.png" alt="nexus-3, the RP the Cisco receiver joined: the (S,G) entry carries the msdp flag and forwards to Ethernet1/2 toward nexus-1."></div><p>nexus-1, last-hop router: (S,G) with the receiver interface Ethernet1/2 in the outgoing list.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t33.png" alt="nexus-1, last-hop router: (S,G) with the receiver interface Ethernet1/2 in the outgoing list."></div><p>Receiver alpine-1 on the Cisco side gets the stream from 172.30.2.10: 64 kbit/s, 0 of 40 datagrams lost in every interval.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t34.png" alt="Receiver alpine-1 on the Cisco side gets the stream from 172.30.2.10: 64 kbit/s, 0 of 40 datagrams lost in every interval."></div><h3 id="s7-7-cisco-source-to-versa-receiver-alpin">7.7 Cisco source to Versa receiver: alpine-0 &gt; nexus-4 &gt; nexus-2 &gt; HUB1 &gt; Branch2 &gt; alpine-2</h3><p>The source registers at nexus-2. nexus-2 announces it to the Cisco RPs with MSDP and copies the Register to HUB1, which is the RP of the Versa receiver.</p><p>Sender alpine-0 (10.20.40.10) transmits to 239.1.1.2.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t35.png" alt="Sender alpine-0 (10.20.40.10) transmits to 239.1.1.2."></div><p>nexus-4, first-hop router of the source.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t36.png" alt="nexus-4, first-hop router of the source."></div><p>nexus-2: Ethernet1/3 (HUB1) is in the outgoing list. HUB1 joined after nexus-2 copied the Register to it.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t37.png" alt="nexus-2: Ethernet1/3 (HUB1) is in the outgoing list. HUB1 joined after nexus-2 copied the Register to it."></div><p>Register counters of nexus-2: Registers and Null-Registers received, Register-Stops sent and received.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t38.png" alt="Register counters of nexus-2: Registers and Null-Registers received, Register-Stops sent and received."></div><p>The other Cisco RPs know the same source through MSDP (and the Versa source of step 7.6).</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t39.png" alt="The other Cisco RPs know the same source through MSDP (and the Versa source of step 7.6)."></div><p>HUB1: (10.20.40.10, 239.1.1.2) comes in on vni-0/2.0 from nexus-2 (10.200.12.2) and goes out on the overlay to Branch2.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t40.png" alt="HUB1: (10.20.40.10, 239.1.1.2) comes in on vni-0/2.0 from nexus-2 (10.200.12.2) and goes out on the overlay to Branch2."></div><p>Branch2, last-hop router of the Versa receiver: the groups are joined toward HUB1 over the overlay, with the LAN interface as downstream.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t41.png" alt="Branch2, last-hop router of the Versa receiver: the groups are joined toward HUB1 over the overlay, with the LAN interface as downstream."></div><p>Receiver alpine-2 behind Branch2 gets the stream from 10.20.40.10: 64 kbit/s, 0 % loss.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t42.png" alt="Receiver alpine-2 behind Branch2 gets the stream from 10.20.40.10: 64 kbit/s, 0 % loss."></div><h3 id="s7-8-versa-source-to-versa-receiver-alpin">7.8 Versa source to Versa receiver: alpine-3 &gt; Branch1 &gt; HUB1 &gt; Branch2 &gt; alpine-2</h3><p>Receiver alpine-2 behind Branch2 gets the stream of the Branch1 source 172.30.2.10: 64 kbit/s, 0 % loss.</p><div class="shot"><img src="versa-pim-anycast-rp-cisco-msdp-t43.png" alt="Receiver alpine-2 behind Branch2 gets the stream of the Branch1 source 172.30.2.10: 64 kbit/s, 0 % loss."></div><h2 id="8-confirmation">8. Confirmation</h2><table><tr><th>Check</th><th>Expected</th><th>Result</th><th>Status</th></tr><tr><td>HUB1: OSPF neighbour nexus-2</td><td>full</td><td>full, 10.255.254.12 on vni-0/2.0</td><td><b class="pass">PASS</b></td></tr><tr><td>HUB1: PIM neighbours</td><td>nexus-2 and both branches (3)</td><td>3 neighbours</td><td><b class="pass">PASS</b></td></tr><tr><td>HUB1: RP</td><td>10.255.255.1 static, 224.0.0.0/4</td><td>10.255.255.1 static 224.0.0.0/4</td><td><b class="pass">PASS</b></td></tr><tr><td>HUB1: anycast-RP set</td><td>own address LOCAL true, peer LOCAL false</td><td>10.200.12.1 true, 10.255.254.12 false</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-2: anycast-RP members</td><td>10.255.254.12 and 10.200.12.1</td><td>10.255.254.12* 10.200.12.1</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-2: MSDP peers</td><td>2 Established</td><td>2 established</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-0: MSDP peers</td><td>2 Established</td><td>2 established</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-3: MSDP peers</td><td>2 Established</td><td>2 established</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-2: Register from HUB1 for the Versa source</td><td>received from 10.200.12.1</td><td>NULL Register from 10.200.12.1</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-3: Versa source in the MSDP SA cache</td><td>172.30.2.10 239.1.1.1, In_MRIB True</td><td>RP 10.255.254.12, In_MRIB True</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-3: (S,G) for the Versa source</td><td>msdp flag, outgoing Ethernet1/2</td><td>msdp mrib ip pim, Ethernet1/2</td><td><b class="pass">PASS</b></td></tr><tr><td>HUB1: (S,G) for the Cisco source</td><td>upstream nexus-2, downstream Branch2</td><td>upstream vni-0/2.0 10.200.12.2</td><td><b class="pass">PASS</b></td></tr><tr><td>nexus-0: Cisco source in the MSDP SA cache</td><td>10.20.40.10 239.1.1.2</td><td>RP 10.255.254.12</td><td><b class="pass">PASS</b></td></tr><tr><td>alpine-1: stream from the Versa source (Cisco receiver)</td><td>64 kbit/s, 0 % loss</td><td>5 intervals, 0/40 (0%)</td><td><b class="pass">PASS</b></td></tr><tr><td>alpine-2: stream from the Cisco source (Versa receiver)</td><td>64 kbit/s, 0 % loss</td><td>5 intervals, 0/40 (0%)</td><td><b class="pass">PASS</b></td></tr><tr><td>alpine-2: stream from the Versa source (Versa receiver)</td><td>64 kbit/s, 0 % loss</td><td>5 intervals, 0/40 (0%)</td><td><b class="pass">PASS</b></td></tr></table><p>Scope of the validation: one Versa hub as RP, one group in each direction, 64 kbit/s, 1000-byte datagrams. Not tested: failure of an RP, a second Versa RP in the set, Cisco IOS XE or IOS XR as the MSDP RPs (the three MSDP RPs here are NX-OS), datagrams larger than 1000 bytes, scale.</p><h2 id="9-things-to-know-before-you-repeat-this">9. Things to know before you repeat this</h2><table><tr><th>#</th><th>What happens</th><th>Message or observation</th><th>What to do</th></tr><tr><td>1</td><td>In this lab the Director 22.1.4 GUI did not store the Anycast RP Local Address</td><td>After OK the row has no local address; the template has no local-address leaf</td><td>Write the anycast-RP entry with the Director REST API (section 3.7), then check for the LOCAL true row (section 7.3)</td></tr><tr><td>2</td><td>An anycast-RP entry without a local address commits without an error</td><td>HUB1 answers the peer's Registers with Register-Stop and builds no (S,G); only the peer row (LOCAL false) is shown</td><td>Same as 1</td></tr><tr><td>3</td><td>Commit validation message when the local interface carries the anycast address</td><td>Anycast RP address 10.255.255.1 configured in PIM instance 1 cannot be same as one of the addresses of local-interface tvi-0/111.0</td><td>Use the hub's own address as Local Address, never the interface of the shared RP address</td></tr><tr><td>4</td><td>Commit validation message when PIM is enabled on an interface that is a member of a network</td><td>Interface vni-0/2.0 is part of the network ACME-branch-lan</td><td>Enable PIM on the Networks tab with the network, not on the Interfaces tab</td></tr><tr><td>5</td><td>1470-byte multicast datagrams did not pass in this lab</td><td>First-hop branch: forwarded and dropped packet counts of the session are equal; nothing arrives at the receiving branch</td><td>Send smaller datagrams (1000 bytes passed). The cause was not investigated [Inference: overlay and Register encapsulation overhead]</td></tr></table><figure><img src="versa-pim-anycast-rp-cisco-msdp-fig12-commit-error.png" alt="Figure 12. Item 4: the commit error when PIM references an interface that belongs to a network."><figcaption>Figure 12. Item 4: the commit error when PIM references an interface that belongs to a network.</figcaption></figure>
+
+</div></article>
+
+<footer><div class="wrap">
+  Field notes · Eniz Aksoy · <a href="https://enizaksoy.github.io/">enizaksoy.github.io</a>
+  <div class="disc">Lab notes for education, written with AI assistance. All commands and outputs are from the author's lab (collected 2026-11-24); no output was edited. Addresses are private lab ranges and the organisation name is a placeholder (ACME). Lab guide only: not an official Versa or Cisco procedure.</div>
+</div></footer>
+<script data-goatcounter="https://enizaksoy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
