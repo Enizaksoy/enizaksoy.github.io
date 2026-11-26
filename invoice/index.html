@@ -10,8 +10,10 @@
 <meta name="apple-mobile-web-app-title" content="MCM Invoice">
 <title>Mills County Meat Invoice</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
+/* Layout: one column of four steps (Photo → Prices → Invoice → Send), sized for a phone */
 :root{
   --bg:#f3f5f7; --surface:#ffffff; --fg:#17202b; --muted:#5d6b7a; --line:#d9e0e7;
   --accent:#1f5fae; --accent-soft:#e3edf9; --warn:#a35a00; --warn-soft:#fdf1df; --ok:#1d7a4a;
@@ -30,18 +32,37 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15
   padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
 .wrap{max-width:760px;margin:0 auto;display:grid;gap:16px}
 h1{font-family:var(--f-display);font-size:1.6rem;margin:0}
+.step{display:flex;align-items:baseline;gap:10px}
+.step b{font-family:var(--f-num);font-size:.8rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:1px 7px}
+.step h2{font-family:var(--f-display);font-size:1.15rem;margin:0}
 .hint{color:var(--muted);font-size:.88rem;margin:0}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:12px;min-width:0}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-textarea{width:100%;min-height:70px;font-family:var(--f-num);font-size:.8rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+textarea{width:100%;min-height:120px;font-family:var(--f-num);font-size:.85rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);resize:vertical}
 label{font-size:.85rem;color:var(--muted);display:grid;gap:4px}
-input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+input,select{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
 .fields{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
-button{font:inherit;font-weight:500;border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
-button.primary{background:var(--ok);border-color:var(--ok);color:var(--bg);font-size:1.05rem;padding:12px 20px}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fields input{width:100%}
+button,.filebtn{font:inherit;font-weight:500;border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:inline-block}
+.filebtn input{display:none}
+.big{font-size:1.05rem;padding:12px 18px}
+.blue{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.green{background:var(--ok);border-color:var(--ok);color:var(--bg)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.filebtn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .msg{font-size:.88rem;color:var(--ok);min-height:1.2em}
 .err{color:var(--warn)}
+.busy{color:var(--accent)}
+#thumb{max-height:110px;max-width:100%;border-radius:6px;border:1px solid var(--line)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.prices{display:grid;gap:8px}
+.pitem{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.pitem.missing{border-color:var(--warn);background:var(--warn-soft)}
+.pitem .nm{font-weight:500;overflow-wrap:anywhere}
+.pitem .q{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+.pitem input{width:100%;text-align:right;font-family:var(--f-num)}
+.progress{font-family:var(--f-num);font-size:.85rem;color:var(--muted)}
+.progress.done{color:var(--ok)}
 .invoice{border:1px solid var(--line);border-radius:8px;padding:18px;background:var(--bg);display:grid;gap:12px;min-width:0}
 .inv-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
 .inv-co{font-family:var(--f-display);font-size:1.4rem;font-weight:700}
@@ -55,26 +76,48 @@ th,td{padding:6px 7px;border-bottom:1px solid var(--line);text-align:left}
 th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 td.n,th.n{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
 td.miss{color:var(--warn)}
-.totals{display:grid;gap:5px;justify-self:end;width:min(100%,320px)}
-.totals div{display:flex;justify-content:space-between;font-family:var(--f-num)}
+.rows{font-size:.75rem;color:var(--muted);white-space:nowrap}
+@media (max-width:480px){.panel{padding:14px}.invoice{padding:12px}table{font-size:.76rem}th,td{padding:5px 3px}th{font-size:.62rem;letter-spacing:.02em}.inv-head{flex-direction:column}.inv-meta{text-align:left}}
+.totals{display:grid;gap:6px;justify-self:end;width:min(100%,340px)}
+.totals div{display:flex;justify-content:space-between;gap:10px;align-items:center;font-family:var(--f-num)}
+.totals input,.totals select{width:72px;text-align:right;padding:3px 6px;font-family:var(--f-num)}
 .totals .grand{border-top:2px solid var(--fg);padding-top:6px;font-size:1.15rem;font-weight:600}
-.empty{color:var(--muted);text-align:center;padding:20px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>Mills County Meat Invoice</h1>
-    <p class="hint">Opened from the Price Calculator, the invoice fills in by itself. Check the details, then press Send PDF and choose WhatsApp or Messages.</p>
+    <p class="hint">Photograph the table, enter the price per pound for each item, then send the invoice as a PDF. Amount = pounds × price per lb. Pieces are kept as a note only.</p>
   </header>
 
-  <section class="panel" id="pastePanel">
-    <p class="hint">No invoice loaded yet. In the Price Calculator, press <b>Open in invoice app</b>, or press <b>Copy for invoice app</b> and paste the code here.</p>
-    <textarea id="code" placeholder="Paste the code here" aria-label="Invoice code"></textarea>
-    <div class="row"><button type="button" id="pasteBtn">Paste from clipboard</button><span class="msg err" id="codeMsg"></span></div>
+  <section class="panel" aria-labelledby="s1">
+    <div class="step"><b>1</b><h2 id="s1">Table</h2></div>
+    <div class="row">
+      <label class="filebtn big blue">📷 Take a photo<input type="file" id="camera" accept="image/*" capture="environment"></label>
+      <label class="filebtn big">🖼️ Choose from Photos<input type="file" id="gallery" accept="image/*"></label>
+    </div>
+    <div class="row"><img id="thumb" alt="Selected photo" hidden><span class="hint" id="ocrMsg">The phone reads the text in the photo. Printed tables read best; check handwriting carefully.</span></div>
+    <div class="bar" id="bar" hidden><i id="barFill"></i></div>
+    <p class="hint">Table as read. Fix any mistakes here: one item per line, name first, then the numbers.</p>
+    <textarea id="input" spellcheck="false" aria-label="Table text" placeholder="Small 10.5 5&#10;Medium 20 8&#10;Large 40 6"></textarea>
+    <div class="row">
+      <label>Pounds (lb) column<select id="colQty"></select></label>
+      <label>Pieces column (note)<select id="colPcs"></select></label>
+      <button type="button" id="clear">Clear</button>
+    </div>
+    <span class="msg err" id="parseErr"></span>
   </section>
 
-  <section class="panel" id="invPanel" hidden>
+  <section class="panel" aria-labelledby="s2">
+    <div class="step"><b>2</b><h2 id="s2">Prices</h2></div>
+    <p class="hint">Enter the price per pound. Rows with the same item (all Smalls, all Mediums) are added together and asked once. Prices are remembered on this phone.</p>
+    <div class="progress" id="progress"></div>
+    <div class="prices" id="prices"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="s3">
+    <div class="step"><b>3</b><h2 id="s3">Invoice</h2></div>
     <div class="fields">
       <label>Invoice no.<input id="invNo"></label>
       <label>Date<input type="date" id="invDate"></label>
@@ -91,84 +134,162 @@ td.miss{color:var(--warn)}
         <thead><tr><th>Item</th><th class="n">Pieces</th><th class="n">Pounds</th><th class="n">Price / lb</th><th class="n">Amount</th></tr></thead>
         <tbody id="pvRows"></tbody>
       </table></div>
-      <div class="totals" id="pvTotals"></div>
+      <div class="totals">
+        <div><span>Currency</span><select id="cur" aria-label="Currency"><option>$</option><option>£</option><option>€</option><option>₺</option></select></div>
+        <div><span>Subtotal</span><span id="sub"></span></div>
+        <div><span>Discount % <input type="number" id="disc" min="0" max="100" step="0.5" value="0" aria-label="Discount percent"></span><span id="discAmt"></span></div>
+        <div><span>Tax % <input type="number" id="vat" min="0" max="100" step="0.5" value="0" aria-label="Tax percent"></span><span id="vatAmt"></span></div>
+        <div class="grand"><span>Total due</span><span id="grand"></span></div>
+      </div>
     </div>
+  </section>
+
+  <section class="panel" aria-labelledby="s4">
+    <div class="step"><b>4</b><h2 id="s4">Send</h2></div>
     <div class="row">
-      <button type="button" class="primary" id="send">Send PDF</button>
+      <button type="button" class="big green" id="send">Send PDF</button>
       <button type="button" id="dl">Download PDF</button>
-      <button type="button" id="newInv">Load another</button>
+      <button type="button" id="copyTxt">Copy as text</button>
     </div>
+    <p class="hint">Send PDF opens your phone's share sheet. Choose WhatsApp or Messages and pick the contact.</p>
     <span class="msg" id="sendMsg"></span>
+    <textarea id="copyBox" readonly hidden aria-label="Invoice text"></textarea>
   </section>
 </div>
 
 <script>
 const COMPANY='Mills County Meat';
 const $=id=>document.getElementById(id);
-let D=null; // {cur,no,date,to,co,rows:[[name,pcs,lbs,price]],dp,vp}
 const lsGet=k=>{try{return localStorage.getItem(k)||'';}catch(e){return '';}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+let cur=lsGet('mcm-cur')||'$';
 const fmtQ=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:3});
-const fmt=n=>(D.cur||'$')+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=n=>cur+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 
-function decode(str){
-  str=String(str||'').trim();
-  const h=str.indexOf('#'); if(h>=0) str=str.slice(h+1);
-  str=str.replace(/^MCM1[:.]/,'').replace(/\s+/g,'');
-  if(!str) return null;
-  const b64=str.replace(/-/g,'+').replace(/_/g,'/');
-  const bin=atob(b64+'==='.slice((b64.length+3)%4));
-  const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
-  const o=JSON.parse(new TextDecoder().decode(bytes));
-  if(!o||!Array.isArray(o.rows)) throw new Error('bad');
-  return o;
+// "1,250.50" → 1250.5, "12,5" → 12.5, "1.500,5" → 1500.5, "10.5lb" → 10.5
+function parseNum(s){
+  if(s==null) return NaN;
+  if(typeof s==='number') return s;
+  let t=String(s).trim().replace(/[₺$£€\s]|TL/gi,'');
+  const m=t.match(/-?[\d.,]+/); if(!m) return NaN; t=m[0];
+  const hasDot=t.includes('.'), hasCom=t.includes(',');
+  if(hasDot&&hasCom){ t=t.lastIndexOf(',')>t.lastIndexOf('.')?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,''); }
+  else if(hasCom){ t=/^-?\d{1,3}(,\d{3})+$/.test(t)?t.replace(/,/g,''):t.replace(',','.'); }
+  const v=parseFloat(t); return isNaN(v)?NaN:v;
+}
+const isNumTok=t=>/^-?[\d.,]*\d[\d.,]*(lbs?|#|pcs?|ea)?$/i.test(t);
+
+// Each line → [name, num1, num2, ...]. Tabs or ";" split columns; otherwise trailing numbers are columns.
+function splitText(text){
+  return text.split(/\r?\n/).map(l=>l.replace(/[|¦]/g,' ').trim()).filter(Boolean).map(l=>{
+    if(l.includes('\t')||l.includes(';')){ const c=l.split(/\t|;/).map(x=>x.trim()); return c; }
+    const tok=l.split(/\s+/); const nums=[];
+    while(tok.length>1 && isNumTok(tok[tok.length-1])) nums.unshift(tok.pop());
+    return [tok.join(' '),...nums];
+  });
 }
 
-function calc(){
-  const rows=D.rows.map(r=>{const [name,pcs,lbs,price]=r; const ok=price!==null&&price!==''&&!isNaN(price); return {name:String(name),pcs:(pcs===null||pcs===''||isNaN(pcs))?null:+pcs,lbs:+lbs,p:ok?+price:null,t:ok?+price*+lbs:null};});
-  const sub=rows.reduce((a,r)=>a+(r.t||0),0), dp=+D.dp||0, vp=+D.vp||0;
-  const dA=sub*dp/100, vA=(sub-dA)*vp/100, g=sub-dA+vA;
-  const tl=[['Subtotal',fmt(sub)]]; if(dp) tl.push([`Discount ${fmtQ(dp)}%`,'-'+fmt(dA)]); if(vp) tl.push([`Tax ${fmtQ(vp)}%`,fmt(vA)]); tl.push(['Total due',fmt(g)]);
-  return {rows,tl,missing:rows.filter(r=>r.p==null).length};
+// Same item written differently ("Small", "small ", "SMALLS") is one category
+function norm(n){ const k=String(n).toLowerCase().replace(/[.:\-\s]+/g,' ').trim(); return k.length>3?k.replace(/s$/,''):k; }
+
+let rows=[], prices={};
+try{ prices=JSON.parse(lsGet('mcm-prices')||'{}'); }catch(e){ prices={}; }
+const savePrices=()=>lsSet('mcm-prices',JSON.stringify(prices));
+
+let colsTouched=false;
+function fillCols(){
+  const n=Math.max(1,...rows.map(r=>r.length))-1;
+  // a first line made only of words is a header, e.g. "Item Pounds Pieces"
+  let hw=null;
+  if(rows[0]){ const r0=rows[0]; if(r0.length>1 && r0.slice(1).every(c=>isNaN(parseNum(c)))) hw=r0; else if(r0.length===1 && isNaN(parseNum(r0[0]))) hw=r0[0].split(/\s+/); }
+  const lbl=i=>hw&&hw[i]?String(hw[i]).slice(0,18):`Number ${i}`;
+  const prevQ=$('colQty').value, prevP=$('colPcs').value;
+  $('colQty').innerHTML=''; $('colPcs').innerHTML='<option value="-1">— none —</option>';
+  for(let i=1;i<=n;i++){ $('colQty').add(new Option(lbl(i),i)); $('colPcs').add(new Option(lbl(i),i)); }
+  let q=-1,p=-1;
+  if(hw) hw.forEach((c,i)=>{ if(!i||i>n) return; if(q<0&&/pound|lb|weight|kilo|kg/i.test(c)) q=i; else if(p<0&&/piece|pcs|count|qty|adet|ea/i.test(c)) p=i; });
+  if(q<0) q=(p===1&&n>=2)?2:1;
+  if(p<0&&n>=2) p=(q===1?2:1);
+  const keep=v=>colsTouched&&v!==''&&+v<=n;
+  $('colQty').value=String(keep(prevQ)&&+prevQ>0?prevQ:q);
+  $('colPcs').value=String(keep(prevP)?prevP:(p>0?p:-1));
 }
+
+function items(){
+  const cq=+$('colQty').value, cp=+$('colPcs').value, out=[], bad=[];
+  rows.forEach((r,i)=>{
+    const name=String(r[0]??'').trim(), q=parseNum(r[cq]);
+    if(isNaN(q)){ bad.push(i+1); return; }
+    if(!name){ bad.push(i+1); return; }
+    out.push({name,qty:q,pcs:cp>0?parseNum(r[cp]):NaN,key:norm(name)});
+  });
+  // first line that is only words is a header, not an error
+  if(bad[0]===1 && rows[0] && rows[0].every(c=>isNaN(parseNum(c)))) bad.shift();
+  return {list:out,bad};
+}
+function grouped(list){
+  const g=new Map();
+  list.forEach(it=>{ const u=g.get(it.key)||{name:it.name,key:it.key,qty:0,pcs:NaN,rows:0}; u.qty+=it.qty; u.rows++; if(!isNaN(it.pcs)) u.pcs=(isNaN(u.pcs)?0:u.pcs)+it.pcs; g.set(it.key,u); });
+  return [...g.values()];
+}
+
+function load(text){ rows=splitText(text); fillCols(); render(); }
 
 function render(){
-  const c=calc();
+  const {list,bad}=items();
+  $('parseErr').textContent=bad.length?`Line ${bad.join(', ')} could not be read (pounds missing). Fix it in the box above.`:'';
+  const gs=grouped(list), box=$('prices'), focusKey=document.activeElement?.dataset?.key;
+  box.textContent=''; let filled=0;
+  gs.forEach((u,idx)=>{
+    const p=prices[u.key], has=p!==undefined&&p!==''&&!isNaN(parseNum(p)); if(has) filled++;
+    const div=document.createElement('div'); div.className='pitem'+(has?'':' missing');
+    const left=document.createElement('div');
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=u.name;
+    const q=document.createElement('div'); q.className='q'; q.textContent=`Total ${fmtQ(u.qty)} lb`+(isNaN(u.pcs)?'':` · note: ${fmtQ(u.pcs)} pcs`)+(u.rows>1?` · ${u.rows} rows`:'');
+    left.append(nm,q);
+    const inp=document.createElement('input'); inp.type='text'; inp.inputMode='decimal'; inp.id='p-'+idx; inp.dataset.key=u.key; inp.placeholder=cur+' / lb'; inp.setAttribute('aria-label','Price per pound for '+u.name); inp.value=has?p:'';
+    div.append(left,inp); box.appendChild(div);
+  });
+  $('progress').textContent=gs.length?`${filled} / ${gs.length} prices entered`+(filled===gs.length?' ✓':''):'Add a photo or type the table above to get started.';
+  $('progress').className='progress'+(gs.length&&filled===gs.length?' done':'');
+  if(focusKey){ const el=[...box.querySelectorAll('input')].find(i=>i.dataset.key===focusKey); if(el){ el.focus(); const v=el.value.length; el.setSelectionRange(v,v);} }
+  renderInvoice();
+}
+
+let C=null;
+function compute(){
+  const rs=grouped(items().list).map(u=>{ const p=parseNum(prices[u.key]), ok=!isNaN(p); return {name:u.name,rows:u.rows,pcs:u.pcs,qty:u.qty,p:ok?p:null,t:ok?p*u.qty:null}; });
+  const sub=rs.reduce((a,r)=>a+(r.t||0),0), dp=Math.min(100,Math.max(0,parseNum($('disc').value)||0)), vp=Math.max(0,parseNum($('vat').value)||0);
+  const dA=sub*dp/100, vA=(sub-dA)*vp/100, g=sub-dA+vA;
+  const tl=[['Subtotal',fmt(sub)]]; if(dp) tl.push([`Discount ${fmtQ(dp)}%`,'-'+fmt(dA)]); if(vp) tl.push([`Tax ${fmtQ(vp)}%`,fmt(vA)]); tl.push(['Total due',fmt(g)]);
+  return {rows:rs,sub,dA,vA,g,tl,missing:rs.filter(r=>r.p==null).length};
+}
+function renderInvoice(){
+  C=compute();
   $('pvCo').textContent=$('invCo').value.trim();
   $('pvNo').textContent='No. '+($('invNo').value.trim()||'-');
   $('pvDate').textContent='Date '+($('invDate').value||today());
   $('pvTo').textContent=$('invTo').value.trim()||'-';
   const tb=$('pvRows'); tb.textContent='';
-  c.rows.forEach(r=>{
+  if(!C.rows.length){ const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=5; td.className='hint'; td.textContent='Items appear here once the table has rows.'; tr.appendChild(td); tb.appendChild(tr); }
+  C.rows.forEach(r=>{
     const tr=document.createElement('tr');
-    [[r.name,''],[r.pcs==null?'-':fmtQ(r.pcs),'n'],[fmtQ(r.lbs)+' lb','n'],[r.p==null?'-':fmt(r.p),'n'+(r.p==null?' miss':'')],[r.t==null?'no price':fmt(r.t),'n'+(r.t==null?' miss':'')]]
+    [[r.name,''],[isNaN(r.pcs)?'-':fmtQ(r.pcs),'n'],[fmtQ(r.qty)+' lb','n'],[r.p==null?'-':fmt(r.p),'n'+(r.p==null?' miss':'')],[r.t==null?'no price':fmt(r.t),'n'+(r.t==null?' miss':'')]]
       .forEach(([t,cl])=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.appendChild(td);});
     tb.appendChild(tr);
   });
-  const tt=$('pvTotals'); tt.textContent='';
-  c.tl.forEach((l,i)=>{const d=document.createElement('div'); if(i===c.tl.length-1)d.className='grand'; const a=document.createElement('span');a.textContent=l[0]; const b=document.createElement('span');b.textContent=l[1]; d.append(a,b); tt.appendChild(d);});
-  $('sendMsg').className='msg'+(c.missing?' err':'');
-  $('sendMsg').textContent=c.missing?`${c.missing} item(s) have no price and are left out of the total.`:'';
+  $('sub').textContent=fmt(C.sub); $('discAmt').textContent='-'+fmt(C.dA); $('vatAmt').textContent=fmt(C.vA); $('grand').textContent=fmt(C.g);
 }
-
-function load(o){
-  D=o;
-  $('invNo').value=o.no||('INV-'+today().replace(/-/g,''));
-  $('invDate').value=o.date||today();
-  $('invTo').value=o.to||'';
-  $('invCo').value=o.co||lsGet('mcm-co');
-  $('pastePanel').hidden=true; $('invPanel').hidden=false;
-  render();
-}
-
-function tryLoad(str,showErr){
-  try{ const o=decode(str); if(!o) return false; load(o); return true; }
-  catch(e){ if(showErr) $('codeMsg').textContent='That code could not be read. Copy it again from the Price Calculator.'; return false; }
+function invoiceText(){
+  const c=C;
+  return `${COMPANY}`+($('invCo').value.trim()?`\n${$('invCo').value.trim()}`:'')+`\nINVOICE ${$('invNo').value.trim()}\nDate: ${$('invDate').value||today()}`+($('invTo').value.trim()?`\nBill to: ${$('invTo').value.trim()}`:'')+'\n\n'
+    +c.rows.map(r=>`${r.name}: ${fmtQ(r.qty)} lb x ${r.p==null?'?':fmt(r.p)} = ${r.t==null?'no price':fmt(r.t)}`+(isNaN(r.pcs)?'':` (${fmtQ(r.pcs)} pcs)`)).join('\n')
+    +'\n\n'+c.tl.map(l=>`${l[0]}: ${l[1]}`).join('\n');
 }
 
 function buildPdf(){
-  const c=calc(); const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'pt',format:'letter'});
+  const c=C; const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'pt',format:'letter'});
   const safe=t=>String(t).replace(/₺/g,'TL ').replace(/[−–]/g,'-').replace(/×/g,'x').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?');
   const L=54,R=558; let y=70;
   doc.setFont('helvetica','bold').setFontSize(22).text(COMPANY,L,y);
@@ -186,8 +307,8 @@ function buildPdf(){
     if(y>700){doc.addPage(); y=70; head();}
     const nl=doc.splitTextToSize(safe(r.name),X[1]-L-70);
     doc.text(nl,X[0],y);
-    doc.text(r.pcs==null?'-':fmtQ(r.pcs),X[1],y,{align:'right'});
-    doc.text(fmtQ(r.lbs)+' lb',X[2],y,{align:'right'});
+    doc.text(isNaN(r.pcs)?'-':fmtQ(r.pcs),X[1],y,{align:'right'});
+    doc.text(fmtQ(r.qty)+' lb',X[2],y,{align:'right'});
     doc.text(r.p==null?'-':safe(fmt(r.p)),X[3],y,{align:'right'});
     doc.text(r.t==null?'no price':safe(fmt(r.t)),X[4],y,{align:'right'});
     y+=14*nl.length; doc.setLineWidth(.3).setDrawColor(200).line(L,y-5,R,y-5); doc.setDrawColor(0); y+=6;
@@ -197,33 +318,105 @@ function buildPdf(){
   return doc.output('blob');
 }
 const fileName=()=>'Invoice-'+($('invNo').value.trim().replace(/[^A-Za-z0-9_-]/g,'')||'draft')+'.pdf';
-
-function download(blob){
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+function download(blob){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+function bumpSeq(){ const m=$('invNo').value.match(/-(\d+)$/); if(m) lsSet('mcm-seq',String(+m[1])); }
+function ready(){
+  const m=$('sendMsg'); m.className='msg';
+  if(!C||!C.rows.length){ m.className='msg err'; m.textContent='Add items first.'; return false; }
+  if(!window.jspdf){ m.className='msg err'; m.textContent='The PDF builder did not load. Check your internet connection and reload the page.'; return false; }
+  return true;
 }
 
+// ---- photo reading (on the phone, no upload) ----
+async function prepImage(file){
+  const img=await createImageBitmap(file).catch(()=>null);
+  if(!img) return file;
+  const max=2200, s=Math.min(1,max/Math.max(img.width,img.height)), up=Math.max(img.width,img.height)<1200?1.8:1;
+  const w=Math.round(img.width*s*up), h=Math.round(img.height*s*up);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const cx=cv.getContext('2d'); cx.filter='grayscale(1) contrast(1.35)'; cx.drawImage(img,0,0,w,h);
+  return await new Promise(r=>cv.toBlob(b=>r(b||file),'image/png'));
+}
+let worker=null;
+async function readPhoto(file){
+  if(!file) return;
+  const m=$('ocrMsg'); $('thumb').src=URL.createObjectURL(file); $('thumb').hidden=false;
+  if(!window.Tesseract){ m.className='hint err'; m.textContent='The photo reader did not load. Check your internet connection and reload the page.'; return; }
+  m.className='hint busy'; m.textContent='Getting the reader ready… (first time takes a few seconds)'; $('bar').hidden=false; $('barFill').style.width='5%';
+  try{
+    if(!worker){
+      worker=await Tesseract.createWorker('eng',1,{logger:x=>{ if(x.status==='recognizing text'){ $('barFill').style.width=Math.round(10+x.progress*90)+'%'; m.textContent='Reading the photo… '+Math.round(x.progress*100)+'%'; } }, ...(window.OCR_PATHS||{})});
+      await worker.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
+    }
+    m.textContent='Reading the photo…';
+    const {data}=await worker.recognize(await prepImage(file));
+    const lines=(data.text||'').split('\n').map(l=>l.replace(/\s{2,}/g,'  ').trim()).filter(l=>l && /[A-Za-z]/.test(l));
+    $('bar').hidden=true;
+    if(!lines.length){ m.className='hint err'; m.textContent='No text found in the photo. Take a closer, sharper photo in good light and try again.'; return; }
+    colsTouched=false; $('input').value=lines.join('\n'); load($('input').value);
+    const n=items().list.length;
+    m.className='hint'+(n?'':' err'); m.textContent=n?`${n} row(s) read. Check them in the box below, then enter the prices.`:'Text was found but no rows with numbers. Fix the box below by hand.';
+    const first=$('prices').querySelector('.missing input'); if(first) first.focus({preventScroll:true});
+  }catch(e){ $('bar').hidden=true; m.className='hint err'; m.textContent='The photo could not be read. Check your internet connection and try again.'; }
+}
+
+// ---- events ----
+['camera','gallery'].forEach(id=>$(id).addEventListener('change',e=>{ readPhoto(e.target.files[0]); e.target.value=''; }));
+$('input').addEventListener('input',()=>load($('input').value));
+$('clear').addEventListener('click',()=>{ colsTouched=false; $('input').value=''; $('thumb').hidden=true; load(''); $('input').focus(); });
+['colQty','colPcs'].forEach(id=>$(id).addEventListener('change',()=>{ colsTouched=true; render(); }));
+$('prices').addEventListener('input',e=>{
+  const k=e.target.dataset.key; if(!k) return;
+  prices[k]=e.target.value.trim(); savePrices();
+  const ok=prices[k]!==''&&!isNaN(parseNum(prices[k]));
+  e.target.closest('.pitem').classList.toggle('missing',!ok);
+  const all=[...$('prices').querySelectorAll('input')], f=all.filter(i=>i.value.trim()&&!isNaN(parseNum(i.value))).length;
+  $('progress').textContent=`${f} / ${all.length} prices entered`+(f===all.length?' ✓':''); $('progress').className='progress'+(f===all.length?' done':'');
+  renderInvoice();
+});
+$('prices').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const all=[...$('prices').querySelectorAll('input')], i=all.indexOf(e.target); if(all[i+1]) all[i+1].focus(); else e.target.blur(); e.preventDefault(); } });
+['disc','vat','invNo','invDate','invTo','invCo'].forEach(id=>$(id).addEventListener('input',()=>{ if(id==='invCo') lsSet('mcm-co',$('invCo').value); renderInvoice(); }));
+$('cur').addEventListener('change',()=>{ cur=$('cur').value; lsSet('mcm-cur',cur); render(); });
 $('send').addEventListener('click',async()=>{
-  const m=$('sendMsg'); m.className='msg';
-  if(!window.jspdf){m.className='msg err'; m.textContent='The PDF builder did not load. Check your internet connection and reload.'; return;}
+  if(!ready()) return; const m=$('sendMsg');
   const file=new File([buildPdf()],fileName(),{type:'application/pdf'});
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file],title:'Invoice '+$('invNo').value.trim()}); m.textContent='Invoice sent.'; }
-    catch(e){ if(e.name!=='AbortError'){ m.className='msg err'; m.textContent='Sharing failed. The PDF was downloaded instead; attach it in WhatsApp.'; download(file);} }
-  } else {
-    download(file); m.className='msg err'; m.textContent='This browser cannot share files directly. The PDF was downloaded; attach it in WhatsApp. On a phone, open this page in Chrome or Safari.';
-  }
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:'Invoice '+$('invNo').value.trim()}); bumpSeq(); m.textContent='Invoice sent.'; }
+    catch(e){ if(e.name!=='AbortError'){ download(file); m.className='msg err'; m.textContent='Sharing failed, so the PDF was downloaded. Attach it in WhatsApp.'; } }
+  } else { download(file); bumpSeq(); m.className='msg err'; m.textContent='This browser cannot share files directly, so the PDF was downloaded. Attach it in WhatsApp.'; }
 });
-$('dl').addEventListener('click',()=>{ if(!window.jspdf){$('sendMsg').textContent='The PDF builder did not load.';return;} download(buildPdf()); });
-$('newInv').addEventListener('click',()=>{ history.replaceState(null,'',location.pathname); $('code').value=''; $('invPanel').hidden=true; $('pastePanel').hidden=false; $('code').focus(); });
-['invNo','invDate','invTo','invCo'].forEach(id=>$(id).addEventListener('input',()=>{ if(id==='invCo') lsSet('mcm-co',$('invCo').value); render(); }));
-$('code').addEventListener('input',()=>{ $('codeMsg').textContent=''; tryLoad($('code').value,true); });
-$('pasteBtn').addEventListener('click',async()=>{
-  try{ const t=await navigator.clipboard.readText(); $('code').value=t; tryLoad(t,true); }
-  catch(e){ $('codeMsg').textContent='Could not read the clipboard. Long-press the box above and choose Paste.'; }
+$('dl').addEventListener('click',()=>{ if(!ready()) return; download(buildPdf()); bumpSeq(); $('sendMsg').textContent='PDF downloaded.'; });
+$('copyTxt').addEventListener('click',()=>{
+  if(!C||!C.rows.length) return; const t=invoiceText();
+  const show=()=>{ const b=$('copyBox'); b.value=t; b.hidden=false; b.select(); $('sendMsg').textContent='Select the text in the box and copy it.'; };
+  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(t).then(()=>{ $('sendMsg').className='msg'; $('sendMsg').textContent='Copied.'; },show); else show();
 });
-window.addEventListener('hashchange',()=>tryLoad(location.hash,false));
-tryLoad(location.hash,false);
+
+// ---- data handed over from the Price Calculator (link #...) ----
+function fromHash(){
+  let s=location.hash.slice(1).replace(/^MCM1[:.]/,''); if(!s) return false;
+  try{
+    const b64=s.replace(/-/g,'+').replace(/_/g,'/');
+    const o=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64+'==='.slice((b64.length+3)%4)),c=>c.charCodeAt(0))));
+    if(!o||!Array.isArray(o.rows)) return false;
+    if(o.cur){ cur=o.cur; $('cur').value=cur; }
+    o.rows.forEach(r=>{ if(r[3]!=null&&r[3]!=='') prices[norm(r[0])]=String(r[3]); }); savePrices();
+    $('input').value=o.rows.map(r=>[r[0],r[2],r[1]==null?'':r[1]].join('\t')).join('\n');
+    $('disc').value=o.dp||0; $('vat').value=o.vp||0;
+    if(o.no) $('invNo').value=o.no; if(o.date) $('invDate').value=o.date; if(o.to) $('invTo').value=o.to; if(o.co) $('invCo').value=o.co;
+    load($('input').value); $('colQty').value='1'; $('colPcs').value='2'; render();
+    history.replaceState(null,'',location.pathname);
+    return true;
+  }catch(e){ return false; }
+}
+
+// ---- start ----
+$('cur').value=cur;
+$('invDate').value=today();
+$('invNo').value='INV-'+today().replace(/-/g,'')+'-'+String((+lsGet('mcm-seq')||0)+1).padStart(2,'0');
+$('invCo').value=lsGet('mcm-co');
+if(!fromHash()) load('');
+window.addEventListener('hashchange',fromHash);
 </script>
 </body>
 </html>
