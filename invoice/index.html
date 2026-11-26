@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f5fae">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MCM Invoice">
+<title>Mills County Meat Invoice</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --fg:#17202b; --muted:#5d6b7a; --line:#d9e0e7;
+  --accent:#1f5fae; --accent-soft:#e3edf9; --warn:#a35a00; --warn-soft:#fdf1df; --ok:#1d7a4a;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#11161c; --surface:#19212a; --fg:#e6ecf2; --muted:#9aa8b6; --line:#2c3743;
+  --accent:#6ea8ef; --accent-soft:#1c2c40; --warn:#f0b35c; --warn-soft:#33281a; --ok:#5fcf93; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:16px}
+h1{font-family:var(--f-display);font-size:1.6rem;margin:0}
+.hint{color:var(--muted);font-size:.88rem;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+textarea{width:100%;min-height:70px;font-family:var(--f-num);font-size:.8rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+label{font-size:.85rem;color:var(--muted);display:grid;gap:4px}
+input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+.fields{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+button{font:inherit;font-weight:500;border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+button.primary{background:var(--ok);border-color:var(--ok);color:var(--bg);font-size:1.05rem;padding:12px 20px}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.msg{font-size:.88rem;color:var(--ok);min-height:1.2em}
+.err{color:var(--warn)}
+.invoice{border:1px solid var(--line);border-radius:8px;padding:18px;background:var(--bg);display:grid;gap:12px;min-width:0}
+.inv-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+.inv-co{font-family:var(--f-display);font-size:1.4rem;font-weight:700}
+.inv-word{font-family:var(--f-display);letter-spacing:.18em;color:var(--accent)}
+.inv-meta{font-family:var(--f-num);font-size:.85rem;text-align:right}
+.inv-sub{color:var(--muted);font-size:.85rem}
+.inv-to b{display:block;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tablebox{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:6px 7px;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.n,th.n{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.miss{color:var(--warn)}
+.totals{display:grid;gap:5px;justify-self:end;width:min(100%,320px)}
+.totals div{display:flex;justify-content:space-between;font-family:var(--f-num)}
+.totals .grand{border-top:2px solid var(--fg);padding-top:6px;font-size:1.15rem;font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mills County Meat Invoice</h1>
+    <p class="hint">Opened from the Price Calculator, the invoice fills in by itself. Check the details, then press Send PDF and choose WhatsApp or Messages.</p>
+  </header>
+
+  <section class="panel" id="pastePanel">
+    <p class="hint">No invoice loaded yet. In the Price Calculator, press <b>Open in invoice app</b>, or press <b>Copy for invoice app</b> and paste the code here.</p>
+    <textarea id="code" placeholder="Paste the code here" aria-label="Invoice code"></textarea>
+    <div class="row"><button type="button" id="pasteBtn">Paste from clipboard</button><span class="msg err" id="codeMsg"></span></div>
+  </section>
+
+  <section class="panel" id="invPanel" hidden>
+    <div class="fields">
+      <label>Invoice no.<input id="invNo"></label>
+      <label>Date<input type="date" id="invDate"></label>
+      <label>Bill to (customer)<input id="invTo" placeholder="Customer name"></label>
+      <label>Company details<input id="invCo" placeholder="Address, phone (optional)"></label>
+    </div>
+    <div class="invoice">
+      <div class="inv-head">
+        <div><div class="inv-co">Mills County Meat</div><div class="inv-sub" id="pvCo"></div></div>
+        <div class="inv-meta"><div class="inv-word">INVOICE</div><div id="pvNo"></div><div id="pvDate"></div></div>
+      </div>
+      <div class="inv-to"><b>Bill to</b><span id="pvTo"></span></div>
+      <div class="tablebox"><table>
+        <thead><tr><th>Item</th><th class="n">Pieces</th><th class="n">Pounds</th><th class="n">Price / lb</th><th class="n">Amount</th></tr></thead>
+        <tbody id="pvRows"></tbody>
+      </table></div>
+      <div class="totals" id="pvTotals"></div>
+    </div>
+    <div class="row">
+      <button type="button" class="primary" id="send">Send PDF</button>
+      <button type="button" id="dl">Download PDF</button>
+      <button type="button" id="newInv">Load another</button>
+    </div>
+    <span class="msg" id="sendMsg"></span>
+  </section>
+</div>
+
+<script>
+const COMPANY='Mills County Meat';
+const $=id=>document.getElementById(id);
+let D=null; // {cur,no,date,to,co,rows:[[name,pcs,lbs,price]],dp,vp}
+const lsGet=k=>{try{return localStorage.getItem(k)||'';}catch(e){return '';}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const fmtQ=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:3});
+const fmt=n=>(D.cur||'$')+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+
+function decode(str){
+  str=String(str||'').trim();
+  const h=str.indexOf('#'); if(h>=0) str=str.slice(h+1);
+  str=str.replace(/^MCM1[:.]/,'').replace(/\s+/g,'');
+  if(!str) return null;
+  const b64=str.replace(/-/g,'+').replace(/_/g,'/');
+  const bin=atob(b64+'==='.slice((b64.length+3)%4));
+  const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
+  const o=JSON.parse(new TextDecoder().decode(bytes));
+  if(!o||!Array.isArray(o.rows)) throw new Error('bad');
+  return o;
+}
+
+function calc(){
+  const rows=D.rows.map(r=>{const [name,pcs,lbs,price]=r; const ok=price!==null&&price!==''&&!isNaN(price); return {name:String(name),pcs:(pcs===null||pcs===''||isNaN(pcs))?null:+pcs,lbs:+lbs,p:ok?+price:null,t:ok?+price*+lbs:null};});
+  const sub=rows.reduce((a,r)=>a+(r.t||0),0), dp=+D.dp||0, vp=+D.vp||0;
+  const dA=sub*dp/100, vA=(sub-dA)*vp/100, g=sub-dA+vA;
+  const tl=[['Subtotal',fmt(sub)]]; if(dp) tl.push([`Discount ${fmtQ(dp)}%`,'-'+fmt(dA)]); if(vp) tl.push([`Tax ${fmtQ(vp)}%`,fmt(vA)]); tl.push(['Total due',fmt(g)]);
+  return {rows,tl,missing:rows.filter(r=>r.p==null).length};
+}
+
+function render(){
+  const c=calc();
+  $('pvCo').textContent=$('invCo').value.trim();
+  $('pvNo').textContent='No. '+($('invNo').value.trim()||'-');
+  $('pvDate').textContent='Date '+($('invDate').value||today());
+  $('pvTo').textContent=$('invTo').value.trim()||'-';
+  const tb=$('pvRows'); tb.textContent='';
+  c.rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    [[r.name,''],[r.pcs==null?'-':fmtQ(r.pcs),'n'],[fmtQ(r.lbs)+' lb','n'],[r.p==null?'-':fmt(r.p),'n'+(r.p==null?' miss':'')],[r.t==null?'no price':fmt(r.t),'n'+(r.t==null?' miss':'')]]
+      .forEach(([t,cl])=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.appendChild(td);});
+    tb.appendChild(tr);
+  });
+  const tt=$('pvTotals'); tt.textContent='';
+  c.tl.forEach((l,i)=>{const d=document.createElement('div'); if(i===c.tl.length-1)d.className='grand'; const a=document.createElement('span');a.textContent=l[0]; const b=document.createElement('span');b.textContent=l[1]; d.append(a,b); tt.appendChild(d);});
+  $('sendMsg').className='msg'+(c.missing?' err':'');
+  $('sendMsg').textContent=c.missing?`${c.missing} item(s) have no price and are left out of the total.`:'';
+}
+
+function load(o){
+  D=o;
+  $('invNo').value=o.no||('INV-'+today().replace(/-/g,''));
+  $('invDate').value=o.date||today();
+  $('invTo').value=o.to||'';
+  $('invCo').value=o.co||lsGet('mcm-co');
+  $('pastePanel').hidden=true; $('invPanel').hidden=false;
+  render();
+}
+
+function tryLoad(str,showErr){
+  try{ const o=decode(str); if(!o) return false; load(o); return true; }
+  catch(e){ if(showErr) $('codeMsg').textContent='That code could not be read. Copy it again from the Price Calculator.'; return false; }
+}
+
+function buildPdf(){
+  const c=calc(); const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'pt',format:'letter'});
+  const safe=t=>String(t).replace(/₺/g,'TL ').replace(/[−–]/g,'-').replace(/×/g,'x').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?');
+  const L=54,R=558; let y=70;
+  doc.setFont('helvetica','bold').setFontSize(22).text(COMPANY,L,y);
+  doc.setFontSize(14).setTextColor(31,95,174).text('INVOICE',R,y,{align:'right'}); doc.setTextColor(0);
+  doc.setFont('helvetica','normal').setFontSize(10);
+  y+=18; if($('invCo').value.trim()) doc.text(safe($('invCo').value.trim()),L,y);
+  doc.text(safe('No. '+$('invNo').value.trim()),R,y,{align:'right'}); y+=14;
+  doc.text('Date '+($('invDate').value||today()),R,y,{align:'right'}); y+=26;
+  doc.setFont('helvetica','bold').text('BILL TO',L,y); doc.setFont('helvetica','normal'); y+=14;
+  doc.text(safe($('invTo').value.trim()||'-'),L,y); y+=30;
+  const X=[L,300,380,470,R];
+  const head=()=>{doc.setFont('helvetica','bold').setFontSize(9); doc.text('ITEM',X[0],y); ['PIECES','POUNDS','PRICE / LB','AMOUNT'].forEach((h,i)=>doc.text(h,X[i+1],y,{align:'right'})); y+=6; doc.setLineWidth(1).line(L,y,R,y); y+=16; doc.setFont('helvetica','normal').setFontSize(10);};
+  head();
+  c.rows.forEach(r=>{
+    if(y>700){doc.addPage(); y=70; head();}
+    const nl=doc.splitTextToSize(safe(r.name),X[1]-L-70);
+    doc.text(nl,X[0],y);
+    doc.text(r.pcs==null?'-':fmtQ(r.pcs),X[1],y,{align:'right'});
+    doc.text(fmtQ(r.lbs)+' lb',X[2],y,{align:'right'});
+    doc.text(r.p==null?'-':safe(fmt(r.p)),X[3],y,{align:'right'});
+    doc.text(r.t==null?'no price':safe(fmt(r.t)),X[4],y,{align:'right'});
+    y+=14*nl.length; doc.setLineWidth(.3).setDrawColor(200).line(L,y-5,R,y-5); doc.setDrawColor(0); y+=6;
+  });
+  y+=10; if(y>680){doc.addPage(); y=70;}
+  c.tl.forEach((l,i)=>{const last=i===c.tl.length-1; if(last){doc.setLineWidth(1).line(360,y-12,R,y-12); y+=4; doc.setFont('helvetica','bold').setFontSize(13);} doc.text(safe(l[0]),360,y); doc.text(safe(l[1]),R,y,{align:'right'}); y+=18;});
+  return doc.output('blob');
+}
+const fileName=()=>'Invoice-'+($('invNo').value.trim().replace(/[^A-Za-z0-9_-]/g,'')||'draft')+'.pdf';
+
+function download(blob){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
+$('send').addEventListener('click',async()=>{
+  const m=$('sendMsg'); m.className='msg';
+  if(!window.jspdf){m.className='msg err'; m.textContent='The PDF builder did not load. Check your internet connection and reload.'; return;}
+  const file=new File([buildPdf()],fileName(),{type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:'Invoice '+$('invNo').value.trim()}); m.textContent='Invoice sent.'; }
+    catch(e){ if(e.name!=='AbortError'){ m.className='msg err'; m.textContent='Sharing failed. The PDF was downloaded instead; attach it in WhatsApp.'; download(file);} }
+  } else {
+    download(file); m.className='msg err'; m.textContent='This browser cannot share files directly. The PDF was downloaded; attach it in WhatsApp. On a phone, open this page in Chrome or Safari.';
+  }
+});
+$('dl').addEventListener('click',()=>{ if(!window.jspdf){$('sendMsg').textContent='The PDF builder did not load.';return;} download(buildPdf()); });
+$('newInv').addEventListener('click',()=>{ history.replaceState(null,'',location.pathname); $('code').value=''; $('invPanel').hidden=true; $('pastePanel').hidden=false; $('code').focus(); });
+['invNo','invDate','invTo','invCo'].forEach(id=>$(id).addEventListener('input',()=>{ if(id==='invCo') lsSet('mcm-co',$('invCo').value); render(); }));
+$('code').addEventListener('input',()=>{ $('codeMsg').textContent=''; tryLoad($('code').value,true); });
+$('pasteBtn').addEventListener('click',async()=>{
+  try{ const t=await navigator.clipboard.readText(); $('code').value=t; tryLoad(t,true); }
+  catch(e){ $('codeMsg').textContent='Could not read the clipboard. Long-press the box above and choose Paste.'; }
+});
+window.addEventListener('hashchange',()=>tryLoad(location.hash,false));
+tryLoad(location.hash,false);
+</script>
+</body>
+</html>
